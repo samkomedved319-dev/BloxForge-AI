@@ -104,3 +104,22 @@ Stage Summary:
 - Agent Browser verified end-to-end: web app generates pairing code → simulated plugin heartbeats with that code → web app detects "Studio connected" + shows script name → dialog closes → header shows green Studio badge → context chip appears near composer → AI generates Luau code block → "Insert in Studio" button appears on code block (alongside Copy) → clicking it sends insert command through the API pipeline.
 - curl verified the full connector API flow: pair → heartbeat(context) → state(connected+script) → insert(commandId) → heartbeat(drains command with correct title/language/code) → ack.
 - Plugin download serves the new 19KB connector file. 77 connector refs, ~0 chat refs in the plugin code.
+
+---
+Task ID: 14-18
+Agent: Orchestrator
+Task: Fix "plugin won't connect to Studio" — diagnose and fix connection issues
+
+Work Log:
+- Root cause: the connect dialog didn't show the server URL (user didn't know what to paste into the plugin), and the plugin's URL parsing was fragile (trailing slashes, /api/studio suffix, etc. broke it).
+- Fixed studio-connector.tsx: dialog now auto-detects window.location.origin and displays it as "② BloxForge server URL (paste in plugin)" with a copy button. Added "Simulate connection" button (sends heartbeats with a fake DemoScript.lua context so the full flow including code insertion works without the real plugin). Added "Not connecting?" troubleshooting panel with 4 key tips (URL match, HTTPS requirement, Output window, code expiry).
+- Added simulate()/stopSimulate() to useStudioConnection hook with a background heartbeat interval (simRef).
+- Rewrote plugin doConnect() with robust normalizeApiUrl(): trims whitespace, strips fragments, trailing slashes, pre-existing /api/studio and /api suffixes. Logs the exact URL used + a 4-point checklist on failure.
+- Added a visible errorLabel in the plugin UI (red text) so users see connection errors without opening the Output window.
+- Changed plugin DEFAULT_API_URL to empty (forces the user to enter the real URL instead of leaving the placeholder).
+- Updated plugin-page.tsx install steps + added an amber "⚠ server URL must be HTTPS" warning box explaining Roblox HttpService blocks plain HTTP.
+
+Stage Summary:
+- Lint clean. Server stable.
+- Agent Browser verified: dialog shows server URL + copy, Simulate button instantly connects (shows "Studio connected" + DemoScript.lua), full flow works (badge → context chip → AI response → "Insert in Studio" button → click → "Sent" + toast "Sent to Roblox Studio").
+- The user can now: (1) see the exact server URL to paste, (2) test without the real plugin via Simulate, (3) read clear error messages in both the plugin UI and the dialog's troubleshooting panel.

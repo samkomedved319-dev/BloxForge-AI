@@ -268,8 +268,25 @@ export function PluginPage({
             <InstallStep
               n={3}
               title="Pair with the web app"
-              desc="Open the BloxForge toolbar button in Studio. In the web app, click “Connect Studio” to get a pairing code, then paste it into the plugin and click Connect."
+              desc="In the web app, click “Connect Studio” and copy the server URL + pairing code. In the Studio plugin, paste both and click Connect. The AI chat stays in your browser — the plugin just syncs your selected script and inserts generated code."
             />
+          </div>
+
+          <div className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+            <p className="text-sm font-semibold text-amber-300">
+              ⚠ Important: the server URL must be HTTPS
+            </p>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Roblox HttpService blocks plain HTTP (except to localhost from
+              Studio on the same machine). Use the HTTPS URL of your deployed
+              BloxForge app. The web app’s “Connect Studio” dialog shows the
+              exact URL to copy. If the plugin can’t connect, check the Studio
+              Output window for{" "}
+              <code className="rounded bg-white/10 px-1 font-mono">
+                [BloxForge Connector]
+              </code>{" "}
+              messages.
+            </p>
           </div>
 
           <div className="mt-10 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5">

@@ -671,6 +671,7 @@ export function ChatApp({
         connecting={studio.connecting}
         onPair={studio.pair}
         onDisconnect={studio.disconnect}
+        onSimulate={studio.simulate}
       />
     </div>
   );

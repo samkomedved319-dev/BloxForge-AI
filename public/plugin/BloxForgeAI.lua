@@ -1,26 +1,26 @@
 --[[
-	BloxForge AI — Roblox Studio Connector
-	---------------------------------------
-	A lightweight bridge between Roblox Studio and the BloxForge AI web app.
+        BloxForge AI — Roblox Studio Connector
+        ---------------------------------------
+        A lightweight bridge between Roblox Studio and the BloxForge AI web app.
 
-	The AI chat lives in your browser. This plugin does two things:
-	  1. Reports the script you currently have selected in Studio to the web app
-	     (so BloxForge can see your code as context).
-	  2. Receives "insert this code" commands from the web app and creates a new
-	     Script in ServerScriptService with the generated Luau.
+        The AI chat lives in your browser. This plugin does two things:
+          1. Reports the script you currently have selected in Studio to the web app
+             (so BloxForge can see your code as context).
+          2. Receives "insert this code" commands from the web app and creates a new
+             Script in ServerScriptService with the generated Luau.
 
-	There is NO chat UI inside Studio — the plugin is just a connector.
+        There is NO chat UI inside Studio — the plugin is just a connector.
 
-	Setup:
-	  1. Save this file as BloxForgeAI.lua in your Studio Plugins folder
-	     (Windows: %localappdata%\Roblox\Plugins · macOS: ~/Documents/Roblox/Plugins).
-	  2. Restart Roblox Studio.
-	  3. Open the BloxForge web app, click "Connect Studio", and copy the
-	     pairing code.
-	  4. Open the BloxForge toolbar button in Studio, paste your server URL +
-	     pairing code, and click Connect.
+        Setup:
+          1. Save this file as BloxForgeAI.lua in your Studio Plugins folder
+             (Windows: %localappdata%\Roblox\Plugins · macOS: ~/Documents/Roblox/Plugins).
+          2. Restart Roblox Studio.
+          3. Open the BloxForge web app, click "Connect Studio", and copy the
+             pairing code.
+          4. Open the BloxForge toolbar button in Studio, paste your server URL +
+             pairing code, and click Connect.
 
-	Requirements: HttpService (enabled by default for plugins).
+        Requirements: HttpService (enabled by default for plugins).
 --]]
 
 --========================================================================
@@ -29,7 +29,7 @@
 
 local PLUGIN_NAME = "BloxForge Connector"
 local PLUGIN_ID = "BloxForgeConnector"
-local DEFAULT_API_URL = "https://YOUR-BLOXFORGE-APP.example.com/api/studio"
+local DEFAULT_API_URL = "" -- user must enter their BloxForge server URL
 local HEARTBEAT_INTERVAL = 3 -- seconds between heartbeats
 
 --========================================================================
@@ -58,64 +58,64 @@ local lastContextHash = ""
 --========================================================================
 
 local function warnMsg(msg)
-	warn("[BloxForge Connector] " .. tostring(msg))
+        warn("[BloxForge Connector] " .. tostring(msg))
 end
 
 local function httpPost(url, payload, timeout)
-	timeout = timeout or 15
-	local body = HttpService:JSONEncode(payload)
-	local ok, response = pcall(function()
-		return HttpService:PostAsync(url, body, Enum.HttpContentType.ApplicationJson, false, timeout)
-	end)
-	return ok, response
+        timeout = timeout or 15
+        local body = HttpService:JSONEncode(payload)
+        local ok, response = pcall(function()
+                return HttpService:PostAsync(url, body, Enum.HttpContentType.ApplicationJson, false, timeout)
+        end)
+        return ok, response
 end
 
 local function httpGet(url, timeout)
-	timeout = timeout or 15
-	local ok, response = pcall(function()
-		return HttpService:GetAsync(url, false, timeout)
-	end)
-	return ok, response
+        timeout = timeout or 15
+        local ok, response = pcall(function()
+                return HttpService:GetAsync(url, false, timeout)
+        end)
+        return ok, response
 end
 
 local function getSelectedScript()
-	local sel = Selection:Get()
-	for _, inst in ipairs(sel) do
-		if inst:IsA("Script") or inst:IsA("LocalScript") or inst:IsA("ModuleScript") then
-			return inst
-		end
-	end
-	return nil
+        local sel = Selection:Get()
+        for _, inst in ipairs(sel) do
+                if inst:IsA("Script") or inst:IsA("LocalScript") or inst:IsA("ModuleScript") then
+                        return inst
+                end
+        end
+        return nil
 end
 
 local function buildContext()
-	local scriptInst = getSelectedScript()
-	if not scriptInst then
-		return nil
-	end
-	local src = scriptInst.Source or ""
-	if #src == 0 then
-		return nil
-	end
-	-- Build a readable path: Service.Folder.Script
-	local parts = {}
-	local node = scriptInst
-	while node and node ~= game do
-		table.insert(parts, 1, node.Name)
-		node = node.Parent
-	end
-	return {
-		scriptName = scriptInst.Name,
-		scriptPath = table.concat(parts, "."),
-		source = src:sub(1, 8000),
-		lineCount = select(2, src:gsub("\n", "\n")) + 1,
-		updatedAt = os.time(),
-	}
+        local scriptInst = getSelectedScript()
+        if not scriptInst then
+                return nil
+        end
+        local src = scriptInst.Source or ""
+        if #src == 0 then
+                return nil
+        end
+        -- Build a readable path: Service.Folder.Script
+        local parts = {}
+        local node = scriptInst
+        while node and node ~= game do
+                table.insert(parts, 1, node.Name)
+                node = node.Parent
+        end
+        return {
+                scriptName = scriptInst.Name,
+                scriptPath = table.concat(parts, "."),
+                source = src:sub(1, 8000),
+                lineCount = select(2, src:gsub("\n", "\n")) + 1,
+                updatedAt = os.time(),
+        }
 end
 
 local function contextHash(ctx)
-	if not ctx then return "" end
-	return ctx.scriptPath .. ":" .. #ctx.source .. ":" .. (ctx.source:sub(-64) or "")
+        if not ctx then return "" end
+        return ctx.scriptPath .. ":" .. #ctx.source .. ":" .. (ctx.source:sub(-64) or "")
 end
 
 --========================================================================
@@ -123,11 +123,11 @@ end
 --========================================================================
 
 local widgetInfo = DockWidgetPluginGuiInfo.new(
-	Enum.InitialDockState.Right,
-	true,   -- initialEnabled
-	false,  -- initialEnabledShouldOverrideRestore
-	320, 380,
-	260, 320
+        Enum.InitialDockState.Right,
+        true,   -- initialEnabled
+        false,  -- initialEnabledShouldOverrideRestore
+        320, 380,
+        260, 320
 )
 
 local gui = Plugin:CreateDockWidgetPluginGui(PLUGIN_ID, widgetInfo)
@@ -276,12 +276,27 @@ connectBtn.Parent = disconnectedView
 local cbCorner = Instance.new("UICorner", connectBtn)
 cbCorner.CornerRadius = UDim.new(0, 6)
 
+-- Visible error label (so users see feedback without opening Output)
+local errorLabel = Instance.new("TextLabel")
+errorLabel.Name = "ErrorLabel"
+errorLabel.BackgroundTransparency = 1
+errorLabel.Position = UDim2.fromOffset(0, 244)
+errorLabel.Size = UDim2.new(1, 0, 0, 40)
+errorLabel.Font = Enum.Font.Gotham
+errorLabel.Text = ""
+errorLabel.TextColor3 = RED
+errorLabel.TextSize = 11
+errorLabel.TextWrapped = true
+errorLabel.TextXAlignment = Enum.TextXAlignment.Left
+errorLabel.TextYAlignment = Enum.TextYAlignment.Top
+errorLabel.Parent = disconnectedView
+
 local hint = Instance.new("TextLabel")
 hint.BackgroundTransparency = 1
-hint.Position = UDim2.fromOffset(0, 244)
+hint.Position = UDim2.fromOffset(0, 288)
 hint.Size = UDim2.new(1, 0, 0, 50)
 hint.Font = Enum.Font.Gotham
-hint.Text = "Tip: open the BloxForge web app, click \"Connect Studio\", then paste the pairing code here."
+hint.Text = "Tip: open the BloxForge web app, click \"Connect Studio\", then copy the server URL + pairing code here."
 hint.TextColor3 = MUTED
 hint.TextSize = 11
 hint.TextWrapped = true
@@ -406,176 +421,217 @@ dbCorner.CornerRadius = UDim.new(0, 6)
 --========================================================================
 
 local function setConnected(isConn)
-	connected = isConn
-	disconnectedView.Visible = not isConn
-	connectedView.Visible = isConn
-	statusDot.BackgroundColor3 = isConn and ACCENT or MUTED
-	gui.Title = PLUGIN_NAME .. (isConn and (" — " .. pairingCode) or "")
-	if isConn then
-		codeDisplay.Text = pairingCode
-	end
+        connected = isConn
+        disconnectedView.Visible = not isConn
+        connectedView.Visible = isConn
+        statusDot.BackgroundColor3 = isConn and ACCENT or MUTED
+        gui.Title = PLUGIN_NAME .. (isConn and (" — " .. pairingCode) or "")
+        if isConn then
+                codeDisplay.Text = pairingCode
+        end
 end
 
 local function appendInsertLog(text)
-	local stamp = os.date("%H:%M:%S")
-	local current = insertLog.Text
-	local lines = (#current > 0) and (current .. "\n") or ""
-	insertLog.Text = (lines .. stamp .. "  " .. text):sub(-200)
+        local stamp = os.date("%H:%M:%S")
+        local current = insertLog.Text
+        local lines = (#current > 0) and (current .. "\n") or ""
+        insertLog.Text = (lines .. stamp .. "  " .. text):sub(-200)
 end
 
 local function executeInsertCommand(cmd)
-	local ok = false
-	local message = ""
-	local scriptType = "Script"
-	-- Heuristic: ModuleScripts return something at the end; keep it simple
-	-- and default to Script. Users can change the type in Studio.
-	local inst = Instance.new(scriptType)
-	inst.Name = (cmd.title or "BloxForgeScript"):gsub("[^%w_%-]", ""):sub(1, 50)
-	if #inst.Name == 0 then inst.Name = "BloxForgeScript" end
-	inst.Source = cmd.code
-	-- Place into ServerScriptService
-	inst.Parent = ServerScriptService
-	Selection:Set({ inst })
-	ok = true
-	message = "Inserted " .. inst.Name .. " into ServerScriptService"
-	appendInsertLog("+" .. inst.Name)
-	warnMsg(message)
+        local ok = false
+        local message = ""
+        local scriptType = "Script"
+        -- Heuristic: ModuleScripts return something at the end; keep it simple
+        -- and default to Script. Users can change the type in Studio.
+        local inst = Instance.new(scriptType)
+        inst.Name = (cmd.title or "BloxForgeScript"):gsub("[^%w_%-]", ""):sub(1, 50)
+        if #inst.Name == 0 then inst.Name = "BloxForgeScript" end
+        inst.Source = cmd.code
+        -- Place into ServerScriptService
+        inst.Parent = ServerScriptService
+        Selection:Set({ inst })
+        ok = true
+        message = "Inserted " .. inst.Name .. " into ServerScriptService"
+        appendInsertLog("+" .. inst.Name)
+        warnMsg(message)
 
-	-- Ack the result
-	task.spawn(function()
-		local _, _ = httpPost(apiUrl .. "/ack", {
-			code = pairingCode,
-			commandId = cmd.id,
-			ok = ok,
-			message = message,
-		}, 10)
-	end)
+        -- Ack the result
+        task.spawn(function()
+                local _, _ = httpPost(apiUrl .. "/ack", {
+                        code = pairingCode,
+                        commandId = cmd.id,
+                        ok = ok,
+                        message = message,
+                }, 10)
+        end)
 end
 
 local function sendContextImmediate()
-	if not connected then return end
-	local ctx = buildContext()
-	local hash = contextHash(ctx)
-	if hash == lastContextHash then return end
-	lastContextHash = hash
-	task.spawn(function()
-		local _, _ = httpPost(apiUrl .. "/heartbeat", {
-			code = pairingCode,
-			context = ctx,
-		}, 10)
-		if ctx then
-			watchingValue.Text = ctx.scriptPath
-		else
-			watchingValue.Text = "Nothing selected"
-		end
-	end)
+        if not connected then return end
+        local ctx = buildContext()
+        local hash = contextHash(ctx)
+        if hash == lastContextHash then return end
+        lastContextHash = hash
+        task.spawn(function()
+                local _, _ = httpPost(apiUrl .. "/heartbeat", {
+                        code = pairingCode,
+                        context = ctx,
+                }, 10)
+                if ctx then
+                        watchingValue.Text = ctx.scriptPath
+                else
+                        watchingValue.Text = "Nothing selected"
+                end
+        end)
 end
 
 local function heartbeatLoop()
-	if heartbeatRunning then return end
-	heartbeatRunning = true
-	while connected do
-		local ctx = buildContext()
-		local hash = contextHash(ctx)
-		local includeContext = (hash ~= lastContextHash)
-		if includeContext then lastContextHash = hash end
+        if heartbeatRunning then return end
+        heartbeatRunning = true
+        while connected do
+                local ctx = buildContext()
+                local hash = contextHash(ctx)
+                local includeContext = (hash ~= lastContextHash)
+                if includeContext then lastContextHash = hash end
 
-		local payload = {
-			code = pairingCode,
-			context = includeContext and ctx or nil,
-		}
+                local payload = {
+                        code = pairingCode,
+                        context = includeContext and ctx or nil,
+                }
 
-		local ok, response = httpPost(apiUrl .. "/heartbeat", payload, 15)
-		if ok then
-			local parsedOk, data = pcall(function()
-				return HttpService:JSONDecode(response)
-			end)
-			if parsedOk and data and data.ok then
-				lastSyncLabel.Text = "Last sync: " .. os.date("%H:%M:%S")
-				if ctx then
-					watchingValue.Text = ctx.scriptPath
-				else
-					watchingValue.Text = "Nothing selected"
-				end
-				-- Process any insert commands
-				if data.commands and #data.commands > 0 then
-					for _, cmd in ipairs(data.commands) do
-						task.spawn(function()
-							executeInsertCommand(cmd)
-						end)
-					end
-				end
-			else
-				if data and data.error then
-					warnMsg("Heartbeat error: " .. tostring(data.error))
-					if data.error == "Unknown pairing code" then
-						setConnected(false)
-						break
-					end
-				end
-			end
-		else
-			warnMsg("Heartbeat request failed: " .. tostring(response))
-		end
+                local ok, response = httpPost(apiUrl .. "/heartbeat", payload, 15)
+                if ok then
+                        local parsedOk, data = pcall(function()
+                                return HttpService:JSONDecode(response)
+                        end)
+                        if parsedOk and data and data.ok then
+                                lastSyncLabel.Text = "Last sync: " .. os.date("%H:%M:%S")
+                                if ctx then
+                                        watchingValue.Text = ctx.scriptPath
+                                else
+                                        watchingValue.Text = "Nothing selected"
+                                end
+                                -- Process any insert commands
+                                if data.commands and #data.commands > 0 then
+                                        for _, cmd in ipairs(data.commands) do
+                                                task.spawn(function()
+                                                        executeInsertCommand(cmd)
+                                                end)
+                                        end
+                                end
+                        else
+                                if data and data.error then
+                                        warnMsg("Heartbeat error: " .. tostring(data.error))
+                                        if data.error == "Unknown pairing code" then
+                                                setConnected(false)
+                                                break
+                                        end
+                                end
+                        end
+                else
+                        warnMsg("Heartbeat request failed: " .. tostring(response))
+                end
 
-		task.wait(HEARTBEAT_INTERVAL)
-	end
-	heartbeatRunning = false
+                task.wait(HEARTBEAT_INTERVAL)
+        end
+        heartbeatRunning = false
+end
+
+-- Robustly normalize a user-entered URL to "<origin>/api/studio".
+-- Handles: trailing slashes, pre-existing /api/studio, /api, #fragments, etc.
+local function normalizeApiUrl(raw)
+        raw = (raw or ""):gsub("^%s+", ""):gsub("%s+$", "") -- trim whitespace
+        -- Strip any URL fragment
+        raw = raw:gsub("#.*$", "")
+        -- Strip trailing slashes
+        raw = raw:gsub("/+$", "")
+        -- If the user already pasted ".../api/studio", strip it
+        raw = raw:gsub("/api/studio$", "")
+        raw = raw:gsub("/+$", "")
+        -- If the user pasted ".../api", strip it too
+        raw = raw:gsub("/api$", "")
+        raw = raw:gsub("/+$", "")
+        if #raw == 0 then return nil end
+        return raw .. "/api/studio"
 end
 
 local function doConnect()
-	local url = (urlInput.Text or ""):gsub("/+$", "")
-	local code = codeInput.Text or ""
-	if #url == 0 or #code < 6 then
-		warnMsg("Server URL and pairing code are required.")
-		return
-	end
-	apiUrl = url .. "/api/studio"
-	pairingCode = code:upper():gsub("[^A-Z0-9]", ""):sub(1, 3)
-	if #code:gsub("[^A-Z0-9]", "") > 3 then
-		pairingCode = pairingCode .. "-" .. code:upper():gsub("[^A-Z0-9]", ""):sub(4, 6)
-	end
-	Plugin:SetSetting(PLUGIN_ID .. "_ApiUrl", url)
+        local rawUrl = urlInput.Text or ""
+        local normalizedUrl = normalizeApiUrl(rawUrl)
+        local code = codeInput.Text or ""
+        errorLabel.Text = ""
 
-	-- Send an initial heartbeat to validate the pairing code
-	connectBtn.Text = "Connecting…"
-	connectBtn.BackgroundColor3 = ACCENT_DARK
+        if not normalizedUrl then
+                errorLabel.Text = "⚠ Please enter the BloxForge server URL."
+                warnMsg("Please enter the BloxForge server URL.")
+                return
+        end
+        if #code:gsub("[^A-Za-z0-9]", "") < 5 then
+                errorLabel.Text = "⚠ Please enter the 6-character pairing code from the web app."
+                warnMsg("Please enter the 6-character pairing code from the web app.")
+                return
+        end
 
-	local ctx = buildContext()
-	local ok, response = httpPost(apiUrl .. "/heartbeat", {
-		code = pairingCode,
-		context = ctx,
-	}, 15)
+        apiUrl = normalizedUrl
+        pairingCode = code:upper():gsub("[^A-Z0-9]", ""):sub(1, 3)
+        local cleanedCode = code:upper():gsub("[^A-Z0-9]", "")
+        if #cleanedCode > 3 then
+                pairingCode = pairingCode .. "-" .. cleanedCode:sub(4, 6)
+        end
+        -- Save the cleaned origin (without /api/studio) so it shows nicely next time
+        local savedUrl = normalizedUrl:gsub("/api/studio$", "")
+        Plugin:SetSetting(PLUGIN_ID .. "_ApiUrl", savedUrl)
 
-	if ok then
-		local parsedOk, data = pcall(function()
-			return HttpService:JSONDecode(response)
-		end)
-		if parsedOk and data and data.ok then
-			setConnected(true)
-			lastContextHash = contextHash(ctx)
-			if ctx then watchingValue.Text = ctx.scriptPath end
-			task.spawn(heartbeatLoop)
-			warnMsg("Connected with code " .. pairingCode)
-		else
-			warnMsg("Connection rejected: " .. tostring(data and data.error or "invalid code"))
-		end
-	else
-		warnMsg("Connection failed: " .. tostring(response))
-	end
+        warnMsg("Connecting to " .. apiUrl .. " with code " .. pairingCode)
 
-	connectBtn.Text = "Connect"
-	connectBtn.BackgroundColor3 = ACCENT
+        -- Send an initial heartbeat to validate the pairing code
+        connectBtn.Text = "Connecting…"
+        connectBtn.BackgroundColor3 = ACCENT_DARK
+
+        local ctx = buildContext()
+        local ok, response = httpPost(apiUrl .. "/heartbeat", {
+                code = pairingCode,
+                context = ctx,
+        }, 15)
+
+        if ok then
+                local parsedOk, data = pcall(function()
+                        return HttpService:JSONDecode(response)
+                end)
+                if parsedOk and data and data.ok then
+                        errorLabel.Text = ""
+                        setConnected(true)
+                        lastContextHash = contextHash(ctx)
+                        if ctx then watchingValue.Text = ctx.scriptPath end
+                        task.spawn(heartbeatLoop)
+                        warnMsg("Connected with code " .. pairingCode)
+                else
+                        local errMsg = (data and data.error) or "invalid response"
+                        errorLabel.Text = "⚠ " .. tostring(errMsg) .. " (code: " .. pairingCode .. ")"
+                        warnMsg("Connection rejected: " .. tostring(errMsg) .. " (code: " .. pairingCode .. ")")
+                end
+        else
+                -- HttpService error — usually wrong URL, HTTPS issue, or server unreachable
+                local shortErr = tostring(response):sub(1, 80)
+                errorLabel.Text = "⚠ Cannot reach server. Check the URL is HTTPS and reachable. (" .. shortErr .. ")"
+                warnMsg("Connection failed: " .. tostring(response))
+                warnMsg("URL used: " .. apiUrl .. "/heartbeat")
+                warnMsg("Check: 1) URL is correct  2) HTTPS is used  3) server is reachable  4) HttpService is enabled")
+        end
+
+        connectBtn.Text = "Connect"
+        connectBtn.BackgroundColor3 = ACCENT
 end
 
 local function doDisconnect()
-	connected = false
-	task.spawn(function()
-		local _, _ = httpPost(apiUrl .. "/disconnect", { code = pairingCode }, 8)
-	end)
-	setConnected(false)
-	lastContextHash = ""
-	warnMsg("Disconnected")
+        connected = false
+        task.spawn(function()
+                local _, _ = httpPost(apiUrl .. "/disconnect", { code = pairingCode }, 8)
+        end)
+        setConnected(false)
+        lastContextHash = ""
+        warnMsg("Disconnected")
 end
 
 connectBtn.MouseButton1Click:Connect(doConnect)
@@ -583,9 +639,9 @@ disconnectBtn.MouseButton1Click:Connect(doDisconnect)
 
 -- React to selection changes immediately (context sync feels live)
 Selection.SelectionChanged:Connect(function()
-	if connected then
-		sendContextImmediate()
-	end
+        if connected then
+                sendContextImmediate()
+        end
 end)
 
 --========================================================================
@@ -594,13 +650,13 @@ end)
 
 local toolbar = Plugin:CreateToolbar("BloxForge AI")
 local toggleBtn = toolbar:CreateButton(
-	"BloxForge Connector",
-	"Open the BloxForge Studio connector",
-	"rbxassetid://0"
+        "BloxForge Connector",
+        "Open the BloxForge Studio connector",
+        "rbxassetid://0"
 )
 toggleBtn.ClickableWhenViewportHidden = true
 toggleBtn.Click:Connect(function()
-	gui.Enabled = not gui.Enabled
+        gui.Enabled = not gui.Enabled
 end)
 
 setConnected(false)
