@@ -681,7 +681,7 @@ ROBLOX_REDIRECT_URI=${appOrigin}/api/auth/roblox/oauth/callback`}</Pre>
         To make a Roblox user an admin automatically on sign-in, add their
         Roblox user ID to <Code>ADMIN_ROBLOX_IDS</Code>:
       </P>
-      <Pre>{`ADMIN_ROBLOX_IDS=8417604297,123456789`}</Pre>
+      <Pre>{`ADMIN_ROBLOX_IDS=123456789,987654321`}</Pre>
       <P>
         These users are promoted to <Code>admin</Code> role, set to the{" "}
         <Code>studio</Code> plan, and auto-approved (bypassing beta wait).

@@ -1,7 +1,7 @@
 /**
  * BloxForge AI — Personality & Mode registry
  *
- * Inspired by lemonade.gg: instead of showing raw model IDs, we present
+ * Instead of showing raw model IDs, we present
  * friendly "personalities" (MODEL dropdown) and response "modes" (MODE dropdown).
  * This mirrors the reference UI: MODEL: "Thoughtful" + MODE: "Normal".
  *

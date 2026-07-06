@@ -530,7 +530,7 @@ export function ChatApp({
 
       {/* Main */}
       <div className="flex flex-1 flex-col">
-        {/* Top bar — MODEL / MODE pickers (the lemonade.gg-style dropdowns) */}
+        {/* Top bar — MODEL / MODE personality pickers */}
         <header className="flex h-14 items-center justify-between border-b border-border px-4">
           <div className="flex items-center gap-2">
             <Button

@@ -364,3 +364,27 @@ Stage Summary:
 - Lint clean. Server stable.
 - Documentation site live at #docs with 12 sections, searchable sidebar, prev/next nav.
 - Covers everything users + admins need: getting started, web app, plugin, connector, Roblox OAuth setup, admin dashboard, custom API keys, API reference, privacy, TOS, FAQ.
+
+---
+Task ID: 60-66
+Agent: Orchestrator
+Task: Make BloxForge AI release-ready — no private code or information leaked
+
+Work Log:
+- Audited all source files for leaked secrets: admin email, admin password, Roblox client ID/secret, Roblox user IDs, NextAuth secret. Found 2 files with leaks:
+  - src/components/bloxforge/docs-page.tsx: had real Roblox user ID in example → replaced with placeholder IDs
+  - scripts/seed-admin.ts: had hardcoded admin email + password as defaults → rewrote to require env vars only (no defaults that match real creds)
+- Removed all "lemonade.gg" competitor references from 3 files (chat-app comment, layout metadata keywords, models.ts comment).
+- Created .gitignore: excludes .env, db/, dev.log, .zscripts/, worklog.md, upload/, agent-ctx/, node_modules/, .next/
+- Created .env.example: all env vars with placeholder values + setup instructions. No real secrets.
+- Created README.md: full public setup guide (prerequisites, install, env config, db setup, admin seed, Roblox OAuth2 setup, Studio plugin, custom API keys, docs link, scripts table, project structure, license, disclaimer).
+- Created LICENSE (MIT).
+- Updated package.json: name → bloxforge-ai, version → 1.0.0, added description + license + seed:admin script.
+- Verified: .env returns 404 (not publicly accessible), app loads 200, lint clean, zero secrets/competitor refs in tracked files.
+
+Stage Summary:
+- Lint clean. Server stable. .env not publicly accessible.
+- All sensitive files gitignored: .env, db/, worklog.md, logs, uploads.
+- All source files scrubbed of real credentials, user IDs, and competitor references.
+- Public release files: README.md, LICENSE, .env.example, .gitignore.
+- The project is ready to release publicly. Users clone → cp .env.example .env → fill in their own values → bun install → bun run db:push → bun run scripts/seed-admin.ts → bun run dev.

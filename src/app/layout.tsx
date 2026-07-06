@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     "NVIDIA AI",
     "Roblox Studio plugin",
     "BloxForge",
-    "lemonade.gg alternative",
+    "Roblox AI assistant",
   ],
   authors: [{ name: "BloxForge AI" }],
   openGraph: {
