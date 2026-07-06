@@ -469,3 +469,27 @@ Stage Summary:
 - Reference image: upload, drag-drop, or paste → AI vision describes it → AI generates Luau code to recreate it → auto-inserts into Studio. Tested with a tiny test image → AI generated ScreenGui code.
 - BloxForge Luau upgraded with comprehensive Roblox expertise + image recreation rules + modern Luau idioms.
 - Everything functional: image upload → vision → AI code generation → auto-insert into Studio.
+
+---
+Task ID: 87-93
+Agent: Orchestrator
+Task: Add Stripe payments configuration for Pro + Studio plans
+
+Work Log:
+- Installed stripe + @stripe/stripe-js packages.
+- Created src/lib/stripe.ts: Stripe client init, price ID config (pro/studio × monthly/annual), planFromPriceId + getPriceId helpers, isStripeConfigured check.
+- Updated Prisma schema: added stripeCustomerId, stripeSubId, stripePlan, stripePeriod fields to User. Pushed to DB.
+- Built 5 Stripe API routes:
+  - POST /api/stripe/checkout: creates a Stripe Checkout Session for upgrading to pro/studio. Reuses existing Stripe customer ID if present. Returns redirect URL. 503 if not configured.
+  - POST /api/stripe/webhook: handles checkout.session.completed (links user to Stripe customer + sets plan + auto-approves), customer.subscription.updated (updates plan based on price ID, downgrades on cancel/unpaid), customer.subscription.deleted (downgrades to free). Verifies Stripe signature.
+  - POST /api/stripe/portal: creates a Stripe Customer Portal session for managing subscription (update card, change plan, cancel).
+  - GET /api/stripe/billing: returns current user's Stripe billing status (hasSubscription, plan, period, canManage).
+  - GET /api/stripe/status: public config check (configured + which price IDs are set). No secrets exposed.
+- Updated pricing page: Pro + Studio CTAs now call /api/stripe/checkout → redirect to Stripe Checkout. Free CTA still launches the app. Loading state on buttons. Graceful fallback to toast "Stripe not configured" when not configured.
+- Updated settings page: new BillingSection component shows current plan + Stripe subscription status + "Manage billing" button (opens Stripe Customer Portal) when user has an active subscription.
+- Updated .env + .env.example with all Stripe env vars (commented out by default).
+
+Stage Summary:
+- Lint clean. Server stable.
+- Stripe is fully wired but not configured (no STRIPE_SECRET_KEY set). When an admin adds their Stripe keys + price IDs, the pricing page CTAs redirect to Stripe Checkout, webhooks sync the user's plan, and settings shows a "Manage billing" button.
+- Graceful degradation: when Stripe isn't configured, checkout returns 503 with a clear message, pricing falls back to launching the app, settings shows "Stripe billing is not configured".

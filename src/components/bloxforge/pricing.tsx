@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Sparkles,
@@ -10,7 +10,9 @@ import {
   Crown,
   Users,
   ShieldCheck,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -261,6 +263,56 @@ function PricingTiers({
   annual: boolean;
   onLaunch: () => void;
 }) {
+  const [stripeStatus, setStripeStatus] = useState<{
+    configured: boolean;
+    hasProMonthly: boolean;
+    hasStudioMonthly: boolean;
+  } | null>(null);
+  const [checkingOut, setCheckingOut] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/stripe/status")
+      .then((r) => r.json())
+      .then((d) => setStripeStatus(d))
+      .catch(() => setStripeStatus(null));
+  }, []);
+
+  const handleCheckout = async (plan: "pro" | "studio") => {
+    setCheckingOut(plan);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, period: annual ? "annual" : "monthly" }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.error === "stripe-not-configured") {
+        // Stripe not configured — fall back to launching the app
+        toast.info("Stripe not configured", {
+          description: "Contact an admin to upgrade your plan.",
+        });
+        onLaunch();
+      } else {
+        toast.error(data.error || data.message || "Checkout failed");
+      }
+    } catch {
+      toast.error("Checkout failed");
+    } finally {
+      setCheckingOut(null);
+    }
+  };
+
+  const handleTierClick = (tierId: string) => {
+    if (tierId === "free") {
+      onLaunch();
+    } else if (tierId === "pro") {
+      handleCheckout("pro");
+    } else if (tierId === "studio") {
+      handleCheckout("studio");
+    }
+  };
   return (
     <section className="relative">
       <div className="mx-auto max-w-7xl px-4 pb-20">
@@ -335,7 +387,8 @@ function PricingTiers({
                 <Button
                   size="lg"
                   variant={tier.ctaVariant}
-                  onClick={onLaunch}
+                  onClick={() => handleTierClick(tier.id)}
+                  disabled={checkingOut === tier.id}
                   className={cn(
                     "mt-6 h-11 gap-2",
                     tier.ctaVariant === "default"
@@ -343,8 +396,17 @@ function PricingTiers({
                       : "border-border bg-card/50 hover:bg-accent",
                   )}
                 >
-                  {tier.cta}
-                  <ArrowRight className="size-4" />
+                  {checkingOut === tier.id ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Redirecting…
+                    </>
+                  ) : (
+                    <>
+                      {tier.cta}
+                      <ArrowRight className="size-4" />
+                    </>
+                  )}
                 </Button>
 
                 <div className="mt-7 border-t border-border/60 pt-5">

@@ -17,6 +17,8 @@ import {
   Moon,
   Crown,
   LogOut,
+  CreditCard,
+  ExternalLink,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -261,27 +263,8 @@ export function Settings({ onBack }: { onBack: () => void }) {
           </Section>
 
           {/* Plan */}
-          <Section icon={Crown} title="Plan & credits" desc="Your current subscription and credits.">
-            <div className="flex items-center justify-between rounded-lg border border-border bg-background p-4">
-              <div>
-                <p className="font-display font-bold">
-                  {plan?.label || "Free"} plan
-                </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {isAdmin
-                    ? "Admin — unlimited messages, all personalities."
-                    : plan?.features?.[0] || "Basic access"}
-                </p>
-              </div>
-              {!isAdmin && plan?.id === "free" && (
-                <Button
-                  onClick={() => (window.location.hash = "pricing")}
-                  className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <Crown className="size-4" /> Upgrade
-                </Button>
-              )}
-            </div>
+          <Section icon={Crown} title="Plan & billing" desc="Your current subscription, credits, and billing.">
+            <BillingSection plan={plan} isAdmin={isAdmin} />
           </Section>
 
           {/* Danger zone */}
@@ -448,5 +431,108 @@ function Section({
         {children}
       </Card>
     </motion.div>
+  );
+}
+
+function BillingSection({
+  plan,
+  isAdmin,
+}: {
+  plan: any;
+  isAdmin: boolean;
+}) {
+  const [billing, setBilling] = useState<{
+    stripeConfigured: boolean;
+    hasSubscription: boolean;
+    plan: string;
+    stripePlan: string | null;
+    stripePeriod: string | null;
+    canManage: boolean;
+  } | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/stripe/billing", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setBilling(d))
+      .catch(() => setBilling(null));
+  }, []);
+
+  const openPortal = async () => {
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error(data.error || "Failed to open billing portal");
+      }
+    } catch {
+      toast.error("Failed to open billing portal");
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between rounded-lg border border-border bg-background p-4">
+        <div>
+          <p className="font-display font-bold">
+            {plan?.label || "Free"} plan
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {isAdmin
+              ? "Admin — unlimited messages, all personalities."
+              : billing?.hasSubscription
+                ? `Stripe subscription · ${billing.stripePeriod || "monthly"}`
+                : plan?.features?.[0] || "Basic access"}
+          </p>
+        </div>
+        {!isAdmin && plan?.id === "free" && (
+          <Button
+            onClick={() => (window.location.hash = "pricing")}
+            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Crown className="size-4" /> Upgrade
+          </Button>
+        )}
+      </div>
+
+      {/* Stripe billing management */}
+      {billing?.hasSubscription && billing.canManage && (
+        <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+          <div className="flex items-center gap-2">
+            <CreditCard className="size-4 text-emerald-400" />
+            <div>
+              <p className="text-sm font-medium">Stripe subscription active</p>
+              <p className="text-xs text-muted-foreground">
+                Manage your card, invoices, or cancel anytime
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={openPortal}
+            disabled={portalLoading}
+            variant="outline"
+            className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+          >
+            {portalLoading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <ExternalLink className="size-4" />
+            )}
+            Manage billing
+          </Button>
+        </div>
+      )}
+
+      {!billing?.stripeConfigured && (
+        <p className="text-[11px] text-muted-foreground">
+          Stripe billing is not configured. Contact an admin to upgrade.
+        </p>
+      )}
+    </div>
   );
 }
