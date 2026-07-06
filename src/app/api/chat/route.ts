@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
 
   const personality = getPersonality(personalityId);
   const model = resolveModel(personalityId);
-  const systemPrompt = buildSystemPrompt(modeId);
+  const systemPrompt = buildSystemPrompt(modeId, personalityId);
 
   const prior: ChatMessage[] = Array.isArray(body.history)
     ? body.history.filter(

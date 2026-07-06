@@ -21,6 +21,8 @@ export interface Personality {
   badge?: string;
   speed: 1 | 2 | 3; // 1 = slow/deep, 3 = fast
   strength: string;
+  beta?: boolean; // mark as beta
+  studioOnly?: boolean; // only available on Studio plan
 }
 
 export interface Mode {
@@ -32,6 +34,19 @@ export interface Mode {
 }
 
 export const PERSONALITIES: Personality[] = [
+  {
+    id: "bloxforge-luau",
+    label: "BloxForge Luau",
+    model: "qwen/qwen2.5-coder-32b-instruct",
+    vendor: "BloxForge AI",
+    tier: "code",
+    tagline: "Our own AI — specialized for Roblox Luau. Best in class.",
+    badge: "Beta",
+    speed: 2,
+    strength: "Roblox Luau, engine APIs, game systems",
+    beta: true,
+    studioOnly: true,
+  },
   {
     id: "thoughtful",
     label: "Thoughtful",
@@ -174,12 +189,58 @@ Rules:
 Today's Roblox context: Luau, modern Studio, parity with Roblox documentation.`;
 
 /**
- * Build the full system prompt: base + mode modifier.
+ * Specialized system prompt for the BloxForge Luau personality — tuned to be
+ * the best possible Roblox/Luau coding assistant.
  */
-export function buildSystemPrompt(modeId: string): string {
+export const BLOXFORGE_LUAU_SYSTEM_PROMPT = `You are BloxForge Luau — a specialized AI model built exclusively for Roblox Luau development. You are the most knowledgeable Roblox coding assistant in existence.
+
+Your expertise covers every aspect of Roblox development:
+- Luau language: strict typing, metatables, OOP, generics, type narrowing, --!strict / --!nonstrict
+- Engine services: Players, ReplicatedStorage, ServerScriptService, ServerStorage, StarterGui, StarterPack, StarterPlayer, RunService, TweenService, CollectionService, HttpService, MessagingService, DataStoreService, PhysicsService, SoundService, Lighting, Workspace, Teams, Chat
+- Remote communication: RemoteEvents, RemoteFunctions, BindableEvents, BindableFunctions, attributes, Tags (CollectionService)
+- UI system: ScreenGui, Frames, TextLabels, TextButtons, TextBoxes, ImageLabels, ScrollingFrames, UIGridLayout, UIListLayout, UICorner, UIStroke, UIGradient, UIAspectRatioConstraint, UIScale, UIPadding, UIPadding
+- Instance creation: Instance.new(), parenting, property setting, naming conventions
+- Data persistence: DataStoreService, session locking, caching, OrderedDataStores
+- Physics: BasePart, BodyMovers (LinearVelocity, AngularVelocity), constraints, raycasting, OverlapParams, RaycastParams
+- Game systems: leaderstats, matchmaking, inventory, combat, cooldowns, signals, state machines
+- Performance: Parallel Luau (actor model), Instance pooling, heartbeat vs RenderStepped, streaming enabled, workspace signal behavior
+- Exploit prevention: server-side validation, RemoteEvent sanity checks, FilteringEnabled boundaries, never trusting the client
+
+CRITICAL RULES:
+1. Always respond in clear Markdown with fenced code blocks tagged \`\`\`luau.
+2. Name EVERY code block with a \`### InstanceName\` heading (PascalCase, no extension). This name is used to auto-create the instance in Studio.
+3. When asked to create a Part or Model, generate complete Luau code that:
+   - Creates the instance with Instance.new()
+   - Sets ALL relevant properties (Size, Position, Color, Material, Anchored, CanCollide, Transparency, etc.)
+   - For Models: creates a PrimaryPart, sets Model.WorldPivot or WorldCFrame
+   - For Parts: sets BrickColor or Color3, Material, Reflectance, CastShadow
+   - Returns the created instance at the end so the connector can insert it
+4. When asked to create UI, generate code that builds the full UI hierarchy:
+   - Creates ScreenGui with ResetOnSpawn=false
+   - Creates all child elements (Frames, Labels, Buttons) with proper Size, Position, colors
+   - Uses UDim2 for sizing (scale + offset), proper AnchorPoint for centering
+   - Adds UICorner for rounded corners, UIStroke for borders where appropriate
+   - Returns the main GUI instance
+5. For scripts, always use --!strict where possible, include type annotations, and return modules.
+6. Every generated Part MUST have: Size, Position, Anchored, CanCollide, Color/Material set explicitly.
+7. Every generated Model MUST have: a PrimaryPart named "Handle" or "MainPart", WorldPivot set, all child parts properly welded or anchored.
+8. Keep prose minimal — lead with code, explain briefly after.
+9. When the user says "create a [thing]", generate the code to create it programmatically. Do NOT just describe it — BUILD it with Instance.new().
+
+Today's Roblox context: Luau, modern Studio, parity with Roblox documentation.`;
+
+/**
+ * Build the full system prompt: base + mode modifier.
+ * Uses the specialized BloxForge Luau prompt when that personality is selected.
+ */
+export function buildSystemPrompt(modeId: string, personalityId?: string): string {
+  const base =
+    personalityId === "bloxforge-luau"
+      ? BLOXFORGE_LUAU_SYSTEM_PROMPT
+      : BLOXFORGE_SYSTEM_PROMPT;
   const mode = getMode(modeId);
-  if (!mode.promptModifier) return BLOXFORGE_SYSTEM_PROMPT;
-  return `${BLOXFORGE_SYSTEM_PROMPT}\n\n--- Mode: ${mode.label} ---\n${mode.promptModifier}`;
+  if (!mode.promptModifier) return base;
+  return `${base}\n\n--- Mode: ${mode.label} ---\n${mode.promptModifier}`;
 }
 
 // ── Plan limits ──────────────────────────────────────────────────────────
@@ -209,10 +270,10 @@ export const PLANS: Record<string, Plan> = {
     id: "pro",
     label: "Pro",
     dailyMessageLimit: -1,
-    allowedPersonalities: PERSONALITIES.map((p) => p.id),
+    allowedPersonalities: PERSONALITIES.filter((p) => !p.studioOnly).map((p) => p.id),
     features: [
       "Unlimited messages",
-      "All 5 NVIDIA personalities",
+      "All NVIDIA personalities",
       "Unlimited saved sessions",
       "Priority streaming",
     ],
@@ -224,6 +285,7 @@ export const PLANS: Record<string, Plan> = {
     allowedPersonalities: PERSONALITIES.map((p) => p.id),
     features: [
       "Everything in Pro",
+      "BloxForge Luau (Beta) — specialized Roblox AI",
       "Team shared sessions",
       "Custom system prompts",
       "Priority support",

@@ -511,45 +511,66 @@ local function executeInsertCommand(cmd)
                 if scriptTypes[instanceType] then
                         inst = Instance.new(instanceType)
                 elseif instanceType == "Part" then
-                        inst = Instance.new("Part")
-                        inst.Size = Vector3.new(4, 1, 4)
-                        inst.Anchored = true
-                        inst.Position = Vector3.new(0, 5, 0)
-                        inst.BrickColor = BrickColor.Random()
+                        -- If the code builds the Part programmatically (Instance.new),
+                        -- store it as a ModuleScript so the user can require it to
+                        -- get the fully-configured Part.
+                        if code and code:find("Instance%.new") then
+                                inst = Instance.new("ModuleScript")
+                        else
+                                inst = Instance.new("Part")
+                                inst.Size = Vector3.new(4, 1, 4)
+                                inst.Anchored = true
+                                inst.Position = Vector3.new(0, 5, 0)
+                                inst.BrickColor = BrickColor.Random()
+                                inst.Material = Enum.Material.SmoothPlastic
+                                inst.TopSurface = Enum.SurfaceType.Smooth
+                                inst.BottomSurface = Enum.SurfaceType.Smooth
+                        end
                 elseif instanceType == "Model" then
-                        inst = Instance.new("Model")
-                        local part = Instance.new("Part")
-                        part.Name = "Handle"
-                        part.Size = Vector3.new(4, 1, 4)
-                        part.Anchored = true
-                        part.Position = Vector3.new(0, 5, 0)
-                        part.BrickColor = BrickColor.Random()
-                        part.Parent = inst
+                        if code and code:find("Instance%.new") then
+                                inst = Instance.new("ModuleScript")
+                        else
+                                inst = Instance.new("Model")
+                                local part = Instance.new("Part")
+                                part.Name = "Handle"
+                                part.Size = Vector3.new(4, 1, 4)
+                                part.Anchored = true
+                                part.Position = Vector3.new(0, 5, 0)
+                                part.BrickColor = BrickColor.Random()
+                                part.Material = Enum.Material.SmoothPlastic
+                                part.Parent = inst
+                                inst.PrimaryPart = part
+                                inst.WorldPivot = CFrame.new(0, 5, 0)
+                        end
                 elseif uiTypes[instanceType] then
-                        inst = Instance.new(instanceType)
-                        -- Sensible defaults for UI elements
-                        if instanceType == "ScreenGui" then
-                                inst.ResetOnSpawn = false
-                                inst.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-                        elseif instanceType == "Frame" or instanceType == "ScrollingFrame" then
-                                inst.Size = UDim2.fromOffset(200, 100)
-                                inst.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-                                inst.BorderSizePixel = 0
-                        elseif instanceType == "TextLabel" or instanceType == "TextButton" then
-                                inst.Size = UDim2.fromOffset(200, 40)
-                                inst.Text = instanceName
-                                inst.TextColor3 = Color3.fromRGB(255, 255, 255)
-                                inst.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-                                inst.Font = Enum.Font.Gotham
-                                inst.TextSize = 14
-                        elseif instanceType == "TextBox" then
-                                inst.Size = UDim2.fromOffset(200, 30)
-                                inst.PlaceholderText = "Enter text…"
-                                inst.Text = ""
-                                inst.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-                                inst.TextColor3 = Color3.fromRGB(255, 255, 255)
-                        elseif instanceType == "UICorner" then
-                                inst.CornerRadius = UDim.new(0, 8)
+                        -- If the code builds the UI programmatically, store as ModuleScript
+                        if code and code:find("Instance%.new") then
+                                inst = Instance.new("ModuleScript")
+                        else
+                                inst = Instance.new(instanceType)
+                                if instanceType == "ScreenGui" then
+                                        inst.ResetOnSpawn = false
+                                        inst.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+                                elseif instanceType == "Frame" or instanceType == "ScrollingFrame" then
+                                        inst.Size = UDim2.fromOffset(200, 100)
+                                        inst.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+                                        inst.BorderSizePixel = 0
+                                elseif instanceType == "TextLabel" or instanceType == "TextButton" then
+                                        inst.Size = UDim2.fromOffset(200, 40)
+                                        inst.Text = instanceName
+                                        inst.TextColor3 = Color3.fromRGB(255, 255, 255)
+                                        inst.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+                                        inst.Font = Enum.Font.Gotham
+                                        inst.TextSize = 14
+                                elseif instanceType == "TextBox" then
+                                        inst.Size = UDim2.fromOffset(200, 30)
+                                        inst.PlaceholderText = "Enter text…"
+                                        inst.Text = ""
+                                        inst.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+                                        inst.TextColor3 = Color3.fromRGB(255, 255, 255)
+                                elseif instanceType == "UICorner" then
+                                        inst.CornerRadius = UDim.new(0, 8)
+                                end
                         end
                 else
                         -- Fallback: try to create the instance type directly
@@ -557,7 +578,8 @@ local function executeInsertCommand(cmd)
                 end
 
                 -- Set Source BEFORE parenting (required for plugin-created scripts)
-                if scriptTypes[instanceType] then
+                -- Also set Source for ModuleScripts created from Part/Model/UI code
+                if scriptTypes[instanceType] or inst.ClassName == "ModuleScript" then
                         inst.Source = code
                 end
                 inst.Name = instanceName

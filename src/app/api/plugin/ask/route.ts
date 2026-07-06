@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   const personalityId = body.personality || DEFAULT_PERSONALITY_ID;
   const modeId = body.mode || DEFAULT_MODE_ID;
   const model = resolveModel(personalityId);
-  const systemPrompt = buildSystemPrompt(modeId);
+  const systemPrompt = buildSystemPrompt(modeId, personalityId);
   const personality = getPersonality(personalityId);
 
   const history: ChatMessage[] = Array.isArray(body.history)

@@ -426,3 +426,22 @@ Stage Summary:
 - Lint clean. Server stable. Plugin serves with 23 UI type references.
 - When Auto-insert is ON and Studio is connected: AI generates code → response streams → after completion, all code blocks are parsed → each is auto-inserted into Studio with the derived name + type + parent → toast confirms each insertion. No manual clicking needed.
 - Supports all instance types: Scripts, LocalScripts, ModuleScripts, Parts, Models, and all UI elements (ScreenGui, Frame, TextLabel, TextButton, TextBox, etc.).
+
+---
+Task ID: 74-79
+Agent: Orchestrator
+Task: Add BloxForge Luau AI model (Beta, Studio-only) + fix Parts/Models creation
+
+Work Log:
+- Added "BloxForge Luau" personality to PERSONALITIES array: id=bloxforge-luau, label="BloxForge Luau", badge="Beta", beta=true, studioOnly=true, vendor="BloxForge AI", tagline="Our own AI — specialized for Roblox Luau. Best in class."
+- Updated Personality interface with `beta?: boolean` and `studioOnly?: boolean` fields.
+- Updated PLANS: pro plan now filters out studioOnly personalities (allowedPersonalities = PERSONALITIES.filter(p => !p.studioOnly)). Studio plan includes ALL personalities. Studio plan features now list "BloxForge Luau (Beta) — specialized Roblox AI".
+- Created BLOXFORGE_LUAU_SYSTEM_PROMPT — a specialized system prompt that makes the AI the best possible Roblox/Luau assistant. Covers: Luau language, all engine services, remote communication, UI system, instance creation, data persistence, physics, game systems, performance, exploit prevention. Critical rules: name every code block, build Parts/Models/UI programmatically with Instance.new + all properties, return the created instance, use --!strict.
+- Updated buildSystemPrompt() to accept personalityId and use BLOXFORGE_LUAU_SYSTEM_PROMPT when bloxforge-luau is selected. Updated chat API + plugin ask endpoint to pass personalityId.
+- Fixed Parts/Models creation in plugin: when the AI code contains Instance.new (programmatic creation), the plugin creates a ModuleScript with the AI's code as Source — so the user can require it to get the fully-configured Part/Model/UI with all properties. When no code, creates a bare instance with sensible defaults (Part: anchored, 4x1x4, smooth plastic, smooth surfaces; Model: with Handle PrimaryPart, WorldPivot set).
+- Updated personality picker UI: BloxForge Luau shows amber Sparkles icon + amber "Beta" badge + "Studio" lock badge (instead of "Pro") for non-Studio users. Disabled for guests/pro users.
+
+Stage Summary:
+- Lint clean. Server stable.
+- BloxForge Luau personality: Beta, Studio-plan only, specialized system prompt for Roblox Luau. Shows in MODEL dropdown with amber Beta badge + Studio lock.
+- Parts/Models: when AI generates code with Instance.new, it's stored as a ModuleScript (executable, all properties preserved). Bare Parts/Models get functional defaults (Material, surfaces, PrimaryPart, WorldPivot).

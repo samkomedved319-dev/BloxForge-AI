@@ -76,8 +76,15 @@ export function PersonalityPicker({
                     p.id === personalityId && "bg-accent/60",
                   )}
                 >
-                  <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400">
-                    {p.tier === "reasoning" ? (
+                  <div className={cn(
+                    "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md",
+                    p.beta
+                      ? "bg-amber-500/10 text-amber-400"
+                      : "bg-emerald-500/10 text-emerald-400",
+                  )}>
+                    {p.beta ? (
+                      <Sparkles className="size-3.5" />
+                    ) : p.tier === "reasoning" ? (
                       <Brain className="size-3.5" />
                     ) : p.speed === 3 ? (
                       <Zap className="size-3.5" />
@@ -91,7 +98,10 @@ export function PersonalityPicker({
                       {p.badge && (
                         <Badge
                           variant="secondary"
-                          className="h-4 px-1.5 text-[10px] text-emerald-400"
+                          className={cn(
+                            "h-4 px-1.5 text-[10px]",
+                            p.beta ? "text-amber-400" : "text-emerald-400",
+                          )}
                         >
                           {p.badge}
                         </Badge>
@@ -101,7 +111,7 @@ export function PersonalityPicker({
                           variant="outline"
                           className="h-4 px-1.5 text-[10px] text-amber-400"
                         >
-                          Pro
+                          {p.studioOnly ? "Studio" : "Pro"}
                         </Badge>
                       )}
                     </div>
