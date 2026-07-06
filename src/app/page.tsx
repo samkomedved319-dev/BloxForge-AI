@@ -1,6 +1,7 @@
 "use client";
 
-import { useSyncExternalStore, useState, useCallback } from "react";
+import { useSyncExternalStore, useState, useCallback, useEffect } from "react";
+import { signIn } from "next-auth/react";
 import { SiteHeader } from "@/components/bloxforge/site-header";
 import { SiteFooter } from "@/components/bloxforge/site-footer";
 import { Landing } from "@/components/bloxforge/landing";
@@ -56,6 +57,31 @@ export default function Home() {
   const openAuth = useCallback((mode: "signin" | "signup" = "signup") => {
     setAuthMode(mode);
     setAuthOpen(true);
+  }, []);
+
+  // Handle Roblox OAuth callback: the server redirects to /#roblox-token=<base64>
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    const match = hash.match(/roblox-token=([^&]+)/);
+    if (match && match[1]) {
+      const token = decodeURIComponent(match[1]);
+      // Clean the URL hash
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+      // Sign in via the roblox NextAuth provider with the token
+      signIn("roblox", { token, redirect: false }).then(() => {
+        window.location.reload();
+      });
+    }
+    // Also surface OAuth errors
+    const errMatch = hash.match(/auth-error=([^&]+)/);
+    if (errMatch && errMatch[1]) {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+      const msg = decodeURIComponent(errMatch[1]).replace(/_/g, " ");
+      import("sonner").then(({ toast }) => {
+        toast.error(`Roblox sign-in failed: ${msg}`);
+      });
+    }
   }, []);
 
   const isApp = view === "app";

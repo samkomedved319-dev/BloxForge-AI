@@ -284,3 +284,25 @@ Stage Summary:
 - AI works reliably (fake keys removed, streaming bug fixed, clean z-ai fallback).
 - Beta: new Roblox-auth users start as approved=false. Admin sees "2 pending approval" in dashboard + can approve with one click. Unapproved users see amber banner + can't chat (403).
 - Roblox auth: verified end-to-end — enter "Roblox" username → real Roblox API lookup → code BF-U6DRJQF4 generated → verify step with instructions. Admin login via "Admin sign in →" link with email/password.
+
+---
+Task ID: 41-45
+Agent: Orchestrator
+Task: Implement verified Roblox OAuth2 sign-in + make donkykong87 admin + beta messaging on web
+
+Work Log:
+- Researched official Roblox OAuth2 via web search + page reader on create.roblox.com/docs/cloud/auth/oauth2-overview + oauth2-reference. Base URL: https://apis.roblox.com/oauth. Flow: GET v1/authorize → user logs into Roblox → redirect with code → POST v1/token (exchange code for access_token) → GET v1/userinfo (get sub/user_id + name).
+- Built /api/auth/roblox/oauth/start (redirects to Roblox authorize with client_id, redirect_uri, response_type=code, scope=openid profile, random state in cookie).
+- Built /api/auth/roblox/oauth/callback (verifies state, exchanges code for token, fetches userinfo, creates/finds BloxForge user linked to robloxUserId, auto-promotes if in ADMIN_ROBLOX_IDS, redirects to /#roblox-token=<base64>).
+- Built /api/auth/roblox/oauth/status (tells client if OAuth is configured so it shows the button vs the warning).
+- Updated auth-modal: "Continue with Roblox" blue button (Roblox brand #00A2FF) when OAuth configured, amber warning + fallback to manual profile-code verification when not. Added "or verify manually" divider.
+- Updated page.tsx: useEffect detects #roblox-token=... in URL hash → calls signIn("roblox", {token}) → reloads. Also surfaces #auth-error=... as a toast.
+- Looked up donkykong87 on Roblox API: user ID 229707751, display name "Donkykong87". Set ADMIN_ROBLOX_IDS=229707751 in .env → auto-promotes to admin + auto-approves on sign-in.
+- Added env config: ROBLOX_CLIENT_ID, ROBLOX_CLIENT_SECRET, ROBLOX_REDIRECT_URI, ADMIN_ROBLOX_IDS, NEXTAUTH_URL (all documented in .env with setup instructions).
+- Beta messaging: landing hero badge changed to amber "BETA · Request access · Sign in with Roblox". New BetaSection on landing: "Closed Beta" badge + 3-step explanation (Sign in with Roblox → Wait for approval → Start forging) + "Request beta access" CTA + "Free during beta · No credit card · Roblox account required".
+
+Stage Summary:
+- Lint clean. Server stable.
+- Roblox OAuth2 implemented per official docs (authorize → callback → token → userinfo). Requires admin to register an OAuth app at create.roblox.com/credentials and set env vars. When not configured, gracefully falls back to manual profile-code verification with a clear warning.
+- donkykong87 (Roblox ID 229707751) is in ADMIN_ROBLOX_IDS → auto-promoted to admin + auto-approved when they sign in via Roblox.
+- Landing page now prominently shows BETA badge + a full "Closed Beta" section explaining the 3-step access flow.

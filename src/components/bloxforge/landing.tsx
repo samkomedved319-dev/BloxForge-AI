@@ -141,6 +141,7 @@ export function Landing({
       <Stats />
       <Models />
       <Features />
+      <BetaSection onLaunch={onLaunch} />
       <HowItWorks onLaunch={onLaunch} />
       <PluginSection onGetPlugin={onGetPlugin} onLaunch={onLaunch} />
       <PricingTeaser onNavigatePricing={onNavigatePricing} onLaunch={onLaunch} />
@@ -172,10 +173,10 @@ function Hero({
         >
           <Badge
             variant="outline"
-            className="mx-auto mb-6 gap-2 border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-emerald-300"
+            className="mx-auto mb-6 gap-2 border-amber-500/40 bg-amber-500/10 px-3 py-1 text-amber-300"
           >
-            <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
-            Powered by NVIDIA NIM · Now with Roblox Studio plugin
+            <span className="size-1.5 animate-pulse rounded-full bg-amber-400" />
+            BETA · Request access · Sign in with Roblox
           </Badge>
 
           <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-balance sm:text-6xl">
@@ -686,6 +687,79 @@ function PricingTeaser({
             <Sparkles className="size-4" />
             Start free
           </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BetaSection({ onLaunch }: { onLaunch: () => void }) {
+  const steps = [
+    {
+      n: "1",
+      title: "Sign in with Roblox",
+      desc: "Use secure Roblox OAuth2 to verify your identity. No passwords, no fake accounts — just your real Roblox account.",
+    },
+    {
+      n: "2",
+      title: "Wait for approval",
+      desc: "BloxForge is in closed beta. After signing in, an admin reviews and approves your account (usually within a few hours).",
+    },
+    {
+      n: "3",
+      title: "Start forging",
+      desc: "Once approved, you get full access to NVIDIA-powered AI, all 5 personalities, saved sessions, and the Studio connector.",
+    },
+  ];
+
+  return (
+    <section className="relative overflow-hidden border-t border-border/50 py-20">
+      <div className="pointer-events-none absolute left-1/2 top-0 size-96 -translate-x-1/2 rounded-full bg-amber-500/10 blur-3xl" />
+      <div className="relative mx-auto max-w-5xl px-4">
+        <div className="text-center">
+          <Badge
+            variant="outline"
+            className="mb-4 gap-2 border-amber-500/40 bg-amber-500/10 text-amber-300"
+          >
+            <Sparkles className="size-3" /> Closed Beta
+          </Badge>
+          <h2 className="font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+            BloxForge AI is in beta
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-muted-foreground text-balance">
+            We're rolling out access gradually to keep the experience great.
+            Here's how to get in.
+          </p>
+        </div>
+
+        <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {steps.map((s, i) => (
+            <Reveal key={s.n} delay={i * 0.08}>
+              <Card className="h-full border-border/60 bg-card p-6">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-xl bg-amber-500/15 font-display text-lg font-bold text-amber-400">
+                  {s.n}
+                </div>
+                <h3 className="font-display text-lg font-bold">{s.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {s.desc}
+                </p>
+              </Card>
+            </Reveal>
+          ))}
+        </div>
+
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Button
+            size="lg"
+            onClick={onLaunch}
+            className="h-12 gap-2 bg-primary px-7 text-base text-primary-foreground hover:bg-primary/90"
+          >
+            <Sparkles className="size-4" />
+            Request beta access
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            Free during beta · No credit card · Roblox account required
+          </span>
         </div>
       </div>
     </section>

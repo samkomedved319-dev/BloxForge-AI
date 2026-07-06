@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -40,6 +40,7 @@ export function AuthModal({
   const [copied, setCopied] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
+  const [oauthConfigured, setOauthConfigured] = useState(false);
 
   const startVerification = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,6 +171,20 @@ export function AuthModal({
     }
   };
 
+  // Check if Roblox OAuth2 is configured (server env)
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/auth/roblox/oauth/status")
+      .then((r) => r.json())
+      .then((d) => setOauthConfigured(Boolean(d.configured)))
+      .catch(() => setOauthConfigured(false));
+  }, [open]);
+
+  const startOAuth = () => {
+    // Redirect to the Roblox OAuth2 authorize endpoint
+    window.location.href = "/api/auth/roblox/oauth/start";
+  };
+
   return (
     <AnimatePresence>
       {open && (
@@ -217,11 +232,46 @@ export function AuthModal({
                         Sign in with Roblox
                       </h2>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Enter your Roblox username. We'll verify it's really you
-                        with a profile code.
+                        Use your Roblox account to access BloxForge AI. Beta
+                        access requires admin approval after sign-in.
                       </p>
 
-                      <form onSubmit={startVerification} className="mt-5 space-y-4">
+                      {/* OAuth button — the secure, verified Roblox sign-in */}
+                      {oauthConfigured ? (
+                        <>
+                          <button
+                            onClick={startOAuth}
+                            className="mt-5 flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#00A2FF] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0090E0]"
+                          >
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 4c1.5 0 2.5 1 2.5 2.5S13.5 11 12 11s-2.5-1-2.5-2.5S10.5 6 12 6zm0 12c-2 0-3.8-1-5-2.5.1-1.5 3-2.5 5-2.5s4.9 1 5 2.5C15.8 17 14 18 12 18z" />
+                            </svg>
+                            Continue with Roblox
+                          </button>
+                          <div className="my-4 flex items-center gap-3">
+                            <div className="h-px flex-1 bg-border" />
+                            <span className="text-[11px] text-muted-foreground">
+                              or verify manually
+                            </span>
+                            <div className="h-px flex-1 bg-border" />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-300">
+                          ⚠ Secure Roblox OAuth isn't configured on this server.
+                          Using manual profile-code verification below. An admin
+                          can enable it by setting{" "}
+                          <code className="font-mono">ROBLOX_CLIENT_ID</code> +
+                          <code className="font-mono">ROBLOX_CLIENT_SECRET</code>.
+                        </div>
+                      )}
+
+                      <form onSubmit={startVerification} className="space-y-4">
                         <div className="space-y-1.5">
                           <Label htmlFor="rbx-username" className="text-xs">
                             Roblox username
