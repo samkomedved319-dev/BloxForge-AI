@@ -123,3 +123,26 @@ Stage Summary:
 - Lint clean. Server stable.
 - Agent Browser verified: dialog shows server URL + copy, Simulate button instantly connects (shows "Studio connected" + DemoScript.lua), full flow works (badge → context chip → AI response → "Insert in Studio" button → click → "Sent" + toast "Sent to Roblox Studio").
 - The user can now: (1) see the exact server URL to paste, (2) test without the real plugin via Simulate, (3) read clear error messages in both the plugin UI and the dialog's troubleshooting panel.
+
+---
+Task ID: 14-18
+Agent: Orchestrator
+Task: Fix "it doesn't want to connect to studio" — root cause was the sandbox can't run Roblox Studio, so the real plugin could never heartbeat back. Added a working Demo mode + clearer troubleshooting.
+
+Work Log:
+- Root cause: the user is in a sandbox preview with no Roblox Studio, so the pairing dialog spun on "Waiting for Studio to connect…" forever with no way to test. The previous simulate() function also had a bug — it discarded the heartbeat response, so insert commands were never drained/acked (silent no-op).
+- Rewrote studio-connector.tsx useStudioConnection:
+  - Added `mode` state ("real" | "demo" | null) tracked through the lifecycle.
+  - Fixed simulate(): now sends heartbeats every 1.5s with a demo script context AND processes the returned `commands` array — for each insert command it shows a toast "Inserted '{title}' into ServerScriptService (Demo mode)" and POSTs an ack. This makes the full insert flow demonstrable in the browser.
+  - Faster polling (2s) for snappier connection detection.
+  - disconnect() now also stops the simulate loop + resets mode.
+- Updated StudioConnectDialog: prominent "Try without Studio (demo)" button (emerald, FlaskConical icon) below the waiting state; "Not connecting? Troubleshoot" expandable help with 5 concrete tips (URL must match origin, HTTPS required, sandbox can't be reached from your machine, check Studio Output, code expires in 10min); shows "Demo mode" amber badge when connected via simulate.
+- Updated StudioBadge: amber styling + "Studio (demo)" label in demo mode so the user always knows it's simulated.
+- Updated chat-app handleInsertCode: demo-mode-aware toast ("Sent to Studio (demo)") vs real ("Sent to Roblox Studio").
+- Verified plugin already has: empty default URL, normalizeApiUrl (strips /api/studio + /api suffixes), inline errorLabel with clear messages for wrong URL / unreachable server / invalid code, "Connecting…" state.
+- Agent Browser verified end-to-end: open Connect dialog → code HSR-DA2 generated → click "Try without Studio (demo)" → "Studio connected" + "Demo mode" badge → close dialog → header shows amber "DemoScript.lua" badge → send message → AI streams Luau → "Insert in Studio | Copy" buttons appear → click Insert → TWO toasts: "Sent to Studio (demo)" + "Inserted 'BloxForge Script' into ServerScriptService (Demo mode)". Full flow works without Roblox Studio.
+
+Stage Summary:
+- Lint clean. Server stable.
+- The connector now works in two modes: REAL (plugin in Roblox Studio heartbeats to a publicly-deployed server) and DEMO (browser simulates the plugin so you can experience pair→connect→insert entirely in the preview).
+- Demo mode is clearly labeled (amber badge, toast disclaimers) so users never confuse it with a real Studio connection.

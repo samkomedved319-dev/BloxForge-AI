@@ -11,11 +11,10 @@ import {
   Unplug,
   FileCode2,
   Copy,
+  FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Logo } from "./logo";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -39,6 +38,7 @@ export function useStudioConnection() {
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [state, setState] = useState<StudioState | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [mode, setMode] = useState<"real" | "demo" | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const simRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -46,6 +46,13 @@ export function useStudioConnection() {
     if (pollRef.current) {
       clearInterval(pollRef.current);
       pollRef.current = null;
+    }
+  }, []);
+
+  const stopSimulate = useCallback(() => {
+    if (simRef.current) {
+      clearInterval(simRef.current);
+      simRef.current = null;
     }
   }, []);
 
@@ -57,17 +64,12 @@ export function useStudioConnection() {
           const res = await fetch(`/api/studio/state?code=${encodeURIComponent(code)}`);
           if (res.ok) {
             const data = await res.json();
-            if (data.ok) {
-              setState(data.state);
-              if (data.state?.connected) {
-                // keep polling to detect disconnects
-              }
-            }
+            if (data.ok) setState(data.state);
           }
         } catch {
-          /* ignore transient errors */
+          /* ignore */
         }
-      }, 2500);
+      }, 2000);
     },
     [stopPolling],
   );
@@ -80,6 +82,7 @@ export function useStudioConnection() {
       if (data.ok) {
         setPairingCode(data.code);
         setState(null);
+        setMode(null);
         startPolling(data.code);
         return data.code;
       }
@@ -92,20 +95,23 @@ export function useStudioConnection() {
   }, [startPolling]);
 
   const disconnect = useCallback(async () => {
-    if (!pairingCode) return;
-    try {
-      await fetch("/api/studio/disconnect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: pairingCode }),
-      });
-    } catch {
-      /* ignore */
+    if (pairingCode) {
+      try {
+        await fetch("/api/studio/disconnect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: pairingCode }),
+        });
+      } catch {
+        /* ignore */
+      }
     }
     stopPolling();
+    stopSimulate();
     setPairingCode(null);
     setState(null);
-  }, [pairingCode, stopPolling]);
+    setMode(null);
+  }, [pairingCode, stopPolling, stopSimulate]);
 
   const insertCode = useCallback(
     async (code: string, title = "BloxForge Script", language = "luau") => {
@@ -134,9 +140,10 @@ export function useStudioConnection() {
   );
 
   /**
-   * Simulate a Studio connection (for testing without the real plugin).
-   * Sends heartbeats with a fake script context so the web app detects
-   * a connection and the full insert flow can be exercised.
+   * Simulate a Studio connection from the browser. Lets you exercise the
+   * full connector flow (pair → connect → insert) without Roblox Studio.
+   * Sends heartbeats with a fake script context AND processes any insert
+   * commands returned by the server, acking them and showing a toast.
    */
   const simulate = useCallback(async () => {
     let code = pairingCode;
@@ -144,46 +151,51 @@ export function useStudioConnection() {
       code = await pair();
     }
     if (!code) return;
-    // Send an initial heartbeat with a fake context
-    try {
-      await fetch("/api/studio/heartbeat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code,
-          context: {
-            scriptName: "DemoScript.lua",
-            scriptPath: "ServerScriptService.DemoScript",
-            source: "-- Demo script\nlocal module = {}\nreturn module",
-            lineCount: 2,
-            updatedAt: Date.now(),
-          },
-        }),
-      });
-    } catch {
-      /* ignore */
-    }
-    // Keep the session alive with periodic heartbeats
-    const sim = setInterval(async () => {
+    setMode("demo");
+
+    const demoContext: StudioContext = {
+      scriptName: "DemoScript.lua",
+      scriptPath: "ServerScriptService.DemoScript",
+      source:
+        "-- Demo script (simulated)\nlocal module = {}\nfunction module:Hello()\n\tprint(\"hi\")\nend\nreturn module",
+      lineCount: 5,
+      updatedAt: Date.now(),
+    };
+
+    const beat = async () => {
       try {
-        await fetch("/api/studio/heartbeat", {
+        const res = await fetch("/api/studio/heartbeat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code }),
+          body: JSON.stringify({ code, context: demoContext }),
         });
+        const data = await res.json();
+        if (data?.ok && Array.isArray(data.commands)) {
+          for (const cmd of data.commands) {
+            toast.success(`Inserted "${cmd.title}" into ServerScriptService`, {
+              description: "Demo mode — no real Studio connected.",
+            });
+            fetch("/api/studio/ack", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                code,
+                commandId: cmd.id,
+                ok: true,
+                message: `Inserted ${cmd.title}`,
+              }),
+            }).catch(() => {});
+          }
+        }
       } catch {
         /* ignore */
       }
-    }, 5000);
-    simRef.current = sim;
-  }, [pairingCode, pair]);
+    };
 
-  const stopSimulate = useCallback(() => {
-    if (simRef.current) {
-      clearInterval(simRef.current);
-      simRef.current = null;
-    }
-  }, []);
+    await beat();
+    stopSimulate();
+    simRef.current = setInterval(beat, 1500);
+  }, [pairingCode, pair, stopSimulate]);
 
   useEffect(() => {
     return () => {
@@ -196,11 +208,11 @@ export function useStudioConnection() {
     pairingCode,
     state,
     connecting,
+    mode,
     pair,
     disconnect,
     insertCode,
     simulate,
-    stopSimulate,
     isConnected: Boolean(state?.connected),
     context: state?.context ?? null,
   };
@@ -211,6 +223,7 @@ export function StudioConnectDialog({
   onClose,
   pairingCode,
   state,
+  mode,
   connecting,
   onPair,
   onDisconnect,
@@ -220,6 +233,7 @@ export function StudioConnectDialog({
   onClose: () => void;
   pairingCode: string | null;
   state: StudioState | null;
+  mode: "real" | "demo" | null;
   connecting: boolean;
   onPair: () => void;
   onDisconnect: () => void;
@@ -365,7 +379,8 @@ export function StudioConnectDialog({
                         </div>
                         <p className="mt-1.5 text-[11px] text-muted-foreground">
                           Paste this exact URL into the plugin’s “BloxForge Server
-                          URL” field.
+                          URL” field — no trailing slash, no{" "}
+                          <code className="font-mono">/api</code>.
                         </p>
                       </div>
 
@@ -387,22 +402,22 @@ export function StudioConnectDialog({
                       </div>
 
                       {/* Simulate + help */}
-                      <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+                      <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4">
                         {onSimulate && (
                           <button
                             onClick={onSimulate}
-                            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground transition hover:border-emerald-500/30 hover:text-foreground"
-                            title="Simulate a Studio connection for testing"
+                            className="flex items-center justify-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs font-medium text-emerald-300 transition hover:bg-emerald-500/15"
+                            title="Simulate a Studio connection for testing without Roblox Studio"
                           >
-                            <RefreshCw className="size-3.5" />
-                            Simulate connection
+                            <FlaskConical className="size-3.5" />
+                            Try without Studio (demo)
                           </button>
                         )}
                         <button
                           onClick={() => setShowHelp((s) => !s)}
-                          className="flex items-center gap-1.5 text-xs text-muted-foreground transition hover:text-foreground"
+                          className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground transition hover:text-foreground"
                         >
-                          {showHelp ? "Hide help" : "Not connecting?"}
+                          {showHelp ? "Hide help" : "Not connecting? Troubleshoot"}
                         </button>
                       </div>
 
@@ -419,7 +434,7 @@ export function StudioConnectDialog({
                             </p>
                             <ul className="list-disc space-y-1.5 pl-4">
                               <li>
-                                Make sure the plugin’s server URL matches{" "}
+                                The plugin’s server URL must match{" "}
                                 <code className="rounded bg-white/10 px-1 font-mono text-[10px] text-foreground">
                                   {serverUrl}
                                 </code>{" "}
@@ -430,20 +445,26 @@ export function StudioConnectDialog({
                                 Roblox HttpService requires{" "}
                                 <b>HTTPS</b>. Localhost (
                                 <code className="font-mono text-[10px]">http://…</code>
-                                ) only works from Studio on the same machine running
-                                the dev server.
+                                ) only works from Studio on the same machine
+                                running the server.
                               </li>
                               <li>
-                                Check the Studio <b>Output</b> window for
+                                The plugin can’t reach a server inside this
+                                sandbox preview from your machine — deploy the
+                                app publicly, or use{" "}
+                                <b>“Try without Studio (demo)”</b> to test the
+                                flow here.
+                              </li>
+                              <li>
+                                Check the Studio <b>Output</b> window for{" "}
                                 <code className="font-mono text-[10px]">
                                   [BloxForge Connector]
                                 </code>{" "}
-                                error messages.
+                                messages.
                               </li>
                               <li>
-                                The pairing code expires after 10 minutes. Click
-                                “Simulate connection” to test the flow without
-                                Studio.
+                                Pairing codes expire after 10 minutes of
+                                inactivity.
                               </li>
                             </ul>
                           </div>
@@ -472,6 +493,15 @@ export function StudioConnectDialog({
                       <p className="mt-1 text-sm text-muted-foreground">
                         Your Roblox Studio session is linked.
                       </p>
+
+                      {mode === "demo" && (
+                        <Badge
+                          variant="outline"
+                          className="mt-2 gap-1 border-amber-500/40 bg-amber-500/10 text-amber-300"
+                        >
+                          <FlaskConical className="size-3" /> Demo mode
+                        </Badge>
+                      )}
 
                       {state?.context ? (
                         <div className="mt-4 flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-left">
@@ -535,24 +565,57 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
 /** Compact badge shown in the chat header when Studio is connected. */
 export function StudioBadge({
   context,
+  mode,
   onClick,
 }: {
   context: StudioContext | null;
+  mode: "real" | "demo" | null;
   onClick: () => void;
 }) {
+  const isDemo = mode === "demo";
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-xs transition hover:bg-emerald-500/20"
-      title={context ? context.scriptPath : "Studio connected"}
+      className={cn(
+        "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition",
+        isDemo
+          ? "border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
+          : "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20",
+      )}
+      title={
+        isDemo
+          ? "Demo connection (no real Studio)"
+          : context
+            ? context.scriptPath
+            : "Studio connected"
+      }
     >
       <span className="relative flex size-2">
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-        <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
+        <span
+          className={cn(
+            "absolute inline-flex size-full animate-ping rounded-full opacity-75",
+            isDemo ? "bg-amber-400" : "bg-emerald-400",
+          )}
+        />
+        <span
+          className={cn(
+            "relative inline-flex size-2 rounded-full",
+            isDemo ? "bg-amber-400" : "bg-emerald-400",
+          )}
+        />
       </span>
-      <Plug className="size-3.5 text-emerald-400" />
-      <span className="hidden font-medium text-emerald-300 sm:inline">
-        {context ? context.scriptName : "Studio"}
+      {isDemo ? (
+        <FlaskConical className="size-3.5 text-amber-400" />
+      ) : (
+        <Plug className="size-3.5 text-emerald-400" />
+      )}
+      <span
+        className={cn(
+          "hidden font-medium sm:inline",
+          isDemo ? "text-amber-300" : "text-emerald-300",
+        )}
+      >
+        {context ? context.scriptName : isDemo ? "Studio (demo)" : "Studio"}
       </span>
     </button>
   );
