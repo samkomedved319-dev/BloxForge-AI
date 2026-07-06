@@ -146,3 +146,17 @@ Stage Summary:
 - Lint clean. Server stable.
 - The connector now works in two modes: REAL (plugin in Roblox Studio heartbeats to a publicly-deployed server) and DEMO (browser simulates the plugin so you can experience pair→connect→insert entirely in the preview).
 - Demo mode is clearly labeled (amber badge, toast disclaimers) so users never confuse it with a real Studio connection.
+
+---
+Task ID: 19
+Agent: Orchestrator
+Task: Fix "headers value must be a dictionary!" error in the Roblox Studio plugin
+
+Work Log:
+- User screenshot showed the real plugin in Roblox Studio failing with: "Cannot reach server. Check the URL is HTTPS and reachable, headers value must be a dictionary!"
+- Root cause: the plugin's httpPost() used HttpService:PostAsync(url, body, contentType, compress, timeout) — but PostAsync's 5th positional argument is `headers` (a table), NOT `timeout` (a number). Passing the number 15 as headers threw the error before any network request was made.
+- Fix: switched httpPost + httpGet to HttpService:RequestAsync({Url, Method, Headers, Body, Timeout}) which takes a single options table and properly supports Timeout. The function now returns (true, response.Body) on success and (false, "HTTP {code}: {body}") on HTTP errors, so all existing callers (doConnect, heartbeatLoop, ack, disconnect) work unchanged and the errorLabel shows clear messages.
+- Verified: served plugin now has 3 RequestAsync refs, 0 old buggy PostAsync refs. curl confirms pair→heartbeat→state flow still returns connected:true. Lint clean.
+
+Stage Summary:
+- The plugin HTTP bug is fixed. User must RE-DOWNLOAD the plugin (BloxForgeAI.lua) and re-install it in their Studio Plugins folder (replace the old file), then restart Studio and click Connect again.

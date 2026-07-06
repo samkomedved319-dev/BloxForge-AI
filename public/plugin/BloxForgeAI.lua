@@ -65,16 +65,42 @@ local function httpPost(url, payload, timeout)
         timeout = timeout or 15
         local body = HttpService:JSONEncode(payload)
         local ok, response = pcall(function()
-                return HttpService:PostAsync(url, body, Enum.HttpContentType.ApplicationJson, false, timeout)
+                -- RequestAsync takes a single options table and supports Timeout.
+                -- (PostAsync's 5th arg is `headers`, NOT timeout — passing a number
+                -- there throws "headers value must be a dictionary!")
+                return HttpService:RequestAsync({
+                        Url = url,
+                        Method = "POST",
+                        Headers = { ["Content-Type"] = "application/json" },
+                        Body = body,
+                        Timeout = timeout,
+                })
         end)
+        if ok and typeof(response) == "table" then
+                if response.Success then
+                        return true, response.Body
+                end
+                -- HTTP error response — surface the body so JSON decode + error label work
+                return false, "HTTP " .. tostring(response.StatusCode) .. ": " .. tostring(response.Body or "")
+        end
         return ok, response
 end
 
 local function httpGet(url, timeout)
         timeout = timeout or 15
         local ok, response = pcall(function()
-                return HttpService:GetAsync(url, false, timeout)
+                return HttpService:RequestAsync({
+                        Url = url,
+                        Method = "GET",
+                        Timeout = timeout,
+                })
         end)
+        if ok and typeof(response) == "table" then
+                if response.Success then
+                        return true, response.Body
+                end
+                return false, "HTTP " .. tostring(response.StatusCode) .. ": " .. tostring(response.Body or "")
+        end
         return ok, response
 end
 
