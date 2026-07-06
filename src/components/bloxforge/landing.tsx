@@ -17,11 +17,13 @@ import {
   CheckCircle2,
   Rocket,
   Brain,
+  Crown,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Counter, Reveal } from "./motion";
 import { cn } from "@/lib/utils";
 
 const FEATURES = [
@@ -127,17 +129,21 @@ const PLUGIN_STEPS = [
 export function Landing({
   onLaunch,
   onGetPlugin,
+  onNavigatePricing,
 }: {
   onLaunch: () => void;
   onGetPlugin: () => void;
+  onNavigatePricing: () => void;
 }) {
   return (
     <main className="flex-1">
       <Hero onLaunch={onLaunch} onGetPlugin={onGetPlugin} />
+      <Stats />
       <Models />
       <Features />
       <HowItWorks onLaunch={onLaunch} />
       <PluginSection onGetPlugin={onGetPlugin} onLaunch={onLaunch} />
+      <PricingTeaser onNavigatePricing={onNavigatePricing} onLaunch={onLaunch} />
       <CTA onLaunch={onLaunch} />
     </main>
   );
@@ -579,6 +585,107 @@ function CTA({ onLaunch }: { onLaunch: () => void }) {
               <ArrowRight className="size-4" />
             </Button>
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Stats() {
+  const stats = [
+    { value: 5, suffix: "", label: "NVIDIA frontier models" },
+    { value: 128, suffix: "K", label: "Context window per model" },
+    { value: 50, suffix: "+", label: "Luau patterns known" },
+    { value: 1, suffix: "", label: "Click to insert code" },
+  ];
+  return (
+    <section className="border-t border-border/50 py-14">
+      <div className="mx-auto max-w-5xl px-4">
+        <Reveal>
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+            {stats.map((s) => (
+              <div key={s.label} className="text-center">
+                <div className="font-display text-3xl font-extrabold tracking-tight text-emerald-400 sm:text-4xl">
+                  <Counter to={s.value} />
+                  {s.suffix}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                  {s.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function PricingTeaser({
+  onNavigatePricing,
+  onLaunch,
+}: {
+  onNavigatePricing: () => void;
+  onLaunch: () => void;
+}) {
+  const tiers = [
+    { name: "Free", price: "$0", blurb: "50 msgs/day, 2 models", highlight: false },
+    { name: "Pro", price: "$9", blurb: "Unlimited, all 5 models", highlight: true },
+    { name: "Studio", price: "$31", blurb: "Teams & custom prompts", highlight: false },
+  ];
+  return (
+    <section className="relative border-t border-border/50 py-20">
+      <div className="bg-radial-brand pointer-events-none absolute inset-0 opacity-50" />
+      <div className="relative mx-auto max-w-5xl px-4">
+        <SectionHeading
+          eyebrow="Simple pricing"
+          title="Free to start, scale when ready"
+          desc="Start on Free forever. Upgrade for unlimited messages and frontier models."
+        />
+        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {tiers.map((t, i) => (
+            <Reveal key={t.name} delay={i * 0.08}>
+              <Card
+                className={cn(
+                  "relative h-full overflow-hidden p-6 text-center transition",
+                  t.highlight
+                    ? "border-emerald-500/40 bg-accent/20 glow-brand"
+                    : "border-border/60 bg-card hover:border-emerald-500/20",
+                )}
+              >
+                {t.highlight && (
+                  <Badge className="absolute right-4 top-4 gap-1 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20">
+                    <Crown className="size-3" /> Popular
+                  </Badge>
+                )}
+                <h3 className="font-display text-lg font-bold">{t.name}</h3>
+                <div className="mt-2 flex items-baseline justify-center gap-1">
+                  <span className="font-display text-4xl font-extrabold">
+                    {t.price}
+                  </span>
+                  <span className="text-sm text-muted-foreground">/mo</span>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{t.blurb}</p>
+              </Card>
+            </Reveal>
+          ))}
+        </div>
+        <div className="mt-8 flex justify-center gap-3">
+          <Button
+            variant="outline"
+            onClick={onNavigatePricing}
+            className="gap-2 border-border bg-card/50 hover:bg-accent"
+          >
+            Compare plans
+            <ArrowRight className="size-4" />
+          </Button>
+          <Button
+            onClick={onLaunch}
+            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Sparkles className="size-4" />
+            Start free
+          </Button>
         </div>
       </div>
     </section>

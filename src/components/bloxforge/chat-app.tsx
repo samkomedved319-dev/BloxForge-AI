@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
   Send,
@@ -8,7 +9,6 @@ import {
   MessageSquare,
   Loader2,
   Sparkles,
-  Cpu,
   ChevronDown,
   Menu,
   X,
@@ -18,26 +18,17 @@ import {
   Wand2,
   Copy,
   Check,
+  Lock,
+  Zap,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { Markdown } from "./markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { PersonalityPicker } from "./personality-picker";
+import { useAuth } from "./use-auth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -46,23 +37,16 @@ interface ChatMessage {
   id: string;
   role: Role;
   content: string;
-  model?: string;
+  personality?: string;
+  mode?: string;
 }
 interface ConversationSummary {
   id: string;
   title: string;
-  model: string;
+  model: string; // personality id
+  mode: string;
   updatedAt: string;
   _count: { messages: number };
-}
-interface AIModel {
-  id: string;
-  label: string;
-  vendor: string;
-  tier: string;
-  description: string;
-  contextWindow: string;
-  badge?: string;
 }
 
 const EXAMPLES = [
@@ -96,40 +80,31 @@ function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-export function ChatApp({ onExit }: { onExit: () => void }) {
+export function ChatApp({
+  onExit,
+  onOpenAuth,
+  onNavigatePricing,
+}: {
+  onExit: () => void;
+  onOpenAuth: () => void;
+  onNavigatePricing: () => void;
+}) {
+  const { isAuthenticated, user, usage, plan, refreshUsage } = useAuth();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [models, setModels] = useState<AIModel[]>([]);
-  const [model, setModel] = useState("qwen/qwen2.5-coder-32b-instruct");
-  const [engineLabel, setEngineLabel] = useState("");
+  const [personality, setPersonality] = useState("swift");
+  const [mode, setMode] = useState("normal");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loadingConv, setLoadingConv] = useState(false);
+  const [showLimitBanner, setShowLimitBanner] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Load models
-  useEffect(() => {
-    fetch("/api/models")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.models) {
-          setModels(d.models);
-          setModel(d.defaultModel);
-        }
-        setEngineLabel(
-          d.engine === "nvidia"
-            ? "NVIDIA NIM"
-            : d.engine === "zai-demo"
-              ? "Demo Engine"
-              : "AI",
-        );
-      })
-      .catch(() => {});
-  }, []);
+  const allowedPersonalities = plan?.allowedPersonalities || ["swift", "balanced"];
 
   // Load conversations
   const refreshConversations = useCallback(() => {
@@ -141,7 +116,7 @@ export function ChatApp({ onExit }: { onExit: () => void }) {
 
   useEffect(() => {
     refreshConversations();
-  }, [refreshConversations]);
+  }, [refreshConversations, isAuthenticated]);
 
   // Auto-scroll on new content
   useEffect(() => {
@@ -157,15 +132,17 @@ export function ChatApp({ onExit }: { onExit: () => void }) {
       const conv = data.conversation;
       if (conv) {
         setActiveId(conv.id);
-        setModel(conv.model);
+        setPersonality(conv.model || "swift");
+        setMode(conv.mode || "normal");
         setMessages(
           (conv.messages || [])
-            .filter((m: { role: string; content: string }) => m.role === "user" || m.role === "assistant")
-            .map((m: { id: string; role: Role; content: string; model?: string }) => ({
+            .filter(
+              (m: { role: string }) => m.role === "user" || m.role === "assistant",
+            )
+            .map((m: { id: string; role: Role; content: string }) => ({
               id: m.id,
               role: m.role,
               content: m.content,
-              model: m.model,
             })),
         );
         setSidebarOpen(false);
@@ -204,12 +181,28 @@ export function ChatApp({ onExit }: { onExit: () => void }) {
       const content = (text ?? input).trim();
       if (!content || streaming) return;
 
+      // Check free-tier limit
+      if (
+        usage &&
+        usage.limit !== -1 &&
+        usage.remaining !== -1 &&
+        usage.remaining <= 0
+      ) {
+        setShowLimitBanner(true);
+        toast.error("Daily limit reached", {
+          description: "Upgrade to Pro for unlimited messages.",
+          action: { label: "Upgrade", onClick: onNavigatePricing },
+        });
+        return;
+      }
+
       const userMsg: ChatMessage = { id: uid(), role: "user", content };
       const assistantMsg: ChatMessage = {
         id: uid(),
         role: "assistant",
         content: "",
-        model,
+        personality,
+        mode,
       };
       const history = messages.map((m) => ({
         role: m.role,
@@ -229,12 +222,42 @@ export function ChatApp({ onExit }: { onExit: () => void }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: content,
-            model,
+            personality,
+            mode,
             history,
             conversationId: activeId,
           }),
           signal: controller.signal,
         });
+
+        if (res.status === 429) {
+          const data = await res.json();
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsg.id
+                ? { ...m, content: `⚠ ${data.message}` }
+                : m,
+            ),
+          );
+          setShowLimitBanner(true);
+          refreshUsage();
+          return;
+        }
+
+        if (res.status === 403) {
+          const data = await res.json();
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsg.id
+                ? { ...m, content: `⚠ ${data.message}` }
+                : m,
+            ),
+          );
+          toast.info("Sign up to unlock this model", {
+            action: { label: "Sign up", onClick: onOpenAuth },
+          });
+          return;
+        }
 
         if (!res.ok || !res.body) throw new Error("Request failed");
 
@@ -281,6 +304,7 @@ export function ChatApp({ onExit }: { onExit: () => void }) {
           }
         }
         refreshConversations();
+        refreshUsage();
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           setMessages((prev) =>
@@ -297,15 +321,25 @@ export function ChatApp({ onExit }: { onExit: () => void }) {
         abortRef.current = null;
       }
     },
-    [input, streaming, messages, model, activeId, refreshConversations],
+    [
+      input,
+      streaming,
+      messages,
+      personality,
+      mode,
+      activeId,
+      refreshConversations,
+      refreshUsage,
+      usage,
+      onNavigatePricing,
+      onOpenAuth,
+    ],
   );
 
   const stop = () => {
     abortRef.current?.abort();
     setStreaming(false);
   };
-
-  const activeModel = models.find((m) => m.id === model);
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden bg-background">
@@ -368,14 +402,51 @@ export function ChatApp({ onExit }: { onExit: () => void }) {
           </div>
         </ScrollArea>
 
-        <div className="border-t border-border p-3">
-          <button
-            onClick={onExit}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/5 hover:text-foreground"
-          >
-            <Logo size={24} />
-          </button>
-        </div>
+        {/* Usage / Upgrade card */}
+        {!isAuthenticated ? (
+          <div className="m-3 rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent p-3.5">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Sparkles className="size-4 text-emerald-400" />
+              Create a free account
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Save sessions, unlock all 5 models & get 50 messages/day.
+            </p>
+            <Button
+              size="sm"
+              onClick={onOpenAuth}
+              className="mt-2.5 w-full gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Sign up free
+            </Button>
+          </div>
+        ) : user?.plan === "free" ? (
+          <div className="m-3 rounded-xl border border-border bg-card p-3.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Today's usage</span>
+              <span className="font-medium">
+                {usage?.used ?? 0}
+                {usage?.limit !== -1 ? ` / ${usage?.limit ?? 50}` : ""}
+              </span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all"
+                style={{
+                  width: `${usage && usage.limit !== -1 ? Math.min(100, (usage.used / usage.limit) * 100) : 0}%`,
+                }}
+              />
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onNavigatePricing}
+              className="mt-2.5 w-full gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+            >
+              <Zap className="size-3.5" /> Upgrade to Pro
+            </Button>
+          </div>
+        ) : null}
       </aside>
 
       {sidebarOpen && (
@@ -388,9 +459,9 @@ export function ChatApp({ onExit }: { onExit: () => void }) {
 
       {/* Main */}
       <div className="flex flex-1 flex-col">
-        {/* Top bar */}
+        {/* Top bar — MODEL / MODE pickers (the lemonade.gg-style dropdowns) */}
         <header className="flex h-14 items-center justify-between border-b border-border px-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -399,23 +470,58 @@ export function ChatApp({ onExit }: { onExit: () => void }) {
             >
               <Menu className="size-4" />
             </Button>
-            <ModelPicker
-              models={models}
-              value={model}
-              onChange={setModel}
-              activeModel={activeModel}
+            <PersonalityPicker
+              personalityId={personality}
+              modeId={mode}
+              onPersonalityChange={setPersonality}
+              onModeChange={setMode}
+              allowedPersonalities={allowedPersonalities}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Badge
-              variant="outline"
-              className="gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-            >
-              <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
-              {engineLabel}
-            </Badge>
-          </div>
+          <Badge
+            variant="outline"
+            className="gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+          >
+            <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+            Live
+          </Badge>
         </header>
+
+        {/* Limit banner */}
+        <AnimatePresence>
+          {showLimitBanner && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden border-b border-amber-500/20 bg-amber-500/10"
+            >
+              <div className="flex items-center gap-3 px-4 py-2.5 text-sm">
+                <Lock className="size-4 shrink-0 text-amber-400" />
+                <span className="flex-1 text-amber-200">
+                  You've reached your free daily limit. Upgrade to Pro for
+                  unlimited messages and all 5 NVIDIA models.
+                </span>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setShowLimitBanner(false);
+                    onNavigatePricing();
+                  }}
+                  className="gap-1.5 bg-amber-500 text-amber-950 hover:bg-amber-400"
+                >
+                  <Zap className="size-3.5" /> Upgrade
+                </Button>
+                <button
+                  onClick={() => setShowLimitBanner(false)}
+                  className="text-amber-400/60 hover:text-amber-400"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
@@ -423,8 +529,12 @@ export function ChatApp({ onExit }: { onExit: () => void }) {
             <EmptyState onPick={(p) => send(p)} />
           ) : (
             <div className="mx-auto max-w-3xl px-4 py-6">
-              {messages.map((m) => (
-                <MessageBubble key={m.id} message={m} streaming={streaming} />
+              {messages.map((m, i) => (
+                <MessageBubble
+                  key={m.id}
+                  message={m}
+                  streaming={streaming && i === messages.length - 1}
+                />
               ))}
             </div>
           )}
@@ -480,49 +590,6 @@ export function ChatApp({ onExit }: { onExit: () => void }) {
   );
 }
 
-function ModelPicker({
-  models,
-  value,
-  onChange,
-  activeModel,
-}: {
-  models: AIModel[];
-  value: string;
-  onChange: (v: string) => void;
-  activeModel?: AIModel;
-}) {
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-9 w-[210px] gap-2 border-border bg-card text-sm sm:w-[260px]">
-        <Cpu className="size-3.5 text-emerald-400" />
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent className="w-[320px]">
-        {models.map((m) => (
-          <SelectItem key={m.id} value={m.id} className="py-2">
-            <div className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{m.label}</span>
-                {m.badge && (
-                  <Badge
-                    variant="secondary"
-                    className="h-4 px-1.5 text-[10px] text-emerald-400"
-                  >
-                    {m.badge}
-                  </Badge>
-                )}
-              </div>
-              <span className="text-[11px] text-muted-foreground">
-                {m.vendor} · {m.contextWindow}
-              </span>
-            </div>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
 function MessageBubble({
   message,
   streaming,
@@ -544,7 +611,12 @@ function MessageBubble({
   };
 
   return (
-    <div className="group mb-6">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="group mb-6"
+    >
       <div className="mb-1.5 flex items-center gap-2">
         {isUser ? (
           <div className="flex size-6 items-center justify-center rounded-md bg-secondary text-[11px] font-semibold text-secondary-foreground">
@@ -558,9 +630,14 @@ function MessageBubble({
         <span className="text-xs font-medium text-muted-foreground">
           {isUser ? "You" : "BloxForge AI"}
         </span>
-        {!isUser && message.model && (
-          <span className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-            {message.model.split("/").pop()}
+        {!isUser && message.personality && (
+          <span className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[10px] capitalize text-emerald-400">
+            {message.personality}
+          </span>
+        )}
+        {!isUser && message.mode && message.mode !== "normal" && (
+          <span className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[10px] capitalize text-muted-foreground">
+            {message.mode}
           </span>
         )}
         {!isUser && message.content && (
@@ -590,27 +667,45 @@ function MessageBubble({
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-16 text-center">
-      <div className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 shadow-xl shadow-emerald-500/30">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", damping: 18 }}
+        className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 shadow-xl shadow-emerald-500/30"
+      >
         <Sparkles className="size-8 text-slate-950" />
-      </div>
-      <h2 className="font-display text-2xl font-bold tracking-tight">
+      </motion.div>
+      <motion.h2
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="font-display text-2xl font-bold tracking-tight"
+      >
         What are we forging today?
-      </h2>
-      <p className="mt-2 max-w-md text-sm text-muted-foreground">
+      </motion.h2>
+      <motion.p
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="mt-2 max-w-md text-sm text-muted-foreground"
+      >
         Ask anything about Roblox & Luau. Generate scripts, debug remote
         events, refactor to OOP — powered by NVIDIA frontier models.
-      </p>
+      </motion.p>
       <div className="mt-8 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
-        {EXAMPLES.map((ex) => (
-          <button
+        {EXAMPLES.map((ex, i) => (
+          <motion.button
             key={ex.title}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 + i * 0.06 }}
             onClick={() => onPick(ex.prompt)}
             className="group flex flex-col gap-1.5 rounded-xl border border-border bg-card p-4 text-left transition hover:border-emerald-500/40 hover:bg-accent/40"
           >
@@ -621,7 +716,7 @@ function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
             <span className="line-clamp-2 text-xs text-muted-foreground">
               {ex.prompt}
             </span>
-          </button>
+          </motion.button>
         ))}
       </div>
     </div>

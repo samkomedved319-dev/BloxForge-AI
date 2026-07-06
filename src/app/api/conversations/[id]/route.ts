@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -9,6 +11,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id || null;
   try {
     const conversation = await db.conversation.findUnique({
       where: { id },
@@ -16,6 +20,10 @@ export async function GET(
         messages: { orderBy: { createdAt: "asc" } },
       },
     });
+    // Guests can only load guest (userId=null) conversations
+    if (conversation && conversation.userId !== userId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     if (!conversation) {
       return NextResponse.json(
         { error: "Conversation not found" },

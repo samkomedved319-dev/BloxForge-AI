@@ -8,14 +8,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  plan         String   @default("free") // free | pro | studio
+  usageDate    String?  // YYYY-MM-DD for daily reset
+  usageCount   Int      @default(0)
+  createdAt    DateTime @default(now())
+  conversations Conversation[]
+}
+
 model Conversation {
   id        String    @id @default(cuid())
+  userId    String?
   title     String    @default("New Forge Session")
-  model     String    @default("qwen/qwen2.5-coder-32b-instruct")
+  model     String    @default("swift")
+  mode      String    @default("normal")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   messages  Message[]
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("conversations")
 }
 
@@ -25,6 +41,7 @@ model Message {
   role           String // "user" | "assistant" | "system"
   content        String
   model          String?
+  mode           String?
   tokens         Int?
   createdAt      DateTime     @default(now())
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

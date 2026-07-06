@@ -1,17 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import { streamChat, type ChatMessage } from "@/lib/ai";
-import { BLOXFORGE_SYSTEM_PROMPT, DEFAULT_MODEL } from "@/lib/models";
+import {
+  buildSystemPrompt,
+  resolveModel,
+  getPersonality,
+  getMode,
+  getPlan,
+  PERSONALITIES,
+  MODES,
+  DEFAULT_PERSONALITY_ID,
+  DEFAULT_MODE_ID,
+} from "@/lib/models";
 import { db } from "@/lib/db";
+import { authOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 interface ChatRequestBody {
   message: string;
-  model?: string;
+  personality?: string; // personality id, e.g. "thoughtful"
+  mode?: string; // mode id, e.g. "normal"
   history?: ChatMessage[];
   conversationId?: string;
   title?: string;
+}
+
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export async function GET() {
+  return NextResponse.json({
+    personalities: PERSONALITIES,
+    modes: MODES,
+    defaultPersonality: DEFAULT_PERSONALITY_ID,
+    defaultMode: DEFAULT_MODE_ID,
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -27,7 +53,62 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
 
-  const model = body.model || DEFAULT_MODEL;
+  // ── Auth + usage limits ──────────────────────────────────────────────
+  const session = await getServerSession(authOptions);
+  const isGuest = !session?.user?.id;
+  const plan = getPlan(session?.user?.plan);
+  const allowedPersonalities = plan.allowedPersonalities;
+
+  const personalityId = body.personality || DEFAULT_PERSONALITY_ID;
+  const modeId = body.mode || DEFAULT_MODE_ID;
+
+  // Guest check: guests can only use the free-tier personalities
+  if (isGuest && !allowedPersonalities.includes(personalityId)) {
+    return NextResponse.json(
+      {
+        error: "free-personality",
+        message:
+          "This personality requires a free account. Sign up to unlock all models.",
+      },
+      { status: 403 },
+    );
+  }
+
+  // Enforce daily limit for signed-in free users
+  if (!isGuest) {
+    const user = await db.user.findUnique({ where: { id: session!.user.id } });
+    if (user) {
+      const today = todayKey();
+      if (user.usageDate !== today) {
+        await db.user.update({
+          where: { id: user.id },
+          data: { usageDate: today, usageCount: 1 },
+        });
+      } else {
+        if (
+          plan.dailyMessageLimit !== -1 &&
+          user.usageCount >= plan.dailyMessageLimit
+        ) {
+          return NextResponse.json(
+            {
+              error: "limit-reached",
+              message: `You've reached your daily limit of ${plan.dailyMessageLimit} messages on the ${plan.label} plan. Upgrade for unlimited.`,
+            },
+            { status: 429 },
+          );
+        }
+        await db.user.update({
+          where: { id: user.id },
+          data: { usageCount: { increment: 1 } },
+        });
+      }
+    }
+  }
+
+  const personality = getPersonality(personalityId);
+  const model = resolveModel(personalityId);
+  const systemPrompt = buildSystemPrompt(modeId);
+
   const prior: ChatMessage[] = Array.isArray(body.history)
     ? body.history.filter(
         (m) => m && (m.role === "user" || m.role === "assistant") && m.content,
@@ -35,24 +116,35 @@ export async function POST(req: NextRequest) {
     : [];
 
   const messages: ChatMessage[] = [
-    { role: "system", content: BLOXFORGE_SYSTEM_PROMPT },
+    { role: "system", content: systemPrompt },
     ...prior.slice(-20),
     { role: "user", content: userMessage },
   ];
 
-  // Persist conversation + user message (best-effort)
+  // ── Persist conversation + user message ──────────────────────────────
   let conversationId = body.conversationId;
   try {
     if (!conversationId) {
       const title =
-        body.title || userMessage.slice(0, 48) + (userMessage.length > 48 ? "…" : "");
+        body.title ||
+        userMessage.slice(0, 48) + (userMessage.length > 48 ? "…" : "");
       const conv = await db.conversation.create({
-        data: { title, model },
+        data: {
+          title,
+          model: personalityId,
+          mode: modeId,
+          userId: session?.user?.id || null,
+        },
       });
       conversationId = conv.id;
     }
     await db.message.create({
-      data: { conversationId, role: "user", content: userMessage },
+      data: {
+        conversationId,
+        role: "user",
+        content: userMessage,
+        mode: modeId,
+      },
     });
   } catch (e) {
     console.error("[chat] persistence error:", e);
@@ -69,7 +161,10 @@ export async function POST(req: NextRequest) {
           `data: ${JSON.stringify({
             type: "meta",
             conversationId,
+            personality: personalityId,
+            personalityLabel: personality.label,
             model,
+            mode: modeId,
           })}\n\n`,
         ),
       );
@@ -96,6 +191,8 @@ export async function POST(req: NextRequest) {
               type: "done",
               meta,
               conversationId,
+              personality: personalityId,
+              mode: modeId,
             })}\n\n`,
           ),
         );
@@ -108,11 +205,12 @@ export async function POST(req: NextRequest) {
                 role: "assistant",
                 content: assistantContent,
                 model,
+                mode: modeId,
               },
             });
             await db.conversation.update({
               where: { id: conversationId },
-              data: { updatedAt: new Date(), model },
+              data: { updatedAt: new Date(), model: personalityId, mode: modeId },
             });
           } catch (e) {
             console.error("[chat] assistant persistence error:", e);

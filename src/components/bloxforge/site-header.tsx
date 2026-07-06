@@ -1,43 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Download, Github, Menu, X } from "lucide-react";
+import { Sparkles, Download, Menu, X } from "lucide-react";
 import { Logo } from "./logo";
 import { Button } from "@/components/ui/button";
+import { AccountMenu } from "./account-menu";
 import { cn } from "@/lib/utils";
 
-type View = "landing" | "app" | "plugin";
+type View = "landing" | "app" | "plugin" | "pricing";
 
 export function SiteHeader({
   view,
   onNavigate,
+  onOpenAuth,
 }: {
   view: View;
   onNavigate: (v: View) => void;
+  onOpenAuth: () => void;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems: { label: string; v: View; anchor?: string }[] = [
     { label: "Home", v: "landing" },
-    { label: "Models", v: "landing", anchor: "#models" },
-    { label: "Features", v: "landing", anchor: "#features" },
+    { label: "Pricing", v: "pricing" },
     { label: "Plugin", v: "plugin" },
   ];
 
   const handleNav = (item: { v: View; anchor?: string }) => {
     setMobileOpen(false);
-    if (item.anchor && view === "landing") {
-      const el = document.querySelector(item.anchor);
-      el?.scrollIntoView({ behavior: "smooth" });
-    } else {
-      onNavigate(item.v);
-      if (item.anchor) {
-        setTimeout(() => {
-          const el = document.querySelector(item.anchor);
-          el?.scrollIntoView({ behavior: "smooth" });
-        }, 50);
-      }
-    }
+    onNavigate(item.v);
   };
 
   return (
@@ -77,13 +68,18 @@ export function SiteHeader({
             <Download className="size-4" />
             Plugin
           </Button>
+          <AccountMenu
+            onOpenAuth={onOpenAuth}
+            onNavigatePricing={() => onNavigate("pricing")}
+          />
           <Button
             size="sm"
             onClick={() => onNavigate("app")}
             className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Sparkles className="size-4" />
-            Launch App
+            <span className="hidden sm:inline">Launch App</span>
+            <span className="sm:hidden">App</span>
           </Button>
           <Button
             variant="ghost"

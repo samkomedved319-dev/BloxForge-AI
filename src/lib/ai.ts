@@ -10,7 +10,7 @@
  */
 
 import ZAI from "z-ai-web-dev-sdk";
-import { BLOXFORGE_SYSTEM_PROMPT } from "@/lib/models";
+import { BLOXFORGE_SYSTEM_PROMPT } from "@/lib/models"; // re-exported below
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -18,7 +18,7 @@ export interface ChatMessage {
 }
 
 export interface ChatOptions {
-  model: string;
+  model: string; // real NVIDIA NIM model id
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
