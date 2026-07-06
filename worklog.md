@@ -241,3 +241,46 @@ Stage Summary:
 - Plugin: errors now visible (pcall + insert log), .Source set before .Parent, "Test insert" button lets users verify instance creation works.
 - Custom API keys: admins can fetch the provider's model list and pick which model to use. The selected model overrides all personalities when that key is active.
 - User must RE-DOWNLOAD the plugin (BloxForgeAI.lua) and re-install in Studio for the insert fix + test button.
+
+---
+Task ID: 4-beta
+Agent: Beta Approval UI
+Task: Add beta approval UI to admin dashboard Users tab
+
+Work Log:
+- Read admin-dashboard.tsx (1448 lines) to understand the existing Users tab structure: AdminUser type, UsersTab component with search/filter, Table with columns User/Plan/Role/Credits/Conversations/Actions, patchUser/deleteUser functions with busyId row-lock pattern.
+- Updated AdminUser type to include `approved: boolean` and `robloxUsername: string | null` (fields now returned by GET /api/admin/users per the beta mode changes).
+- Added 4 lucide-react imports: Check, Clock, X, Gamepad2.
+- Added `showPendingOnly` state + `pendingCount` memo (counts non-admin users with approved=false).
+- Updated `filtered` memo to (a) optionally restrict to pending users when showPendingOnly, and (b) include robloxUsername in the search query match.
+- Added `approveUser(id, approved)` function → PATCH /api/admin/users/[id]/approve with { approved } body, toasts success/error, refetches list.
+- Added beta approval summary banner at the top of the Users tab: amber-tinted card with Clock icon, "{pendingCount} pending approval" headline, context message, and a toggle button "Show only pending" / "Show all users" (amber styling when active). Disabled when no pending users and not in filter mode.
+- Replaced the "Role" table column header with "Status" and rewrote the cell to show: Admin (emerald + Crown) for admins, Approved (emerald + Check) for approved non-admins, Pending (amber + Clock) for pending non-admins.
+- Updated the User cell to show robloxUsername as a tertiary line below name/email with a Gamepad2 icon in emerald (🎮 RobloxUser123 style).
+- Added Approve (solid emerald + Check, labeled "Approve") / Revoke (ghost + X, labeled "Revoke") buttons as the FIRST action in the Actions cell for non-admin users. Admins don't get the button. Buttons use busyId for row-lock during the request.
+- Updated empty-state message to differentiate "No pending users — all caught up!" when in showPendingOnly mode.
+- Updated footer count to append "(pending only)" when filter is active.
+- Matched existing emerald-on-dark-slate theme, used shadcn Button/Badge, cn() from @/lib/utils, toast from sonner. Lint clean.
+
+Stage Summary:
+- Users tab now fully supports beta approval workflow: pending summary banner with quick filter, per-user status badge, one-click Approve/Revoke, Roblox username display.
+- No API routes or pages modified — only src/components/bloxforge/admin-dashboard.tsx.
+- Work record saved at /agent-ctx/4-beta.md.
+
+---
+Task ID: 36-40
+Agent: Orchestrator (+ subagent for admin approval UI)
+Task: Fix AI reliability + beta mode with admin approval + Roblox-only auth
+
+Work Log:
+- AI FIX: deleted 2 fake API keys from DB that were causing every request to fail-then-fallback. Fixed double-meta streaming bug: streamOpenAICompatible now does the fetch BEFORE yielding the meta chunk, so on failure the caller can cleanly fall back to z-ai without sending a duplicate meta event. AI chat now works reliably (verified: streams "Hi there! I'm BloxForge AI...").
+- BETA MODE: added `approved` Boolean to User (default false). Chat API returns 403 "not-approved" for signed-in unapproved users. Admins always approved. Chat app shows amber "Beta: pending admin approval" banner. Usage API exposes isApproved.
+- ADMIN APPROVAL: new /api/admin/users/[id]/approve PATCH endpoint. Admin dashboard Users tab (subagent) shows "X pending approval" banner + Show-only-pending filter + Approve/Revoke buttons per user + Status badge (Admin/Approved/Pending) + Roblox username display.
+- ROBLOX AUTH: replaced email/password with Roblox username verification flow. New /api/auth/roblox/start (looks up Roblox user ID via users.roblox.com API, generates BF-XXXXXXXX verification code) + /api/auth/roblox/verify (fetches Roblox profile description, checks code is present, creates/finds BloxForge user linked to robloxUserId). New NextAuth provider "roblox" (token-based). Secondary "admin-credentials" provider for admin email/password login only (regular users can't use it). Auth modal rebuilt: enter Roblox username → get code → add to Roblox profile description → verify → sign in. "Admin sign in →" link toggles to email/password form for admins.
+- Marked existing admin account as approved. Marked all admins approved via updateMany.
+
+Stage Summary:
+- Lint clean. Server stable.
+- AI works reliably (fake keys removed, streaming bug fixed, clean z-ai fallback).
+- Beta: new Roblox-auth users start as approved=false. Admin sees "2 pending approval" in dashboard + can approve with one click. Unapproved users see amber banner + can't chat (403).
+- Roblox auth: verified end-to-end — enter "Roblox" username → real Roblox API lookup → code BF-U6DRJQF4 generated → verify step with instructions. Admin login via "Admin sign in →" link with email/password.

@@ -9,17 +9,20 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String?
-  passwordHash String
-  plan         String   @default("free") // free | pro | studio
-  role         String   @default("user") // user | admin
-  extraCredits Int      @default(0) // admin-granted bonus daily credits
-  usageDate    String?  // YYYY-MM-DD for daily reset
-  usageCount   Int      @default(0)
-  createdAt    DateTime @default(now())
-  conversations Conversation[]
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  passwordHash    String   @default("")
+  plan            String   @default("free") // free | pro | studio
+  role            String   @default("user") // user | admin
+  approved        Boolean  @default(false) // beta: admin must approve
+  robloxUserId    String?  @unique // Roblox user ID for Roblox-auth users
+  robloxUsername  String?  // cached Roblox username
+  extraCredits    Int      @default(0)
+  usageDate       String?
+  usageCount      Int      @default(0)
+  createdAt       DateTime @default(now())
+  conversations   Conversation[]
 }
 
 model Conversation {

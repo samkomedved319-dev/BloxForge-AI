@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
   const isGuest = !session?.user?.id;
   const plan = getPlan(session?.user?.plan);
   const isAdmin = (session?.user as any)?.role === "admin";
+  const isApproved = isAdmin || (session?.user as any)?.approved === true;
   // Admins unlock everything regardless of plan
   const allowedPersonalities = isAdmin
     ? PERSONALITIES.map((p) => p.id)
@@ -67,13 +68,25 @@ export async function POST(req: NextRequest) {
   const personalityId = body.personality || DEFAULT_PERSONALITY_ID;
   const modeId = body.mode || DEFAULT_MODE_ID;
 
+  // Beta: signed-in but unapproved users cannot chat
+  if (!isGuest && !isApproved) {
+    return NextResponse.json(
+      {
+        error: "not-approved",
+        message:
+          "Your account is pending beta approval. An admin will approve you shortly.",
+      },
+      { status: 403 },
+    );
+  }
+
   // Guest check: guests can only use the free-tier personalities
   if (isGuest && !allowedPersonalities.includes(personalityId)) {
     return NextResponse.json(
       {
         error: "free-personality",
         message:
-          "This personality requires a free account. Sign up to unlock all models.",
+          "This personality requires a free account. Sign in with Roblox to unlock all models.",
       },
       { status: 403 },
     );

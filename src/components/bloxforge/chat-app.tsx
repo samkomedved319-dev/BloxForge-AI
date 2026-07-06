@@ -21,6 +21,7 @@ import {
   Lock,
   Zap,
   FileCode2,
+  Clock,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { Markdown } from "./markdown";
@@ -96,7 +97,7 @@ export function ChatApp({
   onOpenAuth: () => void;
   onNavigatePricing: () => void;
 }) {
-  const { isAuthenticated, user, usage, plan, refreshUsage } = useAuth();
+  const { isAuthenticated, user, usage, plan, refreshUsage, isApproved } = useAuth();
   const studio = useStudioConnection();
   const [studioDialogOpen, setStudioDialogOpen] = useState(false);
   const [includeStudioContext, setIncludeStudioContext] = useState(true);
@@ -300,6 +301,20 @@ export function ChatApp({
 
         if (res.status === 403) {
           const data = await res.json();
+          if (data.error === "not-approved") {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMsg.id
+                  ? { ...m, content: `⏳ ${data.message}` }
+                  : m,
+              ),
+            );
+            toast.error("Pending beta approval", {
+              description: "An admin needs to approve your account first.",
+            });
+            refreshUsage();
+            return;
+          }
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantMsg.id
@@ -307,8 +322,8 @@ export function ChatApp({
                 : m,
             ),
           );
-          toast.info("Sign up to unlock this model", {
-            action: { label: "Sign up", onClick: onOpenAuth },
+          toast.info("Sign in to unlock this model", {
+            action: { label: "Sign in", onClick: onOpenAuth },
           });
           return;
         }
@@ -553,6 +568,19 @@ export function ChatApp({
             </Badge>
           </div>
         </header>
+
+        {/* Beta pending-approval banner */}
+        {isAuthenticated && !isApproved && (
+          <div className="border-b border-amber-500/20 bg-amber-500/10 px-4 py-2.5">
+            <div className="mx-auto flex max-w-3xl items-center gap-2 text-sm">
+              <Clock className="size-4 shrink-0 text-amber-400" />
+              <span className="flex-1 text-amber-200">
+                <b>Beta:</b> Your account is pending admin approval. You can browse
+                but can't chat yet.
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Limit banner */}
         <AnimatePresence>

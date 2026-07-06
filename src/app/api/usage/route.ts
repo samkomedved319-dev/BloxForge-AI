@@ -48,6 +48,8 @@ export async function GET(_req: NextRequest) {
       name: user.name,
       plan: user.plan,
       role: user.role,
+      approved: user.approved,
+      robloxUsername: user.robloxUsername,
     },
     usage: {
       used: usageCount,
@@ -66,5 +68,6 @@ export async function GET(_req: NextRequest) {
         : plan.allowedPersonalities,
     },
     isAdmin,
+    isApproved: isAdmin || user.approved,
   });
 }

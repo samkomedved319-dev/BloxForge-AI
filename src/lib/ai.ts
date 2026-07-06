@@ -117,10 +117,6 @@ async function* streamOpenAICompatible(
   key: ResolvedKey,
 ): AsyncGenerator<{ delta: string; meta?: EngineMeta; done?: boolean }> {
   const model = key.modelOverride || opts.model;
-  yield {
-    delta: "",
-    meta: { provider: key.provider, model, label: `${key.label} · ${model}` },
-  };
 
   const body = {
     model,
@@ -131,6 +127,8 @@ async function* streamOpenAICompatible(
     stream: true,
   };
 
+  // Do the fetch BEFORE yielding the meta chunk — so if it fails, the caller
+  // can cleanly fall back to another engine without having already sent meta.
   const res = await fetch(`${key.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
     method: "POST",
     headers: {
@@ -145,6 +143,12 @@ async function* streamOpenAICompatible(
     const text = await res.text().catch(() => "");
     throw new Error(`${key.label} API ${res.status}: ${text.slice(0, 300)}`);
   }
+
+  // Now yield meta — the fetch succeeded, we're committed to this engine.
+  yield {
+    delta: "",
+    meta: { provider: key.provider, model, label: `${key.label} · ${model}` },
+  };
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();

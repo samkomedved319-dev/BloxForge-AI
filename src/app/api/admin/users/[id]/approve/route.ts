@@ -14,28 +14,24 @@ async function requireAdmin() {
   return user;
 }
 
-export async function GET() {
+/** Approve or reject a beta user. PATCH { approved: boolean } */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const admin = await requireAdmin();
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
-  const users = await db.user.findMany({
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      plan: true,
-      role: true,
-      approved: true,
-      robloxUserId: true,
-      robloxUsername: true,
-      extraCredits: true,
-      usageCount: true,
-      usageDate: true,
-      createdAt: true,
-      _count: { select: { conversations: true } },
-    },
+  const { id } = await params;
+  const body = await req.json().catch(() => ({}));
+  if (typeof body.approved !== "boolean") {
+    return NextResponse.json({ error: "approved boolean required" }, { status: 400 });
+  }
+  const updated = await db.user.update({
+    where: { id },
+    data: { approved: body.approved },
+    select: { id: true, email: true, name: true, approved: true, role: true },
   });
-  return NextResponse.json({ users });
+  return NextResponse.json({ ok: true, user: updated });
 }

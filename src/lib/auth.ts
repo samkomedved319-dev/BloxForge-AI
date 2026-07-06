@@ -18,14 +18,57 @@ export function isAdminEmail(email: string | null | undefined): boolean {
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60,
   },
   pages: {
     signIn: "/",
   },
   providers: [
+    // Roblox verification — the primary auth for all users
     CredentialsProvider({
-      name: "BloxForge",
+      id: "roblox",
+      name: "Roblox",
+      credentials: {
+        token: { label: "Token", type: "text" },
+      },
+      async authorize(credentials) {
+        const token = credentials?.token;
+        if (!token) return null;
+        try {
+          const decoded = JSON.parse(
+            Buffer.from(token, "base64").toString("utf-8"),
+          ) as { userId?: string; robloxUserId?: string; ts?: number };
+          if (!decoded.userId) return null;
+          if (!decoded.ts || Date.now() - decoded.ts > 10 * 60 * 1000) return null;
+
+          const user = await db.user.findUnique({
+            where: { id: decoded.userId },
+          });
+          if (!user) return null;
+          if (
+            user.robloxUserId &&
+            decoded.robloxUserId &&
+            user.robloxUserId !== decoded.robloxUserId
+          ) {
+            return null;
+          }
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name ?? undefined,
+            plan: user.plan,
+            role: user.role,
+            approved: user.approved,
+          } as any;
+        } catch {
+          return null;
+        }
+      },
+    }),
+    // Admin-only password provider — regular users must use Roblox
+    CredentialsProvider({
+      id: "admin-credentials",
+      name: "Admin",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
@@ -34,19 +77,18 @@ export const authOptions: NextAuthOptions = {
         const email = (credentials?.email ?? "").toLowerCase().trim();
         const password = credentials?.password ?? "";
         if (!email || !password) return null;
-
         const user = await db.user.findUnique({ where: { email } });
-        if (!user) return null;
-
+        if (!user || user.role !== "admin") return null;
+        if (!user.passwordHash) return null;
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
-
         return {
           id: user.id,
           email: user.email,
           name: user.name ?? undefined,
           plan: user.plan,
           role: user.role,
+          approved: true,
         } as any;
       },
     }),
@@ -57,6 +99,7 @@ export const authOptions: NextAuthOptions = {
         token.id = (user as any).id;
         token.plan = (user as any).plan ?? "free";
         token.role = (user as any).role ?? "user";
+        token.approved = (user as any).approved ?? false;
       }
       return token;
     },
@@ -65,6 +108,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id;
         (session.user as any).plan = token.plan ?? "free";
         (session.user as any).role = token.role ?? "user";
+        (session.user as any).approved = token.approved ?? false;
       }
       return session;
     },

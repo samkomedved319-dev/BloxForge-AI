@@ -20,6 +20,10 @@ import {
   Sparkles,
   RefreshCw,
   Info,
+  Check,
+  Clock,
+  X,
+  Gamepad2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -90,6 +94,8 @@ type AdminUser = {
   usageCount: number;
   usageDate: string | null;
   createdAt: string;
+  approved: boolean;
+  robloxUsername: string | null;
   _count: { conversations: number };
 };
 
@@ -516,6 +522,7 @@ function UsersTab() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [showPendingOnly, setShowPendingOnly] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -534,15 +541,25 @@ function UsersTab() {
     load();
   }, [load]);
 
+  const pendingCount = useMemo(
+    () => users.filter((u) => u.role !== "admin" && !u.approved).length,
+    [users],
+  );
+
   const filtered = useMemo(() => {
+    let result = users;
+    if (showPendingOnly) {
+      result = result.filter((u) => u.role !== "admin" && !u.approved);
+    }
     const q = query.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(
+    if (!q) return result;
+    return result.filter(
       (u) =>
         u.email.toLowerCase().includes(q) ||
-        (u.name?.toLowerCase().includes(q) ?? false),
+        (u.name?.toLowerCase().includes(q) ?? false) ||
+        (u.robloxUsername?.toLowerCase().includes(q) ?? false),
     );
-  }, [users, query]);
+  }, [users, query, showPendingOnly]);
 
   async function patchUser(
     id: string,
@@ -583,6 +600,29 @@ function UsersTab() {
     }
   }
 
+  async function approveUser(id: string, approved: boolean) {
+    setBusyId(id);
+    try {
+      const res = await fetch(`/api/admin/users/${id}/approve`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approved }),
+      });
+      await jsonOrThrow(res);
+      toast.success(
+        approved
+          ? "User approved — beta access granted"
+          : "Beta access revoked",
+      );
+      await load();
+    } catch (e) {
+      toast.error((e as Error).message || "Update failed");
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -590,6 +630,41 @@ function UsersTab() {
       transition={{ duration: 0.4 }}
       className="space-y-4"
     >
+      {/* Beta approval summary */}
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 sm:p-4">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-400">
+          <Clock className="size-4.5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm">
+            <span className="font-display text-lg font-bold text-amber-300">
+              {pendingCount}
+            </span>{" "}
+            <span className="font-medium">pending approval</span>
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {pendingCount === 0
+              ? "All caught up — no users waiting for beta access."
+              : "Roblox-auth users need admin approval before they can use BloxForge AI."}
+          </p>
+        </div>
+        <Button
+          variant={showPendingOnly ? "default" : "outline"}
+          size="sm"
+          className={cn(
+            "h-8 shrink-0 gap-1.5",
+            showPendingOnly
+              ? "bg-amber-500 text-white hover:bg-amber-500/90"
+              : "border-amber-500/30 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200",
+          )}
+          onClick={() => setShowPendingOnly((v) => !v)}
+          disabled={pendingCount === 0 && !showPendingOnly}
+        >
+          <Clock className="size-3.5" />
+          {showPendingOnly ? "Show all users" : "Show only pending"}
+        </Button>
+      </div>
+
       <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -621,7 +696,9 @@ function UsersTab() {
           <div className="p-10 text-center text-sm text-muted-foreground">
             {users.length === 0
               ? "No users yet."
-              : "No users match your search."}
+              : showPendingOnly
+                ? "No pending users — all caught up!"
+                : "No users match your search."}
           </div>
         ) : (
           <Table>
@@ -629,7 +706,7 @@ function UsersTab() {
               <TableRow className="border-border/60 hover:bg-transparent">
                 <TableHead className="pl-4">User</TableHead>
                 <TableHead>Plan</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Credits</TableHead>
                 <TableHead>Conversations</TableHead>
                 <TableHead className="pr-4 text-right">Actions</TableHead>
@@ -651,6 +728,12 @@ function UsersTab() {
                           {u.email}
                         </span>
                       )}
+                      {u.robloxUsername && (
+                        <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400/90">
+                          <Gamepad2 className="size-3" />
+                          {u.robloxUsername}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -668,14 +751,23 @@ function UsersTab() {
                         className="h-6 gap-1 border-emerald-500/30 bg-emerald-500/15 px-2.5 text-[11px] text-emerald-300"
                       >
                         <Crown className="size-3" />
-                        admin
+                        Admin
+                      </Badge>
+                    ) : u.approved ? (
+                      <Badge
+                        variant="outline"
+                        className="h-6 gap-1 border-emerald-500/30 bg-emerald-500/15 px-2.5 text-[11px] text-emerald-300"
+                      >
+                        <Check className="size-3" />
+                        Approved
                       </Badge>
                     ) : (
                       <Badge
                         variant="outline"
-                        className="h-6 px-2.5 text-[11px] border-border/60 bg-muted text-muted-foreground"
+                        className="h-6 gap-1 border-amber-500/30 bg-amber-500/15 px-2.5 text-[11px] text-amber-300"
                       >
-                        user
+                        <Clock className="size-3" />
+                        Pending
                       </Badge>
                     )}
                   </TableCell>
@@ -696,6 +788,31 @@ function UsersTab() {
                   </TableCell>
                   <TableCell className="pr-4">
                     <div className="flex items-center justify-end gap-1.5">
+                      {u.role !== "admin" &&
+                        (u.approved ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1.5 px-2.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            disabled={busyId === u.id}
+                            onClick={() => approveUser(u.id, false)}
+                            title="Revoke beta access"
+                          >
+                            <X className="size-3.5" />
+                            Revoke
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="h-8 gap-1.5 bg-emerald-500 px-2.5 text-white hover:bg-emerald-500/90"
+                            disabled={busyId === u.id}
+                            onClick={() => approveUser(u.id, true)}
+                            title="Approve beta access"
+                          >
+                            <Check className="size-3.5" />
+                            Approve
+                          </Button>
+                        ))}
                       <Select
                         value={u.plan}
                         disabled={busyId === u.id}
@@ -800,7 +917,8 @@ function UsersTab() {
         )}
       </Card>
       <p className="px-1 text-xs text-muted-foreground">
-        Showing {filtered.length} of {users.length} users.
+        Showing {filtered.length} of {users.length} users
+        {showPendingOnly ? " (pending only)" : ""}.
       </p>
     </motion.div>
   );
