@@ -6,8 +6,8 @@ import {
   Check,
   Copy,
   Terminal,
-  Box,
-  Cpu,
+  Plug,
+  RefreshCw,
   FileCode2,
   ShieldCheck,
   ArrowLeft,
@@ -26,24 +26,24 @@ const INSTALL_COMMANDS = {
 
 const FEATURES = [
   {
-    icon: Box,
-    title: "Studio toolbar widget",
-    desc: "A dockable chat panel right next to your Explorer.",
+    icon: Plug,
+    title: "Pure connector",
+    desc: "No chat UI inside Studio. The AI chat stays in your browser — the plugin just bridges the two.",
   },
   {
-    icon: Cpu,
-    title: "All 5 NVIDIA models",
-    desc: "Switch between Qwen Coder, DeepSeek R1, Nemotron & Llama.",
+    icon: RefreshCw,
+    title: "Live script sync",
+    desc: "Select a script in Studio and the web app sees it instantly as context. Toggle sharing with one click.",
   },
   {
     icon: FileCode2,
     title: "One-click insert",
-    desc: "Generated Luau drops straight into a new Script in ServerScriptService.",
+    desc: "Click “Insert in Studio” on any generated code block — a new Script appears in ServerScriptService.",
   },
   {
     icon: ShieldCheck,
-    title: "Context-aware",
-    desc: "Select a script and the AI sees it — fix in place, no copy-paste.",
+    title: "Pair in seconds",
+    desc: "Get a 6-character pairing code from the web app, paste it into the plugin, click Connect. Done.",
   },
 ];
 
@@ -94,18 +94,19 @@ export function PluginPage({
                 variant="outline"
                 className="mb-4 gap-2 border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
               >
-                <Box className="size-3" /> v1.0.0 · Free & Open
+                <Plug className="size-3" /> v1.0.0 · Free & Open
               </Badge>
               <h1 className="font-display text-4xl font-extrabold tracking-tight text-balance sm:text-5xl">
-                BloxForge AI for{" "}
+                BloxForge Connector for{" "}
                 <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
                   Roblox Studio
                 </span>
               </h1>
               <p className="mt-4 text-muted-foreground">
-                A single Luau plugin file that brings NVIDIA-powered AI into
-                your Studio workflow. Chat, generate, and insert Luau with one
-                click — no leaving Studio.
+                A lightweight bridge that links your Studio session to the
+                BloxForge web app. The AI chat stays in your browser — the
+                plugin syncs your selected script and inserts generated Luau
+                with one click.
               </p>
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -149,33 +150,39 @@ export function PluginPage({
                 <div className="flex items-center gap-2 border-b border-border/60 bg-[oklch(0.17_0.012_250)] px-3 py-2">
                   <Logo size={22} />
                   <span className="ml-auto font-mono text-[10px] text-muted-foreground">
-                    Studio Plugin
+                    Studio Connector
                   </span>
                 </div>
                 <pre className="overflow-x-auto p-4 font-mono text-[11px] leading-relaxed text-muted-foreground">
                   <code>
                     <span className="text-slate-500">{`--[[`}</span>
                     {"\n"}
-                    <span className="text-slate-500">{`  BloxForge AI — Studio Plugin`}</span>
+                    <span className="text-slate-500">{`  BloxForge AI — Studio Connector`}</span>
                     {"\n"}
-                    <span className="text-slate-500">{`  NVIDIA-powered Luau companion`}</span>
+                    <span className="text-slate-500">{`  A pure bridge to the web app. No chat UI.`}</span>
                     {"\n"}
                     <span className="text-slate-500">{`--]]`}</span>
                     {"\n\n"}
-                    <span className="text-violet-400">local</span> Plugin ={" "}
-                    <span className="text-sky-300">plugin</span>
-                    {"\n"}
                     <span className="text-violet-400">local</span> Http ={" "}
                     <span className="text-sky-300">game</span>:GetService(
                     <span className="text-emerald-300">"HttpService"</span>)
+                    {"\n"}
+                    <span className="text-violet-400">local</span> Selection ={" "}
+                    <span className="text-sky-300">game</span>:GetService(
+                    <span className="text-emerald-300">"Selection"</span>)
                     {"\n\n"}
-                    <span className="text-violet-400">local</span> gui ={" "}
-                    Plugin:CreateDockWidgetPluginGui(
-                    <span className="text-emerald-300">"BloxForgeAI"</span>, info)
+                    <span className="text-slate-500">{`-- heartbeat: report selected script +`}</span>
                     {"\n"}
-                    <span className="text-slate-500">{`-- ... chat UI, model picker,`}</span>
+                    <span className="text-slate-500">{`-- receive "insert this code" commands ✨`}</span>
                     {"\n"}
-                    <span className="text-slate-500">{`-- ... one-click code insert ✨`}</span>
+                    <span className="text-violet-400">while</span> connected{" "}
+                    <span className="text-violet-400">do</span>
+                    {"\n"}
+                    {"  "}Http:PostAsync(url, ctx)
+                    {"\n"}
+                    {"  "}task.wait(3)
+                    {"\n"}
+                    <span className="text-violet-400">end</span>
                   </code>
                 </pre>
               </Card>
@@ -217,7 +224,7 @@ export function PluginPage({
           <div className="mt-10 space-y-5">
             <InstallStep
               n={1}
-              title="Download the plugin"
+              title="Download the connector"
               desc="Save BloxForgeAI.lua from the button above."
             />
             <InstallStep
@@ -260,8 +267,8 @@ export function PluginPage({
             </InstallStep>
             <InstallStep
               n={3}
-              title="Restart Studio & connect"
-              desc="Open the BloxForge toolbar button, click ⚙, and paste your BloxForge server URL. Enable HttpService if prompted."
+              title="Pair with the web app"
+              desc="Open the BloxForge toolbar button in Studio. In the web app, click “Connect Studio” to get a pairing code, then paste it into the plugin and click Connect."
             />
           </div>
 

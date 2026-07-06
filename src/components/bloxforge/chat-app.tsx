@@ -20,6 +20,7 @@ import {
   Check,
   Lock,
   Zap,
+  FileCode2,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { Markdown } from "./markdown";
@@ -29,6 +30,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { PersonalityPicker } from "./personality-picker";
 import { useAuth } from "./use-auth";
+import {
+  useStudioConnection,
+  StudioConnectDialog,
+  StudioBadge,
+  ConnectStudioButton,
+} from "./studio-connector";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -90,6 +97,9 @@ export function ChatApp({
   onNavigatePricing: () => void;
 }) {
   const { isAuthenticated, user, usage, plan, refreshUsage } = useAuth();
+  const studio = useStudioConnection();
+  const [studioDialogOpen, setStudioDialogOpen] = useState(false);
+  const [includeStudioContext, setIncludeStudioContext] = useState(true);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -105,6 +115,19 @@ export function ChatApp({
   const abortRef = useRef<AbortController | null>(null);
 
   const allowedPersonalities = plan?.allowedPersonalities || ["swift", "balanced"];
+
+  // Insert generated code into Studio via the connector
+  const handleInsertCode = useCallback(
+    async (code: string, language: string) => {
+      const result = await studio.insertCode(code, "BloxForge Script", language);
+      if (result.ok) {
+        toast.success("Sent to Roblox Studio", {
+          description: "A new Script will appear in ServerScriptService shortly.",
+        });
+      }
+    },
+    [studio],
+  );
 
   // Load conversations
   const refreshConversations = useCallback(() => {
@@ -226,6 +249,10 @@ export function ChatApp({
             mode,
             history,
             conversationId: activeId,
+            context:
+              studio.isConnected && includeStudioContext && studio.context
+                ? studio.context.source
+                : undefined,
           }),
           signal: controller.signal,
         });
@@ -333,6 +360,8 @@ export function ChatApp({
       usage,
       onNavigatePricing,
       onOpenAuth,
+      studio,
+      includeStudioContext,
     ],
   );
 
@@ -478,13 +507,23 @@ export function ChatApp({
               allowedPersonalities={allowedPersonalities}
             />
           </div>
-          <Badge
-            variant="outline"
-            className="gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-          >
-            <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
-            Live
-          </Badge>
+          <div className="flex items-center gap-2">
+            {studio.isConnected ? (
+              <StudioBadge
+                context={studio.context}
+                onClick={() => setStudioDialogOpen(true)}
+              />
+            ) : (
+              <ConnectStudioButton onClick={() => setStudioDialogOpen(true)} />
+            )}
+            <Badge
+              variant="outline"
+              className="gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+            >
+              <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+              Live
+            </Badge>
+          </div>
         </header>
 
         {/* Limit banner */}
@@ -534,6 +573,8 @@ export function ChatApp({
                   key={m.id}
                   message={m}
                   streaming={streaming && i === messages.length - 1}
+                  studioConnected={studio.isConnected}
+                  onInsertCode={handleInsertCode}
                 />
               ))}
             </div>
@@ -543,6 +584,41 @@ export function ChatApp({
         {/* Composer */}
         <div className="border-t border-border bg-background/80 backdrop-blur">
           <div className="mx-auto max-w-3xl px-4 py-3">
+            {/* Studio context chip */}
+            {studio.isConnected && studio.context && (
+              <div className="mb-2 flex items-center gap-2">
+                <button
+                  onClick={() => setIncludeStudioContext((v) => !v)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition",
+                    includeStudioContext
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground",
+                  )}
+                  title={
+                    includeStudioContext
+                      ? "Including this script as context — click to exclude"
+                      : "Not including this script — click to include"
+                  }
+                >
+                  <FileCode2 className="size-3.5" />
+                  <span className="max-w-[200px] truncate font-medium">
+                    {studio.context.scriptName}
+                  </span>
+                  <span className="font-mono text-[10px] opacity-70">
+                    {studio.context.lineCount}L
+                  </span>
+                  {includeStudioContext ? (
+                    <Check className="size-3 text-emerald-400" />
+                  ) : (
+                    <Plus className="size-3" />
+                  )}
+                </button>
+                <span className="text-[10px] text-muted-foreground">
+                  {includeStudioContext ? "Shared as context" : "Click to share"}
+                </span>
+              </div>
+            )}
             <div className="relative rounded-2xl border border-border bg-card focus-within:border-emerald-500/50 focus-within:ring-2 focus-within:ring-emerald-500/20">
               <Textarea
                 value={input}
@@ -586,6 +662,16 @@ export function ChatApp({
           </div>
         </div>
       </div>
+
+      <StudioConnectDialog
+        open={studioDialogOpen}
+        onClose={() => setStudioDialogOpen(false)}
+        pairingCode={studio.pairingCode}
+        state={studio.state}
+        connecting={studio.connecting}
+        onPair={studio.pair}
+        onDisconnect={studio.disconnect}
+      />
     </div>
   );
 }
@@ -593,9 +679,13 @@ export function ChatApp({
 function MessageBubble({
   message,
   streaming,
+  studioConnected,
+  onInsertCode,
 }: {
   message: ChatMessage;
   streaming: boolean;
+  studioConnected?: boolean;
+  onInsertCode?: (code: string, language: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
@@ -659,7 +749,11 @@ function MessageBubble({
             {message.content}
           </div>
         ) : message.content ? (
-          <Markdown content={message.content} />
+          <Markdown
+            content={message.content}
+            studioConnected={studioConnected}
+            onInsertCode={onInsertCode}
+          />
         ) : (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Sparkles className="size-3.5 animate-pulse text-emerald-400" />

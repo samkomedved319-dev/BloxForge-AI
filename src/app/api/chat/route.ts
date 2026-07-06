@@ -25,6 +25,7 @@ interface ChatRequestBody {
   history?: ChatMessage[];
   conversationId?: string;
   title?: string;
+  context?: string; // optional Studio script source sent by the web app
 }
 
 function todayKey(): string {
@@ -115,10 +116,17 @@ export async function POST(req: NextRequest) {
       )
     : [];
 
+  // Optional Studio context: the currently-selected script in Roblox Studio,
+  // forwarded by the web app when the connector is active.
+  const studioContext = (body.context ?? "").trim();
+  const contextBlock = studioContext
+    ? `\n\n[Studio context — currently selected script]\n\`\`\`luau\n${studioContext.slice(0, 8000)}\n\`\`\``
+    : "";
+
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
     ...prior.slice(-20),
-    { role: "user", content: userMessage },
+    { role: "user", content: userMessage + contextBlock },
   ];
 
   // ── Persist conversation + user message ──────────────────────────────

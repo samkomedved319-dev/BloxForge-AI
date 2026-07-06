@@ -82,3 +82,25 @@ Stage Summary:
 - Lint clean. Dev server stable on :3000.
 - Agent Browser verified: landing (with Sign in + Pricing nav), pricing page (3 tiers, annual toggle, FAQ), app with MODEL/MODE dropdowns showing all 5 personalities (Pro models locked for free), auth signup flow (created account, avatar appeared, usage tracking "1/50"), AI streamed complete Luau cooldown ModuleScript as signed-in user, conversation saved to sidebar, account menu with usage bar + upgrade. Zero console errors.
 - Release-ready: authentication, pricing, personality/mode system, animations, usage limits, all wired.
+
+---
+Task ID: 9-13
+Agent: Orchestrator
+Task: Convert the Roblox plugin into a pure connector (no chat) — web app stays the AI chat, plugin just syncs Studio context + inserts code
+
+Work Log:
+- Built in-memory studio-store (src/lib/studio-store.ts): pairing codes, heartbeat, context, insert queue, ack results, stale-session cleanup. Singleton via globalThis.
+- Built 6 API routes: /api/studio/pair, /heartbeat, /state, /insert, /ack, /disconnect.
+- Updated /api/chat to accept optional `context` (Studio script source) appended to the user message.
+- Rewrote public/plugin/BloxForgeAI.lua as a pure connector (~19KB): minimal dockable UI (server URL + pairing code inputs → connect/disconnect), heartbeat loop every 3s reporting selected script, Selection.SelectionChanged → immediate context POST, drains insert commands → creates Script in ServerScriptService + acks. NO chat UI.
+- Built studio-connector.tsx: useStudioConnection hook (pair/poll/insert/disconnect), StudioConnectDialog (pairing code display + 3-step instructions + connected state with script info), StudioBadge (header green pulse), ConnectStudioButton.
+- Updated markdown.tsx: code blocks now show "Insert in Studio" button (emerald) alongside Copy when studioConnected + language is luau/lua. Optimistic "Sending…→Sent" states.
+- Updated chat-app.tsx: integrated useStudioConnection, added Connect Studio button/badge to header, context chip near composer (toggleable include), wired handleInsertCode → studio.insertCode, passed studioConnected + onInsertCode to MessageBubble → Markdown.
+- Updated plugin-page.tsx: renamed to "BloxForge Connector", new features (Pure connector, Live script sync, One-click insert, Pair in seconds), updated code preview + install steps, fixed Sync→RefreshCw icon.
+- Fixed insert route field-name collision (pairing code vs Luau code both named `code` → renamed to pairingCode).
+
+Stage Summary:
+- Lint clean. Dev server stable.
+- Agent Browser verified end-to-end: web app generates pairing code → simulated plugin heartbeats with that code → web app detects "Studio connected" + shows script name → dialog closes → header shows green Studio badge → context chip appears near composer → AI generates Luau code block → "Insert in Studio" button appears on code block (alongside Copy) → clicking it sends insert command through the API pipeline.
+- curl verified the full connector API flow: pair → heartbeat(context) → state(connected+script) → insert(commandId) → heartbeat(drains command with correct title/language/code) → ack.
+- Plugin download serves the new 19KB connector file. 77 connector refs, ~0 chat refs in the plugin code.

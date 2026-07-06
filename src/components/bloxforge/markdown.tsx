@@ -2,17 +2,32 @@
 
 import ReactMarkdown from "react-markdown";
 import { useState, type ReactNode } from "react";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Plug, Loader2, FileCode2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+interface MarkdownProps {
+  content: string;
+  className?: string;
+  /** When Studio is connected, code blocks get an "Insert in Studio" button. */
+  studioConnected?: boolean;
+  onInsertCode?: (code: string, language: string) => void;
+}
 
 function CodeBlock({
   language,
   children,
+  studioConnected,
+  onInsertCode,
 }: {
   language: string;
   children: ReactNode;
+  studioConnected?: boolean;
+  onInsertCode?: (code: string, language: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [inserting, setInserting] = useState(false);
+  const [inserted, setInserted] = useState(false);
   const code = typeof children === "string" ? children : String(children ?? "");
 
   const copy = async () => {
@@ -25,26 +40,69 @@ function CodeBlock({
     }
   };
 
+  const insert = async () => {
+    if (!onInsertCode) return;
+    setInserting(true);
+    try {
+      onInsertCode(code, language);
+      // optimistic — the parent shows a toast with the real result
+      setTimeout(() => {
+        setInserting(false);
+        setInserted(true);
+        setTimeout(() => setInserted(false), 2200);
+      }, 600);
+    } catch {
+      setInserting(false);
+    }
+  };
+
+  const isInsertable =
+    studioConnected &&
+    (language === "luau" || language === "lua" || language === "" || language === "text");
+
   return (
     <div className="group relative my-3 overflow-hidden rounded-xl border border-border bg-[oklch(0.14_0.012_250)]">
       <div className="flex items-center justify-between border-b border-border/60 bg-[oklch(0.18_0.013_250)] px-3 py-1.5">
         <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400/90">
           {language || "code"}
         </span>
-        <button
-          onClick={copy}
-          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
-        >
-          {copied ? (
-            <>
-              <Check className="size-3 text-emerald-400" /> Copied
-            </>
-          ) : (
-            <>
-              <Copy className="size-3" /> Copy
-            </>
+        <div className="flex items-center gap-1">
+          {isInsertable && (
+            <button
+              onClick={insert}
+              disabled={inserting}
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-emerald-400 transition hover:bg-emerald-500/15"
+            >
+              {inserting ? (
+                <>
+                  <Loader2 className="size-3 animate-spin" /> Sending…
+                </>
+              ) : inserted ? (
+                <>
+                  <Check className="size-3" /> Sent
+                </>
+              ) : (
+                <>
+                  <Plug className="size-3" /> Insert in Studio
+                </>
+              )}
+            </button>
           )}
-        </button>
+          <button
+            onClick={copy}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
+          >
+            {copied ? (
+              <>
+                <Check className="size-3 text-emerald-400" /> Copied
+              </>
+            ) : (
+              <>
+                <Copy className="size-3" /> Copy
+              </>
+            )}
+          </button>
+        </div>
       </div>
       <pre className="overflow-x-auto p-4 text-[13px] leading-relaxed">
         <code className="font-mono text-foreground/90">{children}</code>
@@ -53,7 +111,12 @@ function CodeBlock({
   );
 }
 
-export function Markdown({ content, className }: { content: string; className?: string }) {
+export function Markdown({
+  content,
+  className,
+  studioConnected,
+  onInsertCode,
+}: MarkdownProps) {
   return (
     <div
       className={cn(
@@ -122,7 +185,11 @@ export function Markdown({ content, className }: { content: string; className?: 
               );
             }
             return (
-              <CodeBlock language={match?.[1] ?? ""}>
+              <CodeBlock
+                language={match?.[1] ?? ""}
+                studioConnected={studioConnected}
+                onInsertCode={onInsertCode}
+              >
                 {String(children).replace(/\n$/, "")}
               </CodeBlock>
             );

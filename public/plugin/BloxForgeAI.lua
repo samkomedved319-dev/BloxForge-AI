@@ -1,42 +1,36 @@
 --[[
-	BloxForge AI — Roblox Studio Plugin
-	------------------------------------
-	An NVIDIA-powered AI coding companion for Roblox/Luau development.
-	Chat with BloxForge AI right inside Studio, then insert generated
-	Luau code into your scripts with one click.
+	BloxForge AI — Roblox Studio Connector
+	---------------------------------------
+	A lightweight bridge between Roblox Studio and the BloxForge AI web app.
 
-	Install:
-	  1. Save this file as BloxForgeAI.lua
-	  2. Move it into your Roblox Studio Plugins folder:
-	       Windows: %localappdata%\Roblox\Plugins
-	       macOS:   ~/Documents/Roblox/Plugins
-	  3. Restart Studio. Find "BloxForge AI" in the Plugins tab.
+	The AI chat lives in your browser. This plugin does two things:
+	  1. Reports the script you currently have selected in Studio to the web app
+	     (so BloxForge can see your code as context).
+	  2. Receives "insert this code" commands from the web app and creates a new
+	     Script in ServerScriptService with the generated Luau.
 
-	Configure:
-	  - Click the BloxForge button, then the gear icon, to set your
-	    BloxForge server URL (the web app that talks to NVIDIA NIM).
-	  - Enable HTTP requests in Game Settings > Security for in-game calls.
+	There is NO chat UI inside Studio — the plugin is just a connector.
 
-	Requirements:
-	  - HttpService must be enabled (Studio only; plugin always allowed).
+	Setup:
+	  1. Save this file as BloxForgeAI.lua in your Studio Plugins folder
+	     (Windows: %localappdata%\Roblox\Plugins · macOS: ~/Documents/Roblox/Plugins).
+	  2. Restart Roblox Studio.
+	  3. Open the BloxForge web app, click "Connect Studio", and copy the
+	     pairing code.
+	  4. Open the BloxForge toolbar button in Studio, paste your server URL +
+	     pairing code, and click Connect.
+
+	Requirements: HttpService (enabled by default for plugins).
 --]]
 
 --========================================================================
 -- Configuration
 --========================================================================
 
-local PLUGIN_NAME = "BloxForge AI"
-local PLUGIN_ID = "BloxForgeAI"
-local DEFAULT_API_URL = "https://YOUR-BLOXFORGE-APP.example.com/api/plugin/ask"
-local DEFAULT_MODEL = "qwen/qwen2.5-coder-32b-instruct"
-
-local MODELS = {
-	{ id = "qwen/qwen2.5-coder-32b-instruct", label = "Qwen2.5 Coder 32B" },
-	{ id = "deepseek-ai/deepseek-r1", label = "DeepSeek R1" },
-	{ id = "nvidia/llama-3.1-nemotron-70b-instruct", label = "Nemotron 70B" },
-	{ id = "meta/llama-3.3-70b-instruct", label = "Llama 3.3 70B" },
-	{ id = "meta/llama-3.1-405b-instruct", label = "Llama 3.1 405B" },
-}
+local PLUGIN_NAME = "BloxForge Connector"
+local PLUGIN_ID = "BloxForgeConnector"
+local DEFAULT_API_URL = "https://YOUR-BLOXFORGE-APP.example.com/api/studio"
+local HEARTBEAT_INTERVAL = 3 -- seconds between heartbeats
 
 --========================================================================
 -- Services
@@ -45,83 +39,83 @@ local MODELS = {
 local Plugin = plugin
 local HttpService = game:GetService("HttpService")
 local Selection = game:GetService("Selection")
-local StudioUIService = game:GetService("StudioService")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 --========================================================================
 -- State
 --========================================================================
 
 local apiUrl = Plugin:GetSetting(PLUGIN_ID .. "_ApiUrl") or DEFAULT_API_URL
-local currentModel = Plugin:GetSetting(PLUGIN_ID .. "_Model") or DEFAULT_MODEL
-local history = {} -- { {role = "user"|"assistant", content = "..."} }
+local pairingCode = ""
+local connected = false
+local heartbeatRunning = false
+local lastScriptRef = nil
+local lastContextHash = ""
 
 --========================================================================
 -- Helpers
 --========================================================================
 
 local function warnMsg(msg)
-	warn("[BloxForge] " .. tostring(msg))
+	warn("[BloxForge Connector] " .. tostring(msg))
 end
 
-local function jsonEscape(s)
-	s = tostring(s)
-	s = s:gsub("\\", "\\\\")
-	s = s:gsub('"', '\\"')
-	s = s:gsub("\n", "\\n")
-	s = s:gsub("\r", "\\r")
-	s = s:gsub("\t", "\\t")
-	return s
+local function httpPost(url, payload, timeout)
+	timeout = timeout or 15
+	local body = HttpService:JSONEncode(payload)
+	local ok, response = pcall(function()
+		return HttpService:PostAsync(url, body, Enum.HttpContentType.ApplicationJson, false, timeout)
+	end)
+	return ok, response
 end
 
-local function buildJson(payload)
-	-- Minimal JSON encoder to avoid relying on HttpService:JSONEncode quirks.
-	local parts = {}
-	if type(payload) == "table" then
-		-- Use HttpService JSONEncode; it's reliable in Studio.
-		local ok, encoded = pcall(function()
-			return HttpService:JSONEncode(payload)
-		end)
-		if ok then
-			return encoded
-		end
-	end
-	-- Fallback manual encode for { message, model, history }
-	local msg = jsonEscape(payload.message or "")
-	local model = jsonEscape(payload.model or currentModel)
-	local histParts = {}
-	for _, h in ipairs(payload.history or {}) do
-		table.insert(histParts, string.format('{"role":"%s","content":"%s"}',
-			h.role == "assistant" and "assistant" or "user",
-			jsonEscape(h.content or "")))
-	end
-	return string.format(
-		'{"message":"%s","model":"%s","history":[%s]}',
-		msg, model, table.concat(histParts, ",")
-	)
+local function httpGet(url, timeout)
+	timeout = timeout or 15
+	local ok, response = pcall(function()
+		return HttpService:GetAsync(url, false, timeout)
+	end)
+	return ok, response
 end
 
-local function extractCodeBlocks(text)
-	-- Returns a list of { language, code } from fenced ```lang ... ``` blocks.
-	local blocks = {}
-	for lang, code in text:gmatch("```(%w*)%s*\n(.-)```") do
-		table.insert(blocks, { language = lang, code = code })
-	end
-	return blocks
-end
-
-local function getSelectedScriptContent()
+local function getSelectedScript()
 	local sel = Selection:Get()
 	for _, inst in ipairs(sel) do
 		if inst:IsA("Script") or inst:IsA("LocalScript") or inst:IsA("ModuleScript") then
-			local src = inst.Source
-			if src and #src > 0 then
-				return inst, src
-			end
+			return inst
 		end
 	end
-	return nil, nil
+	return nil
+end
+
+local function buildContext()
+	local scriptInst = getSelectedScript()
+	if not scriptInst then
+		return nil
+	end
+	local src = scriptInst.Source or ""
+	if #src == 0 then
+		return nil
+	end
+	-- Build a readable path: Service.Folder.Script
+	local parts = {}
+	local node = scriptInst
+	while node and node ~= game do
+		table.insert(parts, 1, node.Name)
+		node = node.Parent
+	end
+	return {
+		scriptName = scriptInst.Name,
+		scriptPath = table.concat(parts, "."),
+		source = src:sub(1, 8000),
+		lineCount = select(2, src:gsub("\n", "\n")) + 1,
+		updatedAt = os.time(),
+	}
+end
+
+local function contextHash(ctx)
+	if not ctx then return "" end
+	return ctx.scriptPath .. ":" .. #ctx.source .. ":" .. (ctx.source:sub(-64) or "")
 end
 
 --========================================================================
@@ -132,8 +126,8 @@ local widgetInfo = DockWidgetPluginGuiInfo.new(
 	Enum.InitialDockState.Right,
 	true,   -- initialEnabled
 	false,  -- initialEnabledShouldOverrideRestore
-	320, 420, -- default size
-	280, 320  -- min size
+	320, 380,
+	260, 320
 )
 
 local gui = Plugin:CreateDockWidgetPluginGui(PLUGIN_ID, widgetInfo)
@@ -144,14 +138,12 @@ gui.Name = PLUGIN_ID
 local BG = Color3.fromRGB(17, 19, 26)
 local SURFACE = Color3.fromRGB(26, 29, 38)
 local SURFACE2 = Color3.fromRGB(35, 39, 51)
-local ACCENT = Color3.fromRGB(52, 211, 153) -- emerald
+local ACCENT = Color3.fromRGB(52, 211, 153)
 local ACCENT_DARK = Color3.fromRGB(16, 122, 95)
 local TEXT = Color3.fromRGB(233, 236, 245)
 local MUTED = Color3.fromRGB(150, 158, 178)
-local USER_BUBBLE = Color3.fromRGB(46, 51, 67)
-local AI_BUBBLE = Color3.fromRGB(29, 35, 48)
+local RED = Color3.fromRGB(248, 113, 113)
 
--- Root frame
 local root = Instance.new("Frame")
 root.Name = "Root"
 root.Size = UDim2.fromScale(1, 1)
@@ -166,490 +158,434 @@ header.BackgroundColor3 = SURFACE
 header.BorderSizePixel = 0
 header.Parent = root
 
-local logo = Instance.new("TextLabel")
-logo.Name = "Logo"
-logo.BackgroundTransparency = 1
-logo.Position = UDim2.fromOffset(12, 0)
-logo.Size = UDim2.new(0, 200, 1, 0)
-logo.Font = Enum.Font.GothamBold
-logo.Text = "🔥 BloxForge AI"
-logo.TextColor3 = TEXT
-logo.TextSize = 15
-logo.TextXAlignment = Enum.TextXAlignment.Left
-logo.Parent = header
+local title = Instance.new("TextLabel")
+title.BackgroundTransparency = 1
+title.Position = UDim2.fromOffset(14, 0)
+title.Size = UDim2.new(1, -60, 1, 0)
+title.Font = Enum.Font.GothamBold
+title.Text = "BloxForge Connector"
+title.TextColor3 = TEXT
+title.TextSize = 15
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
 
-local settingsBtn = Instance.new("TextButton")
-settingsBtn.Name = "Settings"
-settingsBtn.Size = UDim2.fromOffset(32, 32)
-settingsBtn.Position = UDim2.new(1, -40, 0.5, -16)
-settingsBtn.BackgroundColor3 = SURFACE2
-settingsBtn.Text = "⚙"
-settingsBtn.TextColor3 = TEXT
-settingsBtn.TextSize = 16
-settingsBtn.Font = Enum.Font.Gotham
-settingsBtn.AutoButtonColor = true
-settingsBtn.Parent = header
-local sbCorner = Instance.new("UICorner", settingsBtn)
-sbCorner.CornerRadius = UDim.new(0, 8)
+local statusDot = Instance.new("Frame")
+statusDot.Size = UDim2.fromOffset(8, 8)
+statusDot.Position = UDim2.new(1, -22, 0.5, -4)
+statusDot.BackgroundColor3 = MUTED
+statusDot.BorderSizePixel = 0
+statusDot.Parent = header
+local dotCorner = Instance.new("UICorner", statusDot)
+dotCorner.CornerRadius = UDim.new(1, 0)
 
--- Chat scroll frame
-local scroll = Instance.new("ScrollingFrame")
-scroll.Name = "Chat"
-scroll.Position = UDim2.new(0, 0, 0, 52)
-scroll.Size = UDim2.new(1, 0, 1, -52 - 76)
-scroll.BackgroundColor3 = BG
-scroll.BorderSizePixel = 0
-scroll.ScrollBarThickness = 6
-scroll.ScrollBarImageColor3 = SURFACE2
-scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scroll.Parent = root
+local content = Instance.new("Frame")
+content.Name = "Content"
+content.Position = UDim2.new(0, 0, 0, 52)
+content.Size = UDim2.new(1, 0, 1, -52)
+content.BackgroundColor3 = BG
+content.BorderSizePixel = 0
+content.Parent = root
 
-local list = Instance.new("UIListLayout")
-list.SortOrder = Enum.SortOrder.LayoutOrder
-list.Padding = UDim.new(0, 10)
-list.HorizontalAlignment = Enum.HorizontalAlignment.Center
-list.Parent = scroll
+local contentPad = Instance.new("UIPadding", content)
+contentPad.PaddingTop = UDim.new(0, 16)
+contentPad.PaddingBottom = UDim.new(0, 16)
+contentPad.PaddingLeft = UDim.new(0, 16)
+contentPad.PaddingRight = UDim.new(0, 16)
 
-local padding = Instance.new("UIPadding", scroll)
-padding.PaddingTop = UDim.new(0, 12)
-padding.PaddingBottom = UDim.new(0, 12)
-padding.PaddingLeft = UDim.new(0, 8)
-padding.PaddingRight = UDim.new(0, 8)
+-- Disconnected view
+local disconnectedView = Instance.new("Frame")
+disconnectedView.Name = "Disconnected"
+disconnectedView.Size = UDim2.fromScale(1, 1)
+disconnectedView.BackgroundTransparency = 1
+disconnectedView.Visible = true
+disconnectedView.Parent = content
 
--- Composer
-local composer = Instance.new("Frame")
-composer.Name = "Composer"
-composer.Position = UDim2.new(0, 0, 1, -76)
-composer.Size = UDim2.new(1, 0, 0, 76)
-composer.BackgroundColor3 = SURFACE
-composer.BorderSizePixel = 0
-composer.Parent = root
-
-local composerPadding = Instance.new("UIPadding", composer)
-composerPadding.PaddingTop = UDim.new(0, 8)
-composerPadding.PaddingBottom = UDim.new(0, 8)
-composerPadding.PaddingLeft = UDim.new(0, 8)
-composerPadding.PaddingRight = UDim.new(0, 8)
-
-local inputBox = Instance.new("TextBox")
-inputBox.Name = "Input"
-inputBox.Position = UDim2.new(0, 0, 0, 0)
-inputBox.Size = UDim2.new(1, -86, 1, 0)
-inputBox.BackgroundColor3 = BG
-inputBox.TextColor3 = TEXT
-inputBox.PlaceholderColor3 = MUTED
-inputBox.PlaceholderText = "Ask BloxForge to build, fix or explain Luau…"
-inputBox.Text = ""
-inputBox.Font = Enum.Font.Gotham
-inputBox.TextSize = 13
-inputBox.TextWrapped = true
-inputBox.ClearTextOnFocus = false
-inputBox.TextXAlignment = Enum.TextXAlignment.Left
-inputBox.TextYAlignment = Enum.TextYAlignment.Top
-inputBox.Parent = composer
-local ibCorner = Instance.new("UICorner", inputBox)
-ibCorner.CornerRadius = UDim.new(0, 8)
-local ibPad = Instance.new("UIPadding", inputBox)
-ibPad.PaddingTop = UDim.new(0, 6)
-ibPad.PaddingBottom = UDim.new(0, 6)
-ibPad.PaddingLeft = UDim.new(0, 8)
-ibPad.PaddingRight = UDim.new(0, 8)
-
-local sendBtn = Instance.new("TextButton")
-sendBtn.Name = "Send"
-sendBtn.Position = UDim2.new(1, -78, 0, 0)
-sendBtn.Size = UDim2.new(0, 78, 1, 0)
-sendBtn.BackgroundColor3 = ACCENT
-sendBtn.TextColor3 = Color3.fromRGB(8, 12, 20)
-sendBtn.Text = "Send"
-sendBtn.Font = Enum.Font.GothamBold
-sendBtn.TextSize = 13
-sendBtn.AutoButtonColor = true
-sendBtn.Parent = composer
-local sndCorner = Instance.new("UICorner", sendBtn)
-sndCorner.CornerRadius = UDim.new(0, 8)
-
---========================================================================
--- Bubble rendering
---========================================================================
-
-local function makeBubble(role, text, order)
-	local isUser = role == "user"
-	local bubble = Instance.new("Frame")
-	bubble.Name = isUser and "UserBubble" or "AIBubble"
-	bubble.LayoutOrder = order
-	bubble.AutomaticSize = Enum.AutomaticSize.Y
-	bubble.Size = UDim2.new(1, -16, 0, 0)
-	bubble.BackgroundColor3 = isUser and USER_BUBBLE or AI_BUBBLE
-	bubble.BorderSizePixel = 0
-	bubble.Parent = scroll
-
-	local corner = Instance.new("UICorner", bubble)
-	corner.CornerRadius = UDim.new(0, 10)
-
-	local pad = Instance.new("UIPadding", bubble)
-	pad.PaddingTop = UDim.new(0, 8)
-	pad.PaddingBottom = UDim.new(0, 8)
-	pad.PaddingLeft = UDim.new(0, 10)
-	pad.PaddingRight = UDim.new(0, 10)
-
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Size = UDim2.new(1, 0, 0, 0)
-	label.AutomaticSize = Enum.AutomaticSize.Y
-	label.Text = text
-	label.TextColor3 = TEXT
-	label.Font = Enum.Font.Gotham
-	label.TextSize = 13
-	label.TextWrapped = true
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.TextYAlignment = Enum.TextYAlignment.Top
-	label.RichText = true
-	label.Parent = bubble
-
-	-- Role tag
-	local tag = Instance.new("TextLabel")
-	tag.BackgroundTransparency = 1
-	tag.Size = UDim2.new(1, 0, 0, 14)
-	tag.Position = UDim2.fromOffset(0, -2)
-	tag.Text = isUser and "You" or "BloxForge AI"
-	tag.TextColor3 = isUser and MUTED or ACCENT
-	tag.Font = Enum.Font.GothamBold
-	tag.TextSize = 10
-	tag.TextXAlignment = Enum.TextXAlignment.Left
-	tag.Parent = bubble
-
-	return bubble, label
-end
-
-local function makeCodeAction(code)
-	local wrap = Instance.new("Frame")
-	wrap.Name = "CodeAction"
-	wrap.LayoutOrder = 999
-	wrap.AutomaticSize = Enum.AutomaticSize.Y
-	wrap.Size = UDim2.new(1, -16, 0, 0)
-	wrap.BackgroundColor3 = SURFACE2
-	wrap.BorderSizePixel = 0
-	wrap.Parent = scroll
-	local c = Instance.new("UICorner", wrap)
-	c.CornerRadius = UDim.new(0, 8)
-
-	local pad = Instance.new("UIPadding", wrap)
-	pad.PaddingTop = UDim.new(0, 8)
-	pad.PaddingBottom = UDim.new(0, 8)
-	pad.PaddingLeft = UDim.new(0, 10)
-	pad.PaddingRight = UDim.new(0, 10)
-
-	local info = Instance.new("TextLabel")
-	info.BackgroundTransparency = 1
-	info.Size = UDim2.new(1, 0, 0, 16)
-	info.Text = "⚡ Code block ready"
-	info.TextColor3 = ACCENT
-	info.Font = Enum.Font.GothamBold
-	info.TextSize = 11
-	info.TextXAlignment = Enum.TextXAlignment.Left
-	info.Parent = wrap
-
-	local preview = Instance.new("TextLabel")
-	preview.BackgroundTransparency = 1
-	preview.Size = UDim2.new(1, 0, 0, 0)
-	preview.AutomaticSize = Enum.AutomaticSize.Y
-	preview.Text = code:sub(1, 220) .. (#code > 220 and "\n…" or "")
-	preview.TextColor3 = MUTED
-	preview.Font = Enum.Font.Code
-	preview.TextSize = 11
-	preview.TextWrapped = true
-	preview.TextXAlignment = Enum.TextXAlignment.Left
-	preview.TextYAlignment = Enum.TextYAlignment.Top
-	preview.Parent = wrap
-
-	local btnRow = Instance.new("Frame")
-	btnRow.BackgroundTransparency = 1
-	btnRow.Size = UDim2.new(1, 0, 0, 30)
-	btnRow.AutomaticSize = Enum.AutomaticSize.Y
-	btnRow.Parent = wrap
-	local rowLayout = Instance.new("UIListLayout", btnRow)
-	rowLayout.FillDirection = Enum.FillDirection.Horizontal
-	rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-	rowLayout.Padding = UDim.new(0, 6)
-
-	local insertBtn = Instance.new("TextButton")
-	insertBtn.Size = UDim2.new(0, 130, 0, 28)
-	insertBtn.BackgroundColor3 = ACCENT
-	insertBtn.TextColor3 = Color3.fromRGB(8, 12, 20)
-	insertBtn.Text = "Insert as Script"
-	insertBtn.Font = Enum.Font.GothamBold
-	insertBtn.TextSize = 11
-	insertBtn.Parent = btnRow
-	local ibc = Instance.new("UICorner", insertBtn)
-	ibc.CornerRadius = UDim.new(0, 6)
-
-	local copyBtn = Instance.new("TextButton")
-	copyBtn.Size = UDim2.new(0, 80, 0, 28)
-	copyBtn.BackgroundColor3 = SURFACE
-	copyBtn.TextColor3 = TEXT
-	copyBtn.Text = "Copy"
-	copyBtn.Font = Enum.Font.Gotham
-	copyBtn.TextSize = 11
-	copyBtn.Parent = btnRow
-	local cbc = Instance.new("UICorner", copyBtn)
-	cbc.CornerRadius = UDim.new(0, 6)
-
-	insertBtn.MouseButton1Click:Connect(function()
-		local scriptInst = Instance.new("Script")
-		scriptInst.Name = "BloxForgeScript"
-		scriptInst.Source = code
-		-- Place in ServerScriptService by default
-		scriptInst.Parent = game:GetService("ServerScriptService")
-		Selection:Set({ scriptInst })
-		warnMsg("Inserted new Script into ServerScriptService.")
-	end)
-
-	copyBtn.MouseButton1Click:Connect(function()
-		-- Studio: write to clipboard
-		if StudioUIService then
-			StudioUIService:CopyToClipboard(code)
-		end
-	end)
-end
-
-local function addMessage(role, text, order)
-	local _, label = makeBubble(role, text, order)
-	return label
-end
-
---========================================================================
--- Settings dialog
---========================================================================
-
-local settingsDialog = Instance.new("Frame")
-settingsDialog.Name = "SettingsDialog"
-settingsDialog.Size = UDim2.fromScale(1, 1)
-settingsDialog.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-settingsDialog.BackgroundTransparency = 0.4
-settingsDialog.Visible = false
-settingsDialog.ZIndex = 50
-settingsDialog.Parent = root
-
-local card = Instance.new("Frame")
-card.Name = "Card"
-card.AnchorPoint = Vector2.new(0.5, 0.5)
-card.Position = UDim2.fromScale(0.5, 0.5)
-card.Size = UDim2.new(1, -24, 0, 320)
-card.BackgroundColor3 = SURFACE
-card.ZIndex = 51
-card.Parent = settingsDialog
-local cardCorner = Instance.new("UICorner", card)
-cardCorner.CornerRadius = UDim.new(0, 12)
-
-local cardTitle = Instance.new("TextLabel")
-cardTitle.BackgroundTransparency = 1
-cardTitle.Position = UDim2.fromOffset(16, 14)
-cardTitle.Size = UDim2.new(1, -32, 0, 22)
-cardTitle.Font = Enum.Font.GothamBold
-cardTitle.Text = "BloxForge Settings"
-cardTitle.TextColor3 = TEXT
-cardTitle.TextSize = 16
-cardTitle.TextXAlignment = Enum.TextXAlignment.Left
-cardTitle.ZIndex = 52
-cardTitle.Parent = card
+local info = Instance.new("TextLabel")
+info.BackgroundTransparency = 1
+info.Position = UDim2.fromOffset(0, 0)
+info.Size = UDim2.new(1, 0, 0, 60)
+info.Font = Enum.Font.Gotham
+info.Text = "Connect this Studio session to the BloxForge web app. The AI chat stays in your browser — this plugin just syncs your selected script and inserts generated code."
+info.TextColor3 = MUTED
+info.TextSize = 12
+info.TextWrapped = true
+info.TextXAlignment = Enum.TextXAlignment.Left
+info.TextYAlignment = Enum.TextYAlignment.Top
+info.Parent = disconnectedView
 
 local urlLabel = Instance.new("TextLabel")
 urlLabel.BackgroundTransparency = 1
-urlLabel.Position = UDim2.fromOffset(16, 50)
-urlLabel.Size = UDim2.new(1, -32, 0, 16)
+urlLabel.Position = UDim2.fromOffset(0, 74)
+urlLabel.Size = UDim2.new(1, 0, 0, 14)
 urlLabel.Font = Enum.Font.Gotham
-urlLabel.Text = "BloxForge Server URL (/api/plugin/ask endpoint)"
+urlLabel.Text = "BLOXFORGE SERVER URL"
 urlLabel.TextColor3 = MUTED
-urlLabel.TextSize = 11
+urlLabel.TextSize = 10
 urlLabel.TextXAlignment = Enum.TextXAlignment.Left
-urlLabel.ZIndex = 52
-urlLabel.Parent = card
+urlLabel.Parent = disconnectedView
 
 local urlInput = Instance.new("TextBox")
-urlInput.Position = UDim2.fromOffset(16, 70)
-urlInput.Size = UDim2.new(1, -32, 0, 32)
-urlInput.BackgroundColor3 = BG
+urlInput.Position = UDim2.fromOffset(0, 92)
+urlInput.Size = UDim2.new(1, 0, 0, 32)
+urlInput.BackgroundColor3 = SURFACE
 urlInput.TextColor3 = TEXT
 urlInput.PlaceholderColor3 = MUTED
-urlInput.PlaceholderText = "https://your-app.com/api/plugin/ask"
+urlInput.PlaceholderText = "https://your-app.com/api/studio"
 urlInput.Font = Enum.Font.Code
 urlInput.TextSize = 12
 urlInput.Text = apiUrl
-urlInput.ZIndex = 52
-urlInput.Parent = card
+urlInput.ClearTextOnFocus = false
+urlInput.Parent = disconnectedView
 local urlCorner = Instance.new("UICorner", urlInput)
 urlCorner.CornerRadius = UDim.new(0, 6)
 
-local modelLabel = Instance.new("TextLabel")
-modelLabel.BackgroundTransparency = 1
-modelLabel.Position = UDim2.fromOffset(16, 116)
-modelLabel.Size = UDim2.new(1, -32, 0, 16)
-modelLabel.Font = Enum.Font.Gotham
-modelLabel.Text = "Model (NVIDIA NIM)"
-modelLabel.TextColor3 = MUTED
-modelLabel.TextSize = 11
-modelLabel.TextXAlignment = Enum.TextXAlignment.Left
-modelLabel.ZIndex = 52
-modelLabel.Parent = card
+local codeLabel = Instance.new("TextLabel")
+codeLabel.BackgroundTransparency = 1
+codeLabel.Position = UDim2.fromOffset(0, 134)
+codeLabel.Size = UDim2.new(1, 0, 0, 14)
+codeLabel.Font = Enum.Font.Gotham
+codeLabel.Text = "PAIRING CODE (from the web app)"
+codeLabel.TextColor3 = MUTED
+codeLabel.TextSize = 10
+codeLabel.TextXAlignment = Enum.TextXAlignment.Left
+codeLabel.Parent = disconnectedView
 
-local modelInput = Instance.new("TextBox")
-modelInput.Position = UDim2.fromOffset(16, 136)
-modelInput.Size = UDim2.new(1, -32, 0, 32)
-modelInput.BackgroundColor3 = BG
-modelInput.TextColor3 = TEXT
-modelInput.PlaceholderColor3 = MUTED
-modelInput.PlaceholderText = DEFAULT_MODEL
-modelInput.Font = Enum.Font.Code
-modelInput.TextSize = 12
-modelInput.Text = currentModel
-modelInput.ZIndex = 52
-modelInput.Parent = card
-local modelCorner = Instance.new("UICorner", modelInput)
-modelCorner.CornerRadius = UDim.new(0, 6)
+local codeInput = Instance.new("TextBox")
+codeInput.Position = UDim2.fromOffset(0, 152)
+codeInput.Size = UDim2.new(1, 0, 0, 32)
+codeInput.BackgroundColor3 = SURFACE
+codeInput.TextColor3 = TEXT
+codeInput.PlaceholderColor3 = MUTED
+codeInput.PlaceholderText = "ABC-123"
+codeInput.Font = Enum.Font.Code
+codeInput.TextSize = 14
+codeInput.ClearTextOnFocus = false
+codeInput.Parent = disconnectedView
+local codeCorner = Instance.new("UICorner", codeInput)
+codeCorner.CornerRadius = UDim.new(0, 6)
+
+local connectBtn = Instance.new("TextButton")
+connectBtn.Position = UDim2.fromOffset(0, 196)
+connectBtn.Size = UDim2.new(1, 0, 0, 36)
+connectBtn.BackgroundColor3 = ACCENT
+connectBtn.TextColor3 = Color3.fromRGB(8, 12, 20)
+connectBtn.Text = "Connect"
+connectBtn.Font = Enum.Font.GothamBold
+connectBtn.TextSize = 14
+connectBtn.Parent = disconnectedView
+local cbCorner = Instance.new("UICorner", connectBtn)
+cbCorner.CornerRadius = UDim.new(0, 6)
 
 local hint = Instance.new("TextLabel")
 hint.BackgroundTransparency = 1
-hint.Position = UDim2.fromOffset(16, 180)
-hint.Size = UDim2.new(1, -32, 0, 56)
+hint.Position = UDim2.fromOffset(0, 244)
+hint.Size = UDim2.new(1, 0, 0, 50)
 hint.Font = Enum.Font.Gotham
-hint.Text = "Tip: deploy the BloxForge web app and paste its /api/plugin/ask URL here. The plugin talks to NVIDIA NIM models through that server."
+hint.Text = "Tip: open the BloxForge web app, click \"Connect Studio\", then paste the pairing code here."
 hint.TextColor3 = MUTED
 hint.TextSize = 11
 hint.TextWrapped = true
 hint.TextXAlignment = Enum.TextXAlignment.Left
 hint.TextYAlignment = Enum.TextYAlignment.Top
-hint.ZIndex = 52
-hint.Parent = card
+hint.Parent = disconnectedView
 
-local saveBtn = Instance.new("TextButton")
-saveBtn.Position = UDim2.new(1, -120, 1, -48)
-saveBtn.Size = UDim2.new(0, 104, 0, 32)
-saveBtn.BackgroundColor3 = ACCENT
-saveBtn.TextColor3 = Color3.fromRGB(8, 12, 20)
-saveBtn.Text = "Save"
-saveBtn.Font = Enum.Font.GothamBold
-saveBtn.TextSize = 13
-saveBtn.ZIndex = 52
-saveBtn.Parent = card
-local saveCorner = Instance.new("UICorner", saveBtn)
-saveCorner.CornerRadius = UDim.new(0, 6)
+-- Connected view
+local connectedView = Instance.new("Frame")
+connectedView.Name = "Connected"
+connectedView.Size = UDim2.fromScale(1, 1)
+connectedView.BackgroundTransparency = 1
+connectedView.Visible = false
+connectedView.Parent = content
 
-local closeBtn = Instance.new("TextButton")
-closeBtn.Position = UDim2.new(0, 16, 1, -48)
-closeBtn.Size = UDim2.new(0, 80, 0, 32)
-closeBtn.BackgroundColor3 = SURFACE2
-closeBtn.TextColor3 = TEXT
-closeBtn.Text = "Cancel"
-closeBtn.Font = Enum.Font.Gotham
-closeBtn.TextSize = 13
-closeBtn.ZIndex = 52
-closeBtn.Parent = card
-local closeCorner = Instance.new("UICorner", closeBtn)
-closeCorner.CornerRadius = UDim.new(0, 6)
+local okIcon = Instance.new("TextLabel")
+okIcon.BackgroundTransparency = 1
+okIcon.Position = UDim2.fromOffset(0, 0)
+okIcon.Size = UDim2.new(1, 0, 0, 20)
+okIcon.Font = Enum.Font.GothamBold
+okIcon.Text = "✓  Studio connected"
+okIcon.TextColor3 = ACCENT
+okIcon.TextSize = 15
+okIcon.TextXAlignment = Enum.TextXAlignment.Left
+okIcon.Parent = connectedView
 
-settingsBtn.MouseButton1Click:Connect(function()
-	settingsDialog.Visible = true
-end)
-closeBtn.MouseButton1Click:Connect(function()
-	settingsDialog.Visible = false
-end)
-saveBtn.MouseButton1Click:Connect(function()
-	apiUrl = urlInput.Text
-	currentModel = modelInput.Text
-	Plugin:SetSetting(PLUGIN_ID .. "_ApiUrl", apiUrl)
-	Plugin:SetSetting(PLUGIN_ID .. "_Model", currentModel)
-	settingsDialog.Visible = false
-end)
+local codeDisplayLabel = Instance.new("TextLabel")
+codeDisplayLabel.BackgroundTransparency = 1
+codeDisplayLabel.Position = UDim2.fromOffset(0, 28)
+codeDisplayLabel.Size = UDim2.new(1, 0, 0, 14)
+codeDisplayLabel.Font = Enum.Font.Gotham
+codeDisplayLabel.Text = "PAIRING CODE"
+codeDisplayLabel.TextColor3 = MUTED
+codeDisplayLabel.TextSize = 10
+codeDisplayLabel.TextXAlignment = Enum.TextXAlignment.Left
+codeDisplayLabel.Parent = connectedView
+
+local codeDisplay = Instance.new("TextLabel")
+codeDisplay.BackgroundTransparency = 1
+codeDisplay.Position = UDim2.fromOffset(0, 44)
+codeDisplay.Size = UDim2.new(1, 0, 0, 24)
+codeDisplay.Font = Enum.Font.Code
+codeDisplay.Text = "------"
+codeDisplay.TextColor3 = TEXT
+codeDisplay.TextSize = 18
+codeDisplay.TextXAlignment = Enum.TextXAlignment.Left
+codeDisplay.Parent = connectedView
+
+local watchingLabel = Instance.new("TextLabel")
+watchingLabel.BackgroundTransparency = 1
+watchingLabel.Position = UDim2.fromOffset(0, 78)
+watchingLabel.Size = UDim2.new(1, 0, 0, 14)
+watchingLabel.Font = Enum.Font.Gotham
+watchingLabel.Text = "WATCHING"
+watchingLabel.TextColor3 = MUTED
+watchingLabel.TextSize = 10
+watchingLabel.TextXAlignment = Enum.TextXAlignment.Left
+watchingLabel.Parent = connectedView
+
+local watchingValue = Instance.new("TextLabel")
+watchingValue.BackgroundTransparency = 1
+watchingValue.Position = UDim2.fromOffset(0, 94)
+watchingValue.Size = UDim2.new(1, 0, 0, 20)
+watchingValue.Font = Enum.Font.Code
+watchingValue.Text = "Nothing selected"
+watchingValue.TextColor3 = TEXT
+watchingValue.TextSize = 12
+watchingValue.TextXAlignment = Enum.TextXAlignment.Left
+watchingValue.TextTruncate = Enum.TextTruncate.AtEnd
+watchingValue.Parent = connectedView
+
+local lastSyncLabel = Instance.new("TextLabel")
+lastSyncLabel.BackgroundTransparency = 1
+lastSyncLabel.Position = UDim2.fromOffset(0, 122)
+lastSyncLabel.Size = UDim2.new(1, 0, 0, 14)
+lastSyncLabel.Font = Enum.Font.Gotham
+lastSyncLabel.Text = "Last sync: never"
+lastSyncLabel.TextColor3 = MUTED
+lastSyncLabel.TextSize = 10
+lastSyncLabel.TextXAlignment = Enum.TextXAlignment.Left
+lastSyncLabel.Parent = connectedView
+
+local insertLogLabel = Instance.new("TextLabel")
+insertLogLabel.BackgroundTransparency = 1
+insertLogLabel.Position = UDim2.fromOffset(0, 148)
+insertLogLabel.Size = UDim2.new(1, 0, 0, 14)
+insertLogLabel.Font = Enum.Font.Gotham
+insertLogLabel.Text = "INSERTED"
+insertLogLabel.TextColor3 = MUTED
+insertLogLabel.TextSize = 10
+insertLogLabel.TextXAlignment = Enum.TextXAlignment.Left
+insertLogLabel.Parent = connectedView
+
+local insertLog = Instance.new("TextLabel")
+insertLog.BackgroundTransparency = 1
+insertLogLabel.Position = UDim2.fromOffset(0, 148)
+insertLog.Position = UDim2.fromOffset(0, 164)
+insertLog.Size = UDim2.new(1, 0, 0, 70)
+insertLog.Font = Enum.Font.Code
+insertLog.Text = ""
+insertLog.TextColor3 = MUTED
+insertLog.TextSize = 11
+insertLog.TextWrapped = true
+insertLog.TextXAlignment = Enum.TextXAlignment.Left
+insertLog.TextYAlignment = Enum.TextYAlignment.Top
+insertLog.Parent = connectedView
+
+local disconnectBtn = Instance.new("TextButton")
+disconnectBtn.Position = UDim2.new(0, 0, 1, -36)
+disconnectBtn.Size = UDim2.new(1, 0, 0, 36)
+disconnectBtn.BackgroundColor3 = SURFACE2
+disconnectBtn.TextColor3 = RED
+disconnectBtn.Text = "Disconnect"
+disconnectBtn.Font = Enum.Font.GothamBold
+disconnectBtn.TextSize = 13
+disconnectBtn.Parent = connectedView
+local dbCorner = Instance.new("UICorner", disconnectBtn)
+dbCorner.CornerRadius = UDim.new(0, 6)
 
 --========================================================================
--- Sending messages
+-- Connection logic
 --========================================================================
 
-local isBusy = false
-local orderCounter = 0
-
-local function send()
-	if isBusy then return end
-	local text = inputBox.Text
-	if text == "" then return end
-
-	-- Gather selected script context
-	local _, selSrc = getSelectedScriptContent()
-	local context = selSrc or ""
-
-	orderCounter = orderCounter + 1
-	addMessage("user", text, orderCounter)
-	table.insert(history, { role = "user", content = text })
-	inputBox.Text = ""
-
-	orderCounter = orderCounter + 1
-	local typingLabel = addMessage("assistant", "Forging…", orderCounter)
-
-	isBusy = true
-	sendBtn.Text = "…"
-	sendBtn.BackgroundColor3 = ACCENT_DARK
-
-	local payload = {
-		message = text,
-		model = currentModel,
-		history = history,
-		context = context,
-	}
-
-	local body = buildJson(payload)
-
-	local ok, response = pcall(function()
-		return HttpService:PostAsync(
-			apiUrl,
-			body,
-			Enum.HttpContentType.ApplicationJson,
-			false
-		)
-	end)
-
-	isBusy = false
-	sendBtn.Text = "Send"
-	sendBtn.BackgroundColor3 = ACCENT
-
-	if not ok then
-		typingLabel.Text = "⚠ Request failed: " .. tostring(response)
-		typingLabel.TextColor3 = Color3.fromRGB(248, 113, 113)
-		return
+local function setConnected(isConn)
+	connected = isConn
+	disconnectedView.Visible = not isConn
+	connectedView.Visible = isConn
+	statusDot.BackgroundColor3 = isConn and ACCENT or MUTED
+	gui.Title = PLUGIN_NAME .. (isConn and (" — " .. pairingCode) or "")
+	if isConn then
+		codeDisplay.Text = pairingCode
 	end
+end
 
-	local parsedOk, data = pcall(function()
-		return HttpService:JSONDecode(response)
-	end)
+local function appendInsertLog(text)
+	local stamp = os.date("%H:%M:%S")
+	local current = insertLog.Text
+	local lines = (#current > 0) and (current .. "\n") or ""
+	insertLog.Text = (lines .. stamp .. "  " .. text):sub(-200)
+end
 
-	if not parsedOk or not data or not data.ok then
-		local err = (data and data.error) or "Invalid server response"
-		typingLabel.Text = "⚠ " .. tostring(err)
-		typingLabel.TextColor3 = Color3.fromRGB(248, 113, 113)
-		return
-	end
+local function executeInsertCommand(cmd)
+	local ok = false
+	local message = ""
+	local scriptType = "Script"
+	-- Heuristic: ModuleScripts return something at the end; keep it simple
+	-- and default to Script. Users can change the type in Studio.
+	local inst = Instance.new(scriptType)
+	inst.Name = (cmd.title or "BloxForgeScript"):gsub("[^%w_%-]", ""):sub(1, 50)
+	if #inst.Name == 0 then inst.Name = "BloxForgeScript" end
+	inst.Source = cmd.code
+	-- Place into ServerScriptService
+	inst.Parent = ServerScriptService
+	Selection:Set({ inst })
+	ok = true
+	message = "Inserted " .. inst.Name .. " into ServerScriptService"
+	appendInsertLog("+" .. inst.Name)
+	warnMsg(message)
 
-	local reply = data.reply or ""
-	typingLabel.Text = reply
-	table.insert(history, { role = "assistant", content = reply })
-
-	-- Attach code-action widgets for each code block
-	local blocks = extractCodeBlocks(reply)
-	for _, b in ipairs(blocks) do
-		orderCounter = orderCounter + 1
-		makeCodeAction(b.code)
-	end
-
-	-- Auto-scroll to bottom
-	task.defer(function()
-		scroll.CanvasPosition = Vector2.new(0, scroll.CanvasSize.Y.Offset)
+	-- Ack the result
+	task.spawn(function()
+		local _, _ = httpPost(apiUrl .. "/ack", {
+			code = pairingCode,
+			commandId = cmd.id,
+			ok = ok,
+			message = message,
+		}, 10)
 	end)
 end
 
-sendBtn.MouseButton1Click:Connect(send)
-inputBox.FocusLost:Connect(function(enter)
-	if enter then send() end
+local function sendContextImmediate()
+	if not connected then return end
+	local ctx = buildContext()
+	local hash = contextHash(ctx)
+	if hash == lastContextHash then return end
+	lastContextHash = hash
+	task.spawn(function()
+		local _, _ = httpPost(apiUrl .. "/heartbeat", {
+			code = pairingCode,
+			context = ctx,
+		}, 10)
+		if ctx then
+			watchingValue.Text = ctx.scriptPath
+		else
+			watchingValue.Text = "Nothing selected"
+		end
+	end)
+end
+
+local function heartbeatLoop()
+	if heartbeatRunning then return end
+	heartbeatRunning = true
+	while connected do
+		local ctx = buildContext()
+		local hash = contextHash(ctx)
+		local includeContext = (hash ~= lastContextHash)
+		if includeContext then lastContextHash = hash end
+
+		local payload = {
+			code = pairingCode,
+			context = includeContext and ctx or nil,
+		}
+
+		local ok, response = httpPost(apiUrl .. "/heartbeat", payload, 15)
+		if ok then
+			local parsedOk, data = pcall(function()
+				return HttpService:JSONDecode(response)
+			end)
+			if parsedOk and data and data.ok then
+				lastSyncLabel.Text = "Last sync: " .. os.date("%H:%M:%S")
+				if ctx then
+					watchingValue.Text = ctx.scriptPath
+				else
+					watchingValue.Text = "Nothing selected"
+				end
+				-- Process any insert commands
+				if data.commands and #data.commands > 0 then
+					for _, cmd in ipairs(data.commands) do
+						task.spawn(function()
+							executeInsertCommand(cmd)
+						end)
+					end
+				end
+			else
+				if data and data.error then
+					warnMsg("Heartbeat error: " .. tostring(data.error))
+					if data.error == "Unknown pairing code" then
+						setConnected(false)
+						break
+					end
+				end
+			end
+		else
+			warnMsg("Heartbeat request failed: " .. tostring(response))
+		end
+
+		task.wait(HEARTBEAT_INTERVAL)
+	end
+	heartbeatRunning = false
+end
+
+local function doConnect()
+	local url = (urlInput.Text or ""):gsub("/+$", "")
+	local code = codeInput.Text or ""
+	if #url == 0 or #code < 6 then
+		warnMsg("Server URL and pairing code are required.")
+		return
+	end
+	apiUrl = url .. "/api/studio"
+	pairingCode = code:upper():gsub("[^A-Z0-9]", ""):sub(1, 3)
+	if #code:gsub("[^A-Z0-9]", "") > 3 then
+		pairingCode = pairingCode .. "-" .. code:upper():gsub("[^A-Z0-9]", ""):sub(4, 6)
+	end
+	Plugin:SetSetting(PLUGIN_ID .. "_ApiUrl", url)
+
+	-- Send an initial heartbeat to validate the pairing code
+	connectBtn.Text = "Connecting…"
+	connectBtn.BackgroundColor3 = ACCENT_DARK
+
+	local ctx = buildContext()
+	local ok, response = httpPost(apiUrl .. "/heartbeat", {
+		code = pairingCode,
+		context = ctx,
+	}, 15)
+
+	if ok then
+		local parsedOk, data = pcall(function()
+			return HttpService:JSONDecode(response)
+		end)
+		if parsedOk and data and data.ok then
+			setConnected(true)
+			lastContextHash = contextHash(ctx)
+			if ctx then watchingValue.Text = ctx.scriptPath end
+			task.spawn(heartbeatLoop)
+			warnMsg("Connected with code " .. pairingCode)
+		else
+			warnMsg("Connection rejected: " .. tostring(data and data.error or "invalid code"))
+		end
+	else
+		warnMsg("Connection failed: " .. tostring(response))
+	end
+
+	connectBtn.Text = "Connect"
+	connectBtn.BackgroundColor3 = ACCENT
+end
+
+local function doDisconnect()
+	connected = false
+	task.spawn(function()
+		local _, _ = httpPost(apiUrl .. "/disconnect", { code = pairingCode }, 8)
+	end)
+	setConnected(false)
+	lastContextHash = ""
+	warnMsg("Disconnected")
+end
+
+connectBtn.MouseButton1Click:Connect(doConnect)
+disconnectBtn.MouseButton1Click:Connect(doDisconnect)
+
+-- React to selection changes immediately (context sync feels live)
+Selection.SelectionChanged:Connect(function()
+	if connected then
+		sendContextImmediate()
+	end
 end)
 
 --========================================================================
@@ -658,23 +594,14 @@ end)
 
 local toolbar = Plugin:CreateToolbar("BloxForge AI")
 local toggleBtn = toolbar:CreateButton(
-	"BloxForge AI",
-	"Open the BloxForge AI assistant",
+	"BloxForge Connector",
+	"Open the BloxForge Studio connector",
 	"rbxassetid://0"
 )
 toggleBtn.ClickableWhenViewportHidden = true
-
 toggleBtn.Click:Connect(function()
 	gui.Enabled = not gui.Enabled
 end)
 
--- Welcome message
-orderCounter = orderCounter + 1
-addMessage("assistant",
-	"👋 Welcome to **BloxForge AI** — your NVIDIA-powered Roblox coding companion.\n\n" ..
-	"Select a script in the Explorer and ask me to build, fix, or explain it. " ..
-	"Click ⚙ to point me at your BloxForge server.",
-	orderCounter
-)
-
-warnMsg("BloxForge AI plugin loaded.")
+setConnected(false)
+warnMsg("BloxForge Studio connector loaded. Open the web app and click \"Connect Studio\" to get a pairing code.")
