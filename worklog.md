@@ -445,3 +445,27 @@ Stage Summary:
 - Lint clean. Server stable.
 - BloxForge Luau personality: Beta, Studio-plan only, specialized system prompt for Roblox Luau. Shows in MODEL dropdown with amber Beta badge + Studio lock.
 - Parts/Models: when AI generates code with Instance.new, it's stored as a ModuleScript (executable, all properties preserved). Bare Parts/Models get functional defaults (Material, surfaces, PrimaryPart, WorldPivot).
+
+---
+Task ID: 80-86
+Agent: Orchestrator
+Task: Add reference image upload + upgrade BloxForge Luau model + make everything functional
+
+Work Log:
+- Added reference image support to /api/chat: accepts `image` (base64 data URL). Uses z-ai-web-dev-sdk createVision API to describe the image (layout, colors with RGB values, sizes, positions, UI element types, fonts, text content, 3D parts). The description is injected into the user message so the AI can recreate the image in Roblox.
+- Added image upload UI to chat-app composer:
+  - Image upload button (ImageIcon) next to the send button — opens file picker
+  - Drag-and-drop zone on the composer — drop an image anywhere
+  - Paste support — Ctrl+V to paste an image from clipboard
+  - Image preview bar above the textarea with thumbnail + "Reference image attached" + "AI will analyze this and recreate it in Roblox" + remove (X) button
+  - Placeholder changes to "Describe what to build from the image…" when an image is attached
+  - Image cleared after sending
+  - 4MB size limit, image-only validation
+- Upgraded BloxForge Luau system prompt: expanded expertise list (ContextActionService, UserInputService, GuiService, MarketplaceService, MemoryStoreService, AssemblyLinearVelocity, constraints, GetPartBoundsInBox, AnimationController, ParticleEmitter, Trail, Beam, Fire, Smoke, Explosion, attributes over Values, rate limiting). Added rules: rule 10 (recreate from image with exact Color3.fromRGB values), rule 11 (split complex systems into multiple code blocks), rule 12 (modern Luau idioms). Enhanced Part/Model/UI creation rules with explicit property lists.
+- Plugin already handles programmatic instance creation (ModuleScript with AI code as Source from previous task).
+
+Stage Summary:
+- Lint clean. Server stable.
+- Reference image: upload, drag-drop, or paste → AI vision describes it → AI generates Luau code to recreate it → auto-inserts into Studio. Tested with a tiny test image → AI generated ScreenGui code.
+- BloxForge Luau upgraded with comprehensive Roblox expertise + image recreation rules + modern Luau idioms.
+- Everything functional: image upload → vision → AI code generation → auto-insert into Studio.

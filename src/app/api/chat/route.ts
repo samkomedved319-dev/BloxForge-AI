@@ -20,12 +20,13 @@ export const dynamic = "force-dynamic";
 
 interface ChatRequestBody {
   message: string;
-  personality?: string; // personality id, e.g. "thoughtful"
-  mode?: string; // mode id, e.g. "normal"
+  personality?: string;
+  mode?: string;
   history?: ChatMessage[];
   conversationId?: string;
   title?: string;
-  context?: string; // optional Studio script source sent by the web app
+  context?: string;
+  image?: string; // base64 data URL of a reference image
 }
 
 function todayKey(): string {
@@ -152,10 +153,43 @@ export async function POST(req: NextRequest) {
     ? `\n\n[Studio context — currently selected script]\n\`\`\`luau\n${studioContext.slice(0, 8000)}\n\`\`\``
     : "";
 
+  // Optional reference image — use z-ai vision to describe it, then feed the
+  // description to the AI so it can build based on what the user showed.
+  let imageDescription = "";
+  if (body.image && body.image.startsWith("data:")) {
+    try {
+      const ZAI = (await import("z-ai-web-dev-sdk")).default;
+      const zai = await ZAI.create();
+      const visionRes = await zai.chat.completions.createVision({
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "You are helping a Roblox developer. Describe this reference image in detail for the purpose of recreating it in Roblox Studio. Focus on: layout, colors (give RGB values), sizes, positions, UI element types (TextLabel, TextButton, Frame, ImageLabel), fonts, text content, and any 3D parts/models visible. Be specific and structured. Keep it under 300 words.",
+              },
+              { type: "image_url", image_url: { url: body.image } },
+            ],
+          },
+        ],
+        thinking: { type: "disabled" },
+      });
+      imageDescription =
+        visionRes?.choices?.[0]?.message?.content ?? "";
+    } catch (e) {
+      console.error("[chat] image vision failed:", e);
+    }
+  }
+
+  const imageBlock = imageDescription
+    ? `\n\n[Reference image description]\n${imageDescription}\n\nRecreate this in Roblox based on the description above. Generate complete Luau code that builds it.`
+    : "";
+
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
     ...prior.slice(-20),
-    { role: "user", content: userMessage + contextBlock },
+    { role: "user", content: userMessage + contextBlock + imageBlock },
   ];
 
   // ── Persist conversation + user message ──────────────────────────────

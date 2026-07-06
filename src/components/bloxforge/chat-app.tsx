@@ -22,6 +22,7 @@ import {
   Zap,
   FileCode2,
   Clock,
+  ImageIcon,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { Markdown } from "./markdown";
@@ -111,6 +112,7 @@ export function ChatApp({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [streaming, setStreaming] = useState(false);
   const [personality, setPersonality] = useState(() => {
     if (typeof window === "undefined") return "swift";
@@ -161,6 +163,44 @@ export function ChatApp({
       }
     },
     [studio],
+  );
+
+  // ── Image attachment handling ──
+  const handleImageSelect = useCallback(
+    (file: File) => {
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select an image file");
+        return;
+      }
+      if (file.size > 4 * 1024 * 1024) {
+        toast.error("Image must be under 4MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setAttachedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    },
+    [],
+  );
+
+  const handleImagePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith("image/")) {
+          const file = items[i].getAsFile();
+          if (file) {
+            handleImageSelect(file);
+            e.preventDefault();
+            break;
+          }
+        }
+      }
+    },
+    [handleImageSelect],
   );
 
   // Load conversations
@@ -268,6 +308,7 @@ export function ChatApp({
 
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
       setInput("");
+      setAttachedImage(null);
       setStreaming(true);
 
       const controller = new AbortController();
@@ -288,6 +329,7 @@ export function ChatApp({
               studio.isConnected && includeStudioContext && studio.context
                 ? studio.context.source
                 : undefined,
+            image: attachedImage || undefined,
           }),
           signal: controller.signal,
         });
@@ -440,6 +482,7 @@ export function ChatApp({
       studio,
       includeStudioContext,
       autoInsert,
+      attachedImage,
     ],
   );
 
@@ -731,7 +774,41 @@ export function ChatApp({
                 </span>
               </div>
             )}
-            <div className="relative rounded-2xl border border-border bg-card focus-within:border-emerald-500/50 focus-within:ring-2 focus-within:ring-emerald-500/20">
+            <div
+              className="relative rounded-2xl border border-border bg-card focus-within:border-emerald-500/50 focus-within:ring-2 focus-within:ring-emerald-500/20"
+              onPaste={handleImagePaste}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "copy";
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files[0];
+                if (file) handleImageSelect(file);
+              }}
+            >
+              {/* Image preview */}
+              {attachedImage && (
+                <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+                  <img
+                    src={attachedImage}
+                    alt="Reference"
+                    className="h-12 w-12 rounded-lg object-cover"
+                  />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium">Reference image attached</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      AI will analyze this and recreate it in Roblox
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setAttachedImage(null)}
+                    className="rounded-md p-1.5 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              )}
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -741,11 +818,31 @@ export function ChatApp({
                     send();
                   }
                 }}
-                placeholder="Ask BloxForge to build, fix, or explain Luau…"
-                className="min-h-[56px] max-h-[200px] resize-none border-0 bg-transparent px-4 py-3.5 pr-14 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                placeholder={
+                  attachedImage
+                    ? "Describe what to build from the image…"
+                    : "Ask BloxForge to build, fix, or explain Luau…"
+                }
+                className="min-h-[56px] max-h-[200px] resize-none border-0 bg-transparent px-4 py-3.5 pr-20 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
                 rows={2}
                 disabled={streaming}
               />
+              {/* Image upload button */}
+              <label className="absolute bottom-3 right-14 cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageSelect(file);
+                    e.target.value = "";
+                  }}
+                />
+                <div className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-white/10 hover:text-foreground">
+                  <ImageIcon className="size-4" />
+                </div>
+              </label>
               <div className="absolute bottom-2.5 right-2.5">
                 {streaming ? (
                   <Button
