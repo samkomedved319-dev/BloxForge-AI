@@ -232,20 +232,21 @@ export function AuthModal({
                         Sign in with Roblox
                       </h2>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Use your Roblox account to access BloxForge AI. Beta
-                        access requires admin approval after sign-in.
+                        Verify your identity through Roblox's secure app
+                        permissions. No password shared — you authorize
+                        BloxForge in Roblox's own consent screen.
                       </p>
 
-                      {/* OAuth button — the secure, verified Roblox sign-in */}
+                      {/* OAuth — the verified, recommended sign-in */}
                       {oauthConfigured ? (
                         <>
                           <button
                             onClick={startOAuth}
-                            className="mt-5 flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#00A2FF] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0090E0]"
+                            className="mt-5 flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#00A2FF] px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#00A2FF]/20 transition hover:bg-[#0090E0]"
                           >
                             <svg
-                              width="20"
-                              height="20"
+                              width="22"
+                              height="22"
                               viewBox="0 0 24 24"
                               fill="currentColor"
                             >
@@ -253,28 +254,58 @@ export function AuthModal({
                             </svg>
                             Continue with Roblox
                           </button>
+
+                          {/* Permissions explanation */}
+                          <div className="mt-3 rounded-lg border border-border bg-background/50 p-3">
+                            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
+                              <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M9 12l2 2 4-4" />
+                                <circle cx="12" cy="12" r="10" />
+                              </svg>
+                              Verified & secure
+                            </p>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              You'll be redirected to Roblox to approve access.
+                              BloxForge only sees your <b>username</b> and{" "}
+                              <b>user ID</b> — never your password.
+                            </p>
+                          </div>
+
                           <div className="my-4 flex items-center gap-3">
                             <div className="h-px flex-1 bg-border" />
                             <span className="text-[11px] text-muted-foreground">
-                              or verify manually
+                              no Roblox app? verify manually ↓
                             </span>
                             <div className="h-px flex-1 bg-border" />
                           </div>
                         </>
                       ) : (
-                        <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-300">
-                          ⚠ Secure Roblox OAuth isn't configured on this server.
-                          Using manual profile-code verification below. An admin
-                          can enable it by setting{" "}
-                          <code className="font-mono">ROBLOX_CLIENT_ID</code> +
-                          <code className="font-mono">ROBLOX_CLIENT_SECRET</code>.
+                        <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-[11px] text-amber-300">
+                          <p className="font-semibold">⚠ App-permissions sign-in isn't configured</p>
+                          <p className="mt-1 text-amber-200/80">
+                            An admin needs to register an OAuth app at{" "}
+                            <a
+                              href="https://create.roblox.com/credentials"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="underline"
+                            >
+                              create.roblox.com/credentials
+                            </a>{" "}
+                            and set <code className="font-mono">ROBLOX_CLIENT_ID</code> +{" "}
+                            <code className="font-mono">ROBLOX_CLIENT_SECRET</code> env vars.
+                            Falling back to manual profile-code verification below.
+                          </p>
                         </div>
                       )}
 
                       <form onSubmit={startVerification} className="space-y-4">
                         <div className="space-y-1.5">
                           <Label htmlFor="rbx-username" className="text-xs">
-                            Roblox username
+                            Roblox username{" "}
+                            <span className="text-muted-foreground">
+                              (manual fallback)
+                            </span>
                           </Label>
                           <Input
                             id="rbx-username"
@@ -282,7 +313,6 @@ export function AuthModal({
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             placeholder="YourRobloxUsername"
-                            autoFocus
                           />
                         </div>
 
@@ -295,8 +325,9 @@ export function AuthModal({
 
                         <Button
                           type="submit"
+                          variant="outline"
                           disabled={loading}
-                          className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                          className="w-full gap-2 border-border"
                         >
                           {loading ? (
                             <Loader2 className="size-4 animate-spin" />
@@ -307,9 +338,9 @@ export function AuthModal({
                         </Button>
                       </form>
 
-                      <p className="mt-4 text-center text-[11px] text-muted-foreground">
-                        By signing in you agree to add a one-time verification code
-                        to your Roblox profile. No password needed.
+                      <p className="mt-3 text-center text-[11px] text-muted-foreground">
+                        Manual fallback: we'll ask you to add a one-time code to
+                        your Roblox profile to prove ownership.
                       </p>
 
                       <button

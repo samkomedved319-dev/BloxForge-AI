@@ -306,3 +306,21 @@ Stage Summary:
 - Roblox OAuth2 implemented per official docs (authorize → callback → token → userinfo). Requires admin to register an OAuth app at create.roblox.com/credentials and set env vars. When not configured, gracefully falls back to manual profile-code verification with a clear warning.
 - donkykong87 (Roblox ID 229707751) is in ADMIN_ROBLOX_IDS → auto-promoted to admin + auto-approved when they sign in via Roblox.
 - Landing page now prominently shows BETA badge + a full "Closed Beta" section explaining the 3-step access flow.
+
+---
+Task ID: 46-50
+Agent: Orchestrator
+Task: Verification through Roblox app permissions (OAuth2) + make Donkykong_87 admin
+
+Work Log:
+- Looked up Donkykong_87 on Roblox API: user ID 8417604297, display name "RoarDEV". Updated ADMIN_ROBLOX_IDS=8417604297 in .env (replaced previous 229707751). When Donkykong_87 signs in via Roblox OAuth or manual verification, they're auto-promoted to admin + auto-approved.
+- Enhanced auth modal: "Continue with Roblox" OAuth button is now the prominent primary action (bigger, bolder, Roblox blue #00A2FF, shadow). Added a "Verified & secure" permissions card explaining: "You'll be redirected to Roblox to approve access. BloxForge only sees your username and user ID — never your password." Manual profile-code verification is now clearly labeled as "(manual fallback)" with an outline button + "no Roblox app? verify manually ↓" divider.
+- When OAuth isn't configured: amber warning card with link to create.roblox.com/credentials + env var instructions. Manual form still works as fallback.
+- Built /api/auth/roblox/setup endpoint: returns OAuth config status + step-by-step setup instructions + the expected callback URL + configured admin Roblox IDs. Admin-only instructions.
+- Added OAuth setup status banner to admin dashboard Overview tab: amber card with 4-step setup instructions (register app → set redirect URI → set env vars → restart) when not configured; green "Roblox OAuth is configured" confirmation when ready. Shows the admin Roblox IDs (8417604297) so the admin knows who auto-promotes.
+
+Stage Summary:
+- Lint clean. Server stable.
+- Roblox OAuth2 = the verified "app permissions" flow: user clicks "Continue with Roblox" → redirected to Roblox → Roblox shows consent screen asking to grant BloxForge access to their profile → user approves → redirected back with code → server exchanges for token → fetches userinfo → signs in. This is the official, secure Roblox authentication.
+- Donkykong_87 (ID 8417604297) is in ADMIN_ROBLOX_IDS → auto-admin + auto-approved on sign-in.
+- Admin dashboard shows a clear OAuth setup guide when not configured.

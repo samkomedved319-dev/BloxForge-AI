@@ -332,13 +332,28 @@ function AdminHeader() {
 function OverviewTab() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [oauthSetup, setOauthSetup] = useState<{
+    configured: boolean;
+    expectedCallback: string;
+    adminRobloxIds: string;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/stats", { cache: "no-store" });
-      const data = await jsonOrThrow(res);
-      setStats(data as Stats);
+      const [statsRes, oauthRes] = await Promise.all([
+        fetch("/api/admin/stats", { cache: "no-store" }),
+        fetch("/api/auth/roblox/setup", { cache: "no-store" }),
+      ]);
+      setStats(await jsonOrThrow(statsRes));
+      const od = await oauthRes.json().catch(() => null);
+      if (od) {
+        setOauthSetup({
+          configured: od.configured,
+          expectedCallback: od.expectedCallback || "",
+          adminRobloxIds: od.adminRobloxIds || "",
+        });
+      }
     } catch (e) {
       toast.error((e as Error).message || "Failed to load stats");
     } finally {
@@ -409,6 +424,71 @@ function OverviewTab() {
           Refresh
         </Button>
       </div>
+
+      {/* Roblox OAuth setup status */}
+      {oauthSetup && !oauthSetup.configured && (
+        <Card className="border-amber-500/30 bg-amber-500/5 p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-400">
+              <Info className="size-4" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display font-bold text-amber-300">
+                Roblox OAuth not configured
+              </h3>
+              <p className="mt-1 text-sm text-amber-200/80">
+                Users are falling back to manual profile-code verification.
+                Enable secure app-permissions sign-in:
+              </p>
+              <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs text-amber-200/70">
+                <li>
+                  Register an OAuth app at{" "}
+                  <a
+                    href="https://create.roblox.com/credentials"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline"
+                  >
+                    create.roblox.com/credentials
+                  </a>
+                </li>
+                <li>
+                  Set redirect URI to:{" "}
+                  <code className="rounded bg-black/30 px-1 py-0.5 font-mono text-[10px]">
+                    {oauthSetup.expectedCallback}
+                  </code>
+                </li>
+                <li>
+                  Set env vars:{" "}
+                  <code className="font-mono text-[10px]">ROBLOX_CLIENT_ID</code>,{" "}
+                  <code className="font-mono text-[10px]">ROBLOX_CLIENT_SECRET</code>,{" "}
+                  <code className="font-mono text-[10px]">ROBLOX_REDIRECT_URI</code>
+                </li>
+                <li>Restart the server</li>
+              </ol>
+              {oauthSetup.adminRobloxIds && (
+                <p className="mt-2 text-[11px] text-amber-200/60">
+                  Auto-admin Roblox IDs:{" "}
+                  <code className="font-mono">{oauthSetup.adminRobloxIds}</code>
+                </p>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+      {oauthSetup?.configured && (
+        <Card className="border-emerald-500/30 bg-emerald-500/5 p-4">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="size-2 rounded-full bg-emerald-400" />
+            <span className="font-medium text-emerald-300">
+              Roblox OAuth is configured
+            </span>
+            <span className="text-muted-foreground">
+              — users can sign in with secure app permissions
+            </span>
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c, i) => (
