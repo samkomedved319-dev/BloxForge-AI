@@ -9,7 +9,23 @@ export type InstanceType =
   | "LocalScript"
   | "ModuleScript"
   | "Part"
-  | "Model";
+  | "Model"
+  | "ScreenGui"
+  | "Frame"
+  | "TextLabel"
+  | "TextButton"
+  | "ImageButton"
+  | "ImageLabel"
+  | "TextBox"
+  | "ScrollingFrame"
+  | "UIGridLayout"
+  | "UIListLayout"
+  | "UICorner"
+  | "UIStroke"
+  | "UIGradient"
+  | "UIScale"
+  | "UIAspectRatioConstraint"
+  | "UIPadding";
 
 export interface DerivedInstance {
   instanceType: InstanceType;
@@ -105,4 +121,61 @@ export function deriveInstance(
   if (instanceType === "ModuleScript" && isClient) parent = "ReplicatedStorage";
 
   return { instanceType, instanceName, parent };
+}
+
+/**
+ * Extract all fenced code blocks from a markdown string.
+ * Returns [{ language, code, heading }] in order of appearance.
+ * The heading is the nearest preceding ### heading (if any).
+ */
+export function extractCodeBlocks(
+  markdown: string,
+): { language: string; code: string; heading?: string }[] {
+  const blocks: { language: string; code: string; heading?: string }[] = [];
+  const lines = markdown.split("\n");
+  let lastHeading: string | undefined;
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    // Track h3 headings
+    if (/^###\s+/.test(line)) {
+      lastHeading = line.replace(/^###\s+/, "").trim();
+      i++;
+      continue;
+    }
+    // Detect code fence start
+    const fenceMatch = line.match(/^```(\w*)/);
+    if (fenceMatch) {
+      const language = fenceMatch[1] || "";
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++; // skip closing ```
+      blocks.push({
+        language,
+        code: codeLines.join("\n").replace(/\n$/, ""),
+        heading: lastHeading,
+      });
+      lastHeading = undefined; // consume
+    } else {
+      i++;
+    }
+  }
+  return blocks;
+}
+
+/**
+ * Check if a code block is insertable (Luau/Lua, or a UI/instance description).
+ */
+export function isInsertable(language: string): boolean {
+  return (
+    language === "luau" ||
+    language === "lua" ||
+    language === "" ||
+    language === "text"
+  );
 }

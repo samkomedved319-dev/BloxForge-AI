@@ -495,8 +495,22 @@ local function executeInsertCommand(cmd)
                 local parent = resolveService(cmd.parent or "ServerScriptService")
                 local code = cmd.code or ""
 
+                -- Script types
+                local scriptTypes = { ["Script"] = true, ["LocalScript"] = true, ["ModuleScript"] = true }
+                -- UI types — created as empty instances (code goes into a child Script if present)
+                local uiTypes = {
+                        ["ScreenGui"] = true, ["Frame"] = true, ["TextLabel"] = true,
+                        ["TextButton"] = true, ["ImageButton"] = true, ["ImageLabel"] = true,
+                        ["TextBox"] = true, ["ScrollingFrame"] = true,
+                        ["UIGridLayout"] = true, ["UIListLayout"] = true,
+                        ["UICorner"] = true, ["UIStroke"] = true, ["UIGradient"] = true,
+                        ["UIScale"] = true, ["UIAspectRatioConstraint"] = true, ["UIPadding"] = true,
+                }
+
                 local inst
-                if instanceType == "Part" then
+                if scriptTypes[instanceType] then
+                        inst = Instance.new(instanceType)
+                elseif instanceType == "Part" then
                         inst = Instance.new("Part")
                         inst.Size = Vector3.new(4, 1, 4)
                         inst.Anchored = true
@@ -511,16 +525,39 @@ local function executeInsertCommand(cmd)
                         part.Position = Vector3.new(0, 5, 0)
                         part.BrickColor = BrickColor.Random()
                         part.Parent = inst
-                elseif instanceType == "LocalScript" then
-                        inst = Instance.new("LocalScript")
-                elseif instanceType == "ModuleScript" then
-                        inst = Instance.new("ModuleScript")
+                elseif uiTypes[instanceType] then
+                        inst = Instance.new(instanceType)
+                        -- Sensible defaults for UI elements
+                        if instanceType == "ScreenGui" then
+                                inst.ResetOnSpawn = false
+                                inst.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+                        elseif instanceType == "Frame" or instanceType == "ScrollingFrame" then
+                                inst.Size = UDim2.fromOffset(200, 100)
+                                inst.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+                                inst.BorderSizePixel = 0
+                        elseif instanceType == "TextLabel" or instanceType == "TextButton" then
+                                inst.Size = UDim2.fromOffset(200, 40)
+                                inst.Text = instanceName
+                                inst.TextColor3 = Color3.fromRGB(255, 255, 255)
+                                inst.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+                                inst.Font = Enum.Font.Gotham
+                                inst.TextSize = 14
+                        elseif instanceType == "TextBox" then
+                                inst.Size = UDim2.fromOffset(200, 30)
+                                inst.PlaceholderText = "Enter text…"
+                                inst.Text = ""
+                                inst.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+                                inst.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        elseif instanceType == "UICorner" then
+                                inst.CornerRadius = UDim.new(0, 8)
+                        end
                 else
-                        inst = Instance.new("Script")
+                        -- Fallback: try to create the instance type directly
+                        inst = Instance.new(instanceType)
                 end
 
                 -- Set Source BEFORE parenting (required for plugin-created scripts)
-                if instanceType == "Script" or instanceType == "LocalScript" or instanceType == "ModuleScript" then
+                if scriptTypes[instanceType] then
                         inst.Source = code
                 end
                 inst.Name = instanceName

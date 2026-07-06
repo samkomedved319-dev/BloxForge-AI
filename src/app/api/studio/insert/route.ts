@@ -4,7 +4,30 @@ import { studioStore } from "@/lib/studio-store";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const VALID_INSTANCE_TYPES = ["Script", "LocalScript", "ModuleScript", "Part", "Model"];
+const VALID_INSTANCE_TYPES = [
+  "Script",
+  "LocalScript",
+  "ModuleScript",
+  "Part",
+  "Model",
+  "ScreenGui",
+  "Frame",
+  "TextLabel",
+  "TextButton",
+  "ImageButton",
+  "ImageLabel",
+  "TextBox",
+  "ScrollingFrame",
+  "UIGridLayout",
+  "UIListLayout",
+  "UICorner",
+  "UIStroke",
+  "UIGradient",
+  "UIScale",
+  "UIAspectRatioConstraint",
+  "UIPadding",
+];
+
 const VALID_PARENTS = [
   "ServerScriptService",
   "ReplicatedStorage",
@@ -13,6 +36,7 @@ const VALID_PARENTS = [
   "StarterCharacterScripts",
   "StarterGui",
   "Workspace",
+  "Players", // for PlayerGui
 ];
 
 /**

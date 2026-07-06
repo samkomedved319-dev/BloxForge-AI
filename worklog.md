@@ -403,3 +403,26 @@ Work Log:
 Stage Summary:
 - Lint clean. Server stable.
 - Admin approval now takes effect IMMEDIATELY — no sign-out/sign-in required. Both the chat API and the frontend UI update in real-time.
+
+---
+Task ID: 68-73
+Agent: Orchestrator
+Task: Make AI automatically insert scripts, models, parts, and UIs into Roblox Studio
+
+Work Log:
+- Extended InstanceType to include 17 UI types: ScreenGui, Frame, TextLabel, TextButton, ImageButton, ImageLabel, TextBox, ScrollingFrame, UIGridLayout, UIListLayout, UICorner, UIStroke, UIGradient, UIScale, UIAspectRatioConstraint, UIPadding.
+- Added extractCodeBlocks() + isInsertable() helpers to luau-naming.ts — parses markdown for fenced code blocks + their nearest ### heading.
+- Updated insert API VALID_INSTANCE_TYPES + VALID_PARENTS to include all UI types + Players service.
+- Updated plugin executeInsertCommand: handles script types, Part, Model, AND all UI types with sensible defaults (ScreenGui.ResetOnSpawn=false, Frame sizes, TextLabel text+font, UICorner radius, etc.). Fallback: Instance.new(type) for any unrecognized type.
+- Updated system prompt: rule 6 now instructs the AI to generate Luau code that builds UI programmatically using Instance.new when asked for UI elements. Rule 3 says headings should be the instance name (no .lua extension).
+- Added auto-insert to chat-app:
+  - New `autoInsert` state (default false)
+  - `accumulatedContent` variable tracks the full AI response during streaming
+  - After stream completes: if autoInsert + studio.isConnected, calls extractCodeBlocks → deriveInstance → studio.insertCode for each code block automatically
+  - Toast: "Auto-inserting N items into Studio…" + per-item success toast with name + type + parent
+- Added Auto-insert toggle button in chat header (emerald Zap icon) — only visible when Studio is connected. Toggles on/off. When ON, every AI response with code blocks is automatically sent to Studio.
+
+Stage Summary:
+- Lint clean. Server stable. Plugin serves with 23 UI type references.
+- When Auto-insert is ON and Studio is connected: AI generates code → response streams → after completion, all code blocks are parsed → each is auto-inserted into Studio with the derived name + type + parent → toast confirms each insertion. No manual clicking needed.
+- Supports all instance types: Scripts, LocalScripts, ModuleScripts, Parts, Models, and all UI elements (ScreenGui, Frame, TextLabel, TextButton, TextBox, etc.).

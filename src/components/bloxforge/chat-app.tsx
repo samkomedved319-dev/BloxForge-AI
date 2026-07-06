@@ -39,6 +39,11 @@ import {
 } from "./studio-connector";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  extractCodeBlocks,
+  isInsertable,
+  deriveInstance,
+} from "@/lib/luau-naming";
 
 type Role = "user" | "assistant";
 interface ChatMessage {
@@ -101,6 +106,7 @@ export function ChatApp({
   const studio = useStudioConnection();
   const [studioDialogOpen, setStudioDialogOpen] = useState(false);
   const [includeStudioContext, setIncludeStudioContext] = useState(true);
+  const [autoInsert, setAutoInsert] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -266,6 +272,7 @@ export function ChatApp({
 
       const controller = new AbortController();
       abortRef.current = controller;
+      let accumulatedContent = ""; // tracks the full AI response for auto-insert
 
       try {
         const res = await fetch("/api/chat", {
@@ -348,6 +355,7 @@ export function ChatApp({
             try {
               const evt = JSON.parse(data);
               if (evt.type === "delta" && evt.delta) {
+                accumulatedContent += evt.delta;
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantMsg.id
@@ -374,6 +382,33 @@ export function ChatApp({
         }
         refreshConversations();
         refreshUsage();
+
+        // ── Auto-insert: if Studio is connected + autoInsert is on, parse
+        // the AI response for code blocks and insert each one automatically.
+        if (autoInsert && studio.isConnected && accumulatedContent) {
+          const blocks = extractCodeBlocks(accumulatedContent);
+          const insertable = blocks.filter((b) => isInsertable(b.language));
+          if (insertable.length > 0) {
+            toast.info(`Auto-inserting ${insertable.length} item${insertable.length > 1 ? "s" : ""} into Studio…`);
+            for (const block of insertable) {
+              const heading = block.heading || "";
+              const cleanHeading = heading.replace(/\.luau?$/i, "").replace(/[.:]$/, "").trim();
+              const derived = deriveInstance(block.code, cleanHeading);
+              const result = await studio.insertCode(block.code, {
+                title: derived.instanceName,
+                language: block.language,
+                instanceType: derived.instanceType,
+                instanceName: derived.instanceName,
+                parent: derived.parent,
+              });
+              if (result.ok) {
+                toast.success(`Auto-inserted: ${derived.instanceName}`, {
+                  description: `${derived.instanceType} → ${derived.parent}`,
+                });
+              }
+            }
+          }
+        }
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           setMessages((prev) =>
@@ -404,6 +439,7 @@ export function ChatApp({
       onOpenAuth,
       studio,
       includeStudioContext,
+      autoInsert,
     ],
   );
 
@@ -551,11 +587,31 @@ export function ChatApp({
           </div>
           <div className="flex items-center gap-2">
             {studio.isConnected ? (
-              <StudioBadge
-                context={studio.context}
-                mode={studio.mode}
-                onClick={() => setStudioDialogOpen(true)}
-              />
+              <>
+                <StudioBadge
+                  context={studio.context}
+                  mode={studio.mode}
+                  onClick={() => setStudioDialogOpen(true)}
+                />
+                {/* Auto-insert toggle — only visible when Studio is connected */}
+                <button
+                  onClick={() => setAutoInsert((v) => !v)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition",
+                    autoInsert
+                      ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground",
+                  )}
+                  title={
+                    autoInsert
+                      ? "Auto-insert is ON — AI code is sent to Studio automatically"
+                      : "Auto-insert is OFF — click to enable automatic insertion"
+                  }
+                >
+                  <Zap className={cn("size-3.5", autoInsert && "text-emerald-400")} />
+                  <span className="hidden sm:inline">Auto-insert</span>
+                </button>
+              </>
             ) : (
               <ConnectStudioButton onClick={() => setStudioDialogOpen(true)} />
             )}
