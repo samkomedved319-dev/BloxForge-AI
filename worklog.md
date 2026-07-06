@@ -343,3 +343,24 @@ Stage Summary:
 - Everything the user needs to complete the Roblox OAuth2 form is now at #oauth-setup with copy-paste values.
 - Privacy Policy at #privacy and Terms of Service at #tos — both required by Roblox.
 - Footer links all three legal/setup pages.
+
+---
+Task ID: 56-59
+Agent: Orchestrator
+Task: Build comprehensive documentation website
+
+Work Log:
+- Built docs-page.tsx: full documentation site with sidebar navigation + content area. 12 doc sections across 5 categories (Overview, Using BloxForge, Setup, Reference):
+  - Introduction, Getting Started, FAQ
+  - Web App Guide, Studio Plugin, Studio Connector
+  - Roblox Authentication, Custom API Keys, Admin Dashboard
+  - API Reference, Privacy Policy (summary), Terms of Service (summary)
+- Sidebar has live search filter, categorized sections with icons, active-state highlighting, prev/next navigation at the bottom of each doc.
+- Each doc section includes copy-paste code blocks, callouts (info/warn/tip), step-by-step instructions, and cross-links to other docs.
+- Docs cover: personalities/modes, plugin install, connector architecture diagram, OAuth2 setup with exact values, admin approval flow, custom API keys with model fetching, full API reference (all endpoints), and FAQ.
+- Wired #docs route in page.tsx (footer hidden on docs for full-width sidebar layout). Added "Docs" to site header nav + footer Resources section.
+
+Stage Summary:
+- Lint clean. Server stable.
+- Documentation site live at #docs with 12 sections, searchable sidebar, prev/next nav.
+- Covers everything users + admins need: getting started, web app, plugin, connector, Roblox OAuth setup, admin dashboard, custom API keys, API reference, privacy, TOS, FAQ.

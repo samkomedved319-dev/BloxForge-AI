@@ -13,6 +13,7 @@ import { UserDashboard } from "@/components/bloxforge/user-dashboard";
 import { Settings } from "@/components/bloxforge/settings";
 import { LegalPage } from "@/components/bloxforge/legal-page";
 import { OauthSetupGuide } from "@/components/bloxforge/oauth-setup-guide";
+import { DocsPage } from "@/components/bloxforge/docs-page";
 import { AuthModal } from "@/components/bloxforge/auth-modal";
 
 type View =
@@ -25,7 +26,8 @@ type View =
   | "settings"
   | "privacy"
   | "tos"
-  | "oauth-setup";
+  | "oauth-setup"
+  | "docs";
 
 function subscribe(callback: () => void) {
   window.addEventListener("hashchange", callback);
@@ -43,7 +45,8 @@ function getSnapshot(): View {
     h === "settings" ||
     h === "privacy" ||
     h === "tos" ||
-    h === "oauth-setup"
+    h === "oauth-setup" ||
+    h === "docs"
   )
     return h;
   return "landing";
@@ -125,6 +128,8 @@ export default function Home() {
         <LegalPage type="tos" />
       ) : view === "oauth-setup" ? (
         <OauthSetupGuide />
+      ) : view === "docs" ? (
+        <DocsPage />
       ) : view === "plugin" ? (
         <PluginPage
           onBack={() => navigate("landing")}
@@ -142,7 +147,7 @@ export default function Home() {
           onNavigatePricing={() => navigate("pricing")}
         />
       )}
-      {!isApp && !isAdmin && !isDashboard && !isSettings && <SiteFooter />}
+      {!isApp && !isAdmin && !isDashboard && !isSettings && view !== "docs" && <SiteFooter />}
 
       <AuthModal
         open={authOpen}

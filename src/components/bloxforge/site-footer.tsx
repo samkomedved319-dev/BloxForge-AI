@@ -30,10 +30,10 @@ export function SiteFooter() {
           <div>
             <h4 className="mb-3 text-sm font-semibold">Resources</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><button onClick={go("plugin")} className="hover:text-foreground">Documentation</button></li>
+              <li><button onClick={go("docs")} className="hover:text-foreground">Documentation</button></li>
+              <li><button onClick={go("oauth-setup")} className="hover:text-foreground">OAuth Setup Guide</button></li>
               <li><a href="https://create.roblox.com/docs/cloud/auth/oauth2-overview" target="_blank" rel="noreferrer" className="hover:text-foreground">Roblox OAuth2</a></li>
               <li><a href="https://build.nvidia.com" target="_blank" rel="noreferrer" className="hover:text-foreground">NVIDIA NIM</a></li>
-              <li><a href="https://create.roblox.com/docs" target="_blank" rel="noreferrer" className="hover:text-foreground">Roblox Docs</a></li>
             </ul>
           </div>
 

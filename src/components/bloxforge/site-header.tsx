@@ -7,7 +7,18 @@ import { Button } from "@/components/ui/button";
 import { AccountMenu } from "./account-menu";
 import { cn } from "@/lib/utils";
 
-type View = "landing" | "app" | "plugin" | "pricing";
+type View =
+  | "landing"
+  | "app"
+  | "plugin"
+  | "pricing"
+  | "admin"
+  | "dashboard"
+  | "settings"
+  | "docs"
+  | "privacy"
+  | "tos"
+  | "oauth-setup";
 
 export function SiteHeader({
   view,
@@ -23,6 +34,7 @@ export function SiteHeader({
   const navItems: { label: string; v: View; anchor?: string }[] = [
     { label: "Home", v: "landing" },
     { label: "Pricing", v: "pricing" },
+    { label: "Docs", v: "docs" },
     { label: "Plugin", v: "plugin" },
   ];
 
