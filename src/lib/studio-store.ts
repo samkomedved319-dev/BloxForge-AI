@@ -17,6 +17,9 @@ export interface InsertCommand {
   title: string;
   language: string;
   code: string;
+  instanceType: string; // "Script" | "LocalScript" | "ModuleScript" | "Part" | "Model"
+  instanceName: string; // the name to give the created instance
+  parent: string; // service path, e.g. "ServerScriptService"
   createdAt: number;
 }
 
@@ -114,7 +117,14 @@ class StudioStore {
   /** Web app → plugin: enqueue an insert command. */
   insert(
     code: string,
-    cmd: { title: string; language: string; code: string },
+    cmd: {
+      title: string;
+      language: string;
+      code: string;
+      instanceType?: string;
+      instanceName?: string;
+      parent?: string;
+    },
   ): { ok: boolean; commandId?: string; error?: string } {
     const normalized = normalizeCode(code);
     const s = this.sessions.get(normalized);
@@ -125,8 +135,13 @@ class StudioStore {
     const commandId =
       Math.random().toString(36).slice(2) + Date.now().toString(36);
     s.pendingInserts.push({
-      ...cmd,
       id: commandId,
+      title: cmd.title,
+      language: cmd.language,
+      code: cmd.code,
+      instanceType: cmd.instanceType || "Script",
+      instanceName: cmd.instanceName || cmd.title || "BloxForgeScript",
+      parent: cmd.parent || "ServerScriptService",
       createdAt: Date.now(),
     });
     return { ok: true, commandId };

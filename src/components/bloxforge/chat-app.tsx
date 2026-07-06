@@ -117,19 +117,32 @@ export function ChatApp({
   const allowedPersonalities = plan?.allowedPersonalities || ["swift", "balanced"];
 
   // Insert generated code into Studio via the connector.
-  // In demo mode, the simulated heartbeat drains the command and shows a
-  // confirmation toast. In real mode, the plugin drains it.
+  // The Markdown component derives an instanceName + instanceType from the
+  // code + the AI's heading. In demo mode the simulated heartbeat drains the
+  // command and shows a confirmation toast; in real mode the plugin drains it.
   const handleInsertCode = useCallback(
-    async (code: string, language: string) => {
-      const result = await studio.insertCode(code, "BloxForge Script", language);
+    async (
+      code: string,
+      language: string,
+      instanceType: "Script" | "LocalScript" | "ModuleScript" | "Part" | "Model",
+      instanceName: string,
+      parent: string,
+    ) => {
+      const result = await studio.insertCode(code, {
+        title: instanceName,
+        language,
+        instanceType,
+        instanceName,
+        parent,
+      });
       if (result.ok) {
         if (studio.mode === "demo") {
-          toast.success("Sent to Studio (demo)", {
-            description: "The simulated plugin will insert it shortly.",
+          toast.success(`Sent to Studio (demo)`, {
+            description: `${instanceType} "${instanceName}" → ${parent}`,
           });
         } else {
-          toast.success("Sent to Roblox Studio", {
-            description: "A new Script will appear in ServerScriptService shortly.",
+          toast.success(`Sent to Roblox Studio`, {
+            description: `${instanceType} "${instanceName}" → ${parent}`,
           });
         }
       }

@@ -7,9 +7,10 @@ import { Landing } from "@/components/bloxforge/landing";
 import { ChatApp } from "@/components/bloxforge/chat-app";
 import { PluginPage } from "@/components/bloxforge/plugin-page";
 import { Pricing } from "@/components/bloxforge/pricing";
+import { AdminDashboard } from "@/components/bloxforge/admin-dashboard";
 import { AuthModal } from "@/components/bloxforge/auth-modal";
 
-type View = "landing" | "app" | "plugin" | "pricing";
+type View = "landing" | "app" | "plugin" | "pricing" | "admin";
 
 function subscribe(callback: () => void) {
   window.addEventListener("hashchange", callback);
@@ -18,7 +19,7 @@ function subscribe(callback: () => void) {
 
 function getSnapshot(): View {
   const h = window.location.hash.replace("#", "");
-  if (h === "app" || h === "plugin" || h === "pricing") return h;
+  if (h === "app" || h === "plugin" || h === "pricing" || h === "admin") return h;
   return "landing";
 }
 
@@ -48,6 +49,7 @@ export default function Home() {
   }, []);
 
   const isApp = view === "app";
+  const isAdmin = view === "admin";
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -58,6 +60,8 @@ export default function Home() {
           onOpenAuth={() => openAuth("signup")}
           onNavigatePricing={() => navigate("pricing")}
         />
+      ) : isAdmin ? (
+        <AdminDashboard />
       ) : view === "plugin" ? (
         <PluginPage
           onBack={() => navigate("landing")}
@@ -75,14 +79,13 @@ export default function Home() {
           onNavigatePricing={() => navigate("pricing")}
         />
       )}
-      {!isApp && <SiteFooter />}
+      {!isApp && !isAdmin && <SiteFooter />}
 
       <AuthModal
         open={authOpen}
         onClose={() => setAuthOpen(false)}
         initialMode={authMode}
         onSuccess={() => {
-          // Reload to pick up the new session + scoped conversations
           if (typeof window !== "undefined") window.location.reload();
         }}
       />

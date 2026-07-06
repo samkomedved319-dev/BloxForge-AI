@@ -58,7 +58,11 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   const isGuest = !session?.user?.id;
   const plan = getPlan(session?.user?.plan);
-  const allowedPersonalities = plan.allowedPersonalities;
+  const isAdmin = (session?.user as any)?.role === "admin";
+  // Admins unlock everything regardless of plan
+  const allowedPersonalities = isAdmin
+    ? PERSONALITIES.map((p) => p.id)
+    : plan.allowedPersonalities;
 
   const personalityId = body.personality || DEFAULT_PERSONALITY_ID;
   const modeId = body.mode || DEFAULT_MODE_ID;
@@ -75,25 +79,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Enforce daily limit for signed-in free users
-  if (!isGuest) {
+  // Enforce daily limit for signed-in non-admin users. Admins = unlimited.
+  if (!isGuest && !isAdmin) {
     const user = await db.user.findUnique({ where: { id: session!.user.id } });
     if (user) {
       const today = todayKey();
+      // effective limit = plan limit + admin-granted extra credits
+      const effectiveLimit =
+        plan.dailyMessageLimit === -1 ? -1 : plan.dailyMessageLimit + (user.extraCredits || 0);
       if (user.usageDate !== today) {
         await db.user.update({
           where: { id: user.id },
           data: { usageDate: today, usageCount: 1 },
         });
       } else {
-        if (
-          plan.dailyMessageLimit !== -1 &&
-          user.usageCount >= plan.dailyMessageLimit
-        ) {
+        if (effectiveLimit !== -1 && user.usageCount >= effectiveLimit) {
           return NextResponse.json(
             {
               error: "limit-reached",
-              message: `You've reached your daily limit of ${plan.dailyMessageLimit} messages on the ${plan.label} plan. Upgrade for unlimited.`,
+              message: `You've reached your daily limit of ${effectiveLimit} messages. Upgrade for unlimited.`,
             },
             { status: 429 },
           );

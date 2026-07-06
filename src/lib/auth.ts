@@ -3,13 +3,24 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
+/** Comma-separated list of admin emails (env-configurable). */
+export const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
+  .split(",")
+  .map((e) => e.toLowerCase().trim())
+  .filter(Boolean);
+
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const e = email.toLowerCase().trim();
+  return ADMIN_EMAILS.includes(e);
+}
+
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
-    // We use a modal-based UI on /, so we redirect any auth-page hits back home.
     signIn: "/",
   },
   providers: [
@@ -35,6 +46,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name ?? undefined,
           plan: user.plan,
+          role: user.role,
         } as any;
       },
     }),
@@ -44,6 +56,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = (user as any).id;
         token.plan = (user as any).plan ?? "free";
+        token.role = (user as any).role ?? "user";
       }
       return token;
     },
@@ -51,6 +64,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).id = token.id;
         (session.user as any).plan = token.plan ?? "free";
+        (session.user as any).role = token.role ?? "user";
       }
       return session;
     },

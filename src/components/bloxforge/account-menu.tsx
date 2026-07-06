@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Sparkles,
   Settings,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,7 @@ export function AccountMenu({
   onOpenAuth: () => void;
   onNavigatePricing: () => void;
 }) {
-  const { isAuthenticated, user, usage, plan } = useAuth();
+  const { isAuthenticated, user, usage, plan, isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
 
   if (!isAuthenticated) {
@@ -141,6 +142,19 @@ export function AccountMenu({
 
               {/* Actions */}
               <div className="p-2">
+                {isAdmin && (
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      window.location.hash = "admin";
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-emerald-400 transition hover:bg-emerald-500/10"
+                  >
+                    <Shield className="size-4" />
+                    <span className="flex-1 font-medium">Admin Dashboard</span>
+                    <span className="text-xs">→</span>
+                  </button>
+                )}
                 {isFree && (
                   <button
                     onClick={() => {

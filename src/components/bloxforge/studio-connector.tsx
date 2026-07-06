@@ -114,16 +114,40 @@ export function useStudioConnection() {
   }, [pairingCode, stopPolling, stopSimulate]);
 
   const insertCode = useCallback(
-    async (code: string, title = "BloxForge Script", language = "luau") => {
+    async (
+      code: string,
+      opts: {
+        title?: string;
+        language?: string;
+        instanceType?: string;
+        instanceName?: string;
+        parent?: string;
+      } = {},
+    ) => {
       if (!pairingCode || !state?.connected) {
         toast.error("Studio is not connected");
         return { ok: false };
       }
+      const {
+        title = "BloxForge Script",
+        language = "luau",
+        instanceType = "Script",
+        instanceName,
+        parent = "ServerScriptService",
+      } = opts;
       try {
         const res = await fetch("/api/studio/insert", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pairingCode, title, language, code }),
+          body: JSON.stringify({
+            pairingCode,
+            title,
+            language,
+            code,
+            instanceType,
+            instanceName,
+            parent,
+          }),
         });
         const data = await res.json();
         if (data.ok) {
@@ -172,9 +196,12 @@ export function useStudioConnection() {
         const data = await res.json();
         if (data?.ok && Array.isArray(data.commands)) {
           for (const cmd of data.commands) {
-            toast.success(`Inserted "${cmd.title}" into ServerScriptService`, {
-              description: "Demo mode — no real Studio connected.",
-            });
+            toast.success(
+              `Inserted "${cmd.instanceName || cmd.title}" (${cmd.instanceType}) into ${cmd.parent}`,
+              {
+                description: "Demo mode — no real Studio connected.",
+              },
+            );
             fetch("/api/studio/ack", {
               method: "POST",
               headers: { "Content-Type": "application/json" },

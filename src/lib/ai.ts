@@ -2,15 +2,18 @@
  * BloxForge AI — AI engine
  *
  * Primary path: NVIDIA NIM API (https://integrate.api.nvidia.com/v1/chat/completions)
- *   OpenAI-compatible, real-time streaming, uses NVIDIA_API_KEY env var.
- * Fallback path: z-ai-web-dev-sdk (so the live demo works without an NVIDIA key).
+ *   OpenAI-compatible, real-time streaming. Uses either the NVIDIA_API_KEY env
+ *   var OR a custom API key added by an admin via the dashboard (stored in DB).
+ * Fallback path: z-ai-web-dev-sdk (so the live demo works without any key).
  *
- * Both paths expose the same surface: a streaming chat completion over
- * Roblox/Luau-aware messages.
+ * Any OpenAI-compatible endpoint works as a "custom" key — admins can add their
+ * own NVIDIA key, Together AI, Groq, OpenRouter, OpenAI, etc. The highest-priority
+ * active key wins.
  */
 
 import ZAI from "z-ai-web-dev-sdk";
 import { BLOXFORGE_SYSTEM_PROMPT } from "@/lib/models"; // re-exported below
+import { db } from "@/lib/db";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -18,13 +21,13 @@ export interface ChatMessage {
 }
 
 export interface ChatOptions {
-  model: string; // real NVIDIA NIM model id
+  model: string; // real model id for the chosen provider
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
 }
 
-export type EngineProvider = "nvidia" | "zai";
+export type EngineProvider = "nvidia" | "custom" | "zai";
 
 export interface EngineMeta {
   provider: EngineProvider;
@@ -38,6 +41,51 @@ export function getNvidiaKey(): string | undefined {
   return process.env.NVIDIA_API_KEY || process.env.NVIDIA_KEY;
 }
 
+export interface ResolvedKey {
+  provider: EngineProvider;
+  baseUrl: string;
+  apiKey: string;
+  label: string;
+  modelOverride?: string | null;
+}
+
+/**
+ * Resolve the best available API key.
+ * 1. Highest-priority active custom key from the DB (admin-configured).
+ * 2. NVIDIA_API_KEY env var.
+ * 3. None → fall back to z-ai demo engine.
+ */
+export async function resolveApiKey(): Promise<ResolvedKey | null> {
+  try {
+    const custom = await db.apiKey.findFirst({
+      where: { active: true },
+      orderBy: { priority: "desc" },
+    });
+    if (custom) {
+      return {
+        provider: custom.provider === "nvidia" ? "nvidia" : "custom",
+        baseUrl: custom.baseUrl,
+        apiKey: custom.key,
+        label: custom.label,
+        modelOverride: custom.model,
+      };
+    }
+  } catch (e) {
+    console.error("[ai] failed to load custom keys:", e);
+  }
+
+  const envKey = getNvidiaKey();
+  if (envKey) {
+    return {
+      provider: "nvidia",
+      baseUrl: NVIDIA_BASE_URL,
+      apiKey: envKey,
+      label: "NVIDIA (env)",
+    };
+  }
+  return null;
+}
+
 /**
  * Stream a chat completion as a series of text deltas.
  * Yields `{ delta, meta }` chunks. The first chunk carries engine metadata.
@@ -45,14 +93,14 @@ export function getNvidiaKey(): string | undefined {
 export async function* streamChat(
   opts: ChatOptions,
 ): AsyncGenerator<{ delta: string; meta?: EngineMeta; done?: boolean }> {
-  const nvidiaKey = getNvidiaKey();
+  const key = await resolveApiKey();
 
-  if (nvidiaKey) {
+  if (key) {
     try {
-      yield* streamNvidia(opts, nvidiaKey);
+      yield* streamOpenAICompatible(opts, key);
       return;
     } catch (err) {
-      console.error("[bloxforge] NVIDIA stream failed, falling back:", err);
+      console.error("[bloxforge] stream failed, falling back to z-ai:", err);
       // fall through to z-ai
     }
   }
@@ -60,17 +108,22 @@ export async function* streamChat(
   yield* streamZai(opts);
 }
 
-async function* streamNvidia(
+/**
+ * Stream from any OpenAI-compatible /chat/completions endpoint
+ * (NVIDIA NIM, OpenAI, OpenRouter, Groq, Together, etc.)
+ */
+async function* streamOpenAICompatible(
   opts: ChatOptions,
-  apiKey: string,
+  key: ResolvedKey,
 ): AsyncGenerator<{ delta: string; meta?: EngineMeta; done?: boolean }> {
+  const model = key.modelOverride || opts.model;
   yield {
     delta: "",
-    meta: { provider: "nvidia", model: opts.model, label: opts.model },
+    meta: { provider: key.provider, model, label: `${key.label} · ${model}` },
   };
 
   const body = {
-    model: opts.model,
+    model,
     messages: opts.messages,
     temperature: opts.temperature ?? 0.6,
     top_p: 0.95,
@@ -78,11 +131,11 @@ async function* streamNvidia(
     stream: true,
   };
 
-  const res = await fetch(`${NVIDIA_BASE_URL}/chat/completions`, {
+  const res = await fetch(`${key.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${key.apiKey}`,
       Accept: "text/event-stream",
     },
     body: JSON.stringify(body),
@@ -90,7 +143,7 @@ async function* streamNvidia(
 
   if (!res.ok || !res.body) {
     const text = await res.text().catch(() => "");
-    throw new Error(`NVIDIA API ${res.status}: ${text.slice(0, 300)}`);
+    throw new Error(`${key.label} API ${res.status}: ${text.slice(0, 300)}`);
   }
 
   const reader = res.body.getReader();
@@ -127,7 +180,7 @@ async function* streamNvidia(
 
 /**
  * Fallback engine using z-ai-web-dev-sdk. The SDK is non-streaming, so we
- * request the full completion then emit it in word chunks to simulate a
+ * request the full completion then emit it in small chunks to simulate a
  * smooth streaming experience for the UI.
  */
 async function* streamZai(
@@ -151,7 +204,6 @@ async function* streamZai(
 
   const content: string = completion?.choices?.[0]?.message?.content ?? "";
 
-  // Stream out in small chunks for a live feel.
   const chunkSize = 6;
   for (let i = 0; i < content.length; i += chunkSize) {
     yield { delta: content.slice(i, i + chunkSize) };

@@ -1,0 +1,694 @@
+     1→"use client";
+     2→
+     3→import { motion } from "framer-motion";
+     4→import {
+     5→  Sparkles,
+     6→  ArrowRight,
+     7→  Code2,
+     8→  Bug,
+     9→  Wand2,
+    10→  Cpu,
+    11→  Zap,
+    12→  Shield,
+    13→  GitBranch,
+    14→  Download,
+    15→  Terminal,
+    16→  Box,
+    17→  CheckCircle2,
+    18→  Rocket,
+    19→  Brain,
+    20→  Crown,
+    21→} from "lucide-react";
+    22→import { Logo } from "./logo";
+    23→import { Button } from "@/components/ui/button";
+    24→import { Badge } from "@/components/ui/badge";
+    25→import { Card } from "@/components/ui/card";
+    26→import { Counter, Reveal } from "./motion";
+    27→import { cn } from "@/lib/utils";
+    28→
+    29→const FEATURES = [
+    30→  {
+    31→    icon: Code2,
+    32→    title: "Instant Luau Generation",
+    33→    desc: "Describe the system you need — BloxForge ships complete, idiomatic ModuleScripts, LocalScripts and Scripts you can drop straight into Studio.",
+    34→  },
+    35→  {
+    36→    icon: Bug,
+    37→    title: "Debug & Explain",
+    38→    desc: "Paste a stack trace or a misbehaving remote event. Get a root-cause diagnosis plus the fixed code, with the why explained.",
+    39→  },
+    40→  {
+    41→    icon: Wand2,
+    42→    title: "Refactor to Patterns",
+    43→    desc: "Turn spaghetti into clean OOP with metatables, signals, and type annotations. Modern Luau best-practices baked in.",
+    44→  },
+    45→  {
+    46→    icon: Cpu,
+    47→    title: "NVIDIA Frontier Models",
+    48→    desc: "Pick from Qwen2.5-Coder 32B, DeepSeek R1, Nemotron 70B, or Llama 3.1 405B — all served via NVIDIA NIM at low latency.",
+    49→  },
+    50→  {
+    51→    icon: Shield,
+    52→    title: "Exploit-Aware",
+    53→    desc: "Suggestions respect the client/server boundary. Never trust the client — BloxForge flags insecure remote patterns for you.",
+    54→  },
+    55→  {
+    56→    icon: GitBranch,
+    57→    title: "Session Memory",
+    58→    desc: "Every forge session is saved. Jump back into a conversation, pick up context, and keep iterating across days.",
+    59→  },
+    60→];
+    61→
+    62→const MODELS = [
+    63→  {
+    64→    name: "Qwen2.5 Coder 32B",
+    65→    vendor: "Alibaba / NVIDIA NIM",
+    66→    tag: "Recommended",
+    67→    desc: "Purpose-built code model. Best-in-class for Luau scripting.",
+    68→    accent: "from-emerald-400 to-teal-500",
+    69→  },
+    70→  {
+    71→    name: "DeepSeek R1",
+    72→    vendor: "DeepSeek / NVIDIA NIM",
+    73→    tag: "Reasoning",
+    74→    desc: "Deep reasoning for complex game-system architecture.",
+    75→    accent: "from-violet-400 to-fuchsia-500",
+    76→  },
+    77→  {
+    78→    name: "Nemotron 70B",
+    79→    vendor: "NVIDIA",
+    80→    tag: "All-rounder",
+    81→    desc: "NVIDIA-tuned Llama 3.1 for docs, ideas and design.",
+    82→    accent: "from-amber-400 to-orange-500",
+    83→  },
+    84→  {
+    85→    name: "Llama 3.1 405B",
+    86→    vendor: "Meta / NVIDIA NIM",
+    87→    tag: "Flagship",
+    88→    desc: "Frontier-scale model for the hardest generation tasks.",
+    89→    accent: "from-cyan-400 to-blue-500",
+    90→  },
+    91→];
+    92→
+    93→const STEPS = [
+    94→  {
+    95→    icon: Rocket,
+    96→    title: "Launch the Forge",
+    97→    desc: "Open the BloxForge AI app right here in your browser. No install required to start chatting.",
+    98→  },
+    99→  {
+   100→    icon: Cpu,
+   101→    title: "Pick your model",
+   102→    desc: "Choose the NVIDIA NIM model that fits the task — coder for scripts, R1 for reasoning, 405B for the hard stuff.",
+   103→  },
+   104→  {
+   105→    icon: Sparkles,
+   106→    title: "Forge & ship",
+   107→    desc: "Generate, copy, and paste into Studio — or install the plugin to insert code with one click.",
+   108→  },
+   109→];
+   110→
+   111→const PLUGIN_STEPS = [
+   112→  {
+   113→    step: "1",
+   114→    title: "Download the plugin",
+   115→    desc: "Grab BloxForgeAI.lua — a single self-contained Luau file, no dependencies.",
+   116→  },
+   117→  {
+   118→    step: "2",
+   119→    title: "Drop it in your Plugins folder",
+   120→    desc: "Windows: %localappdata%\\Roblox\\Plugins · macOS: ~/Documents/Roblox/Plugins",
+   121→  },
+   122→  {
+   123→    step: "3",
+   124→    title: "Restart Studio & connect",
+   125→    desc: "Open the BloxForge toolbar, click ⚙, and paste your BloxForge server URL. Done.",
+   126→  },
+   127→];
+   128→
+   129→export function Landing({
+   130→  onLaunch,
+   131→  onGetPlugin,
+   132→  onNavigatePricing,
+   133→}: {
+   134→  onLaunch: () => void;
+   135→  onGetPlugin: () => void;
+   136→  onNavigatePricing: () => void;
+   137→}) {
+   138→  return (
+   139→    <main className="flex-1">
+   140→      <Hero onLaunch={onLaunch} onGetPlugin={onGetPlugin} />
+   141→      <Stats />
+   142→      <Models />
+   143→      <Features />
+   144→      <HowItWorks onLaunch={onLaunch} />
+   145→      <PluginSection onGetPlugin={onGetPlugin} onLaunch={onLaunch} />
+   146→      <PricingTeaser onNavigatePricing={onNavigatePricing} onLaunch={onLaunch} />
+   147→      <CTA onLaunch={onLaunch} />
+   148→    </main>
+   149→  );
+   150→}
+   151→
+   152→function Hero({
+   153→  onLaunch,
+   154→  onGetPlugin,
+   155→}: {
+   156→  onLaunch: () => void;
+   157→  onGetPlugin: () => void;
+   158→}) {
+   159→  return (
+   160→    <section className="relative overflow-hidden">
+   161→      <div className="bg-radial-brand pointer-events-none absolute inset-0" />
+   162→      <div className="bg-grid pointer-events-none absolute inset-0 opacity-40 [mask-image:radial-gradient(60%_50%_at_50%_0%,black,transparent)]" />
+   163→      <div className="pointer-events-none absolute -top-24 left-1/4 size-72 rounded-full bg-emerald-500/20 blur-3xl animate-blob" />
+   164→      <div className="pointer-events-none absolute -top-16 right-1/4 size-72 rounded-full bg-teal-500/15 blur-3xl animate-blob [animation-delay:4s]" />
+   165→
+   166→      <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-16 sm:pt-24">
+   167→        <motion.div
+   168→          initial={{ opacity: 0, y: 16 }}
+   169→          animate={{ opacity: 1, y: 0 }}
+   170→          transition={{ duration: 0.5 }}
+   171→          className="mx-auto max-w-3xl text-center"
+   172→        >
+   173→          <Badge
+   174→            variant="outline"
+   175→            className="mx-auto mb-6 gap-2 border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-emerald-300"
+   176→          >
+   177→            <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+   178→            Powered by NVIDIA NIM · Now with Roblox Studio plugin
+   179→          </Badge>
+   180→
+   181→          <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-balance sm:text-6xl">
+   182→            The AI coding companion for{" "}
+   183→            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
+   184→              Roblox developers
+   185→            </span>
+   186→          </h1>
+   187→
+   188→          <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground text-balance sm:text-lg">
+   189→            BloxForge AI generates, debugs and refactors Luau using NVIDIA
+   190→            frontier models — and ships a free Studio plugin that drops the
+   191→            code straight into your game.
+   192→          </p>
+   193→
+   194→          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+   195→            <Button
+   196→              size="lg"
+   197→              onClick={onLaunch}
+   198→              className="h-12 gap-2 bg-primary px-7 text-base text-primary-foreground hover:bg-primary/90 glow-brand"
+   199→            >
+   200→              <Sparkles className="size-4" />
+   201→              Launch BloxForge AI
+   202→              <ArrowRight className="size-4" />
+   203→            </Button>
+   204→            <Button
+   205→              size="lg"
+   206→              variant="outline"
+   207→              onClick={onGetPlugin}
+   208→              className="h-12 gap-2 border-border bg-card/50 px-7 text-base backdrop-blur hover:bg-accent"
+   209→            >
+   210→              <Download className="size-4" />
+   211→              Get the Studio Plugin
+   212→            </Button>
+   213→          </div>
+   214→
+   215→          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+   216→            {[
+   217→              "5 NVIDIA models",
+   218→              "No sign-up to try",
+   219→              "Streaming responses",
+   220→              "Saved sessions",
+   221→            ].map((t) => (
+   222→              <span key={t} className="flex items-center gap-1.5">
+   223→                <CheckCircle2 className="size-3.5 text-emerald-400" />
+   224→                {t}
+   225→              </span>
+   226→            ))}
+   227→          </div>
+   228→        </motion.div>
+   229→
+   230→        {/* Code preview mock */}
+   231→        <motion.div
+   232→          initial={{ opacity: 0, y: 30 }}
+   233→          animate={{ opacity: 1, y: 0 }}
+   234→          transition={{ duration: 0.6, delay: 0.2 }}
+   235→          className="relative mx-auto mt-14 max-w-4xl"
+   236→        >
+   237→          <div className="absolute -inset-x-8 -top-6 bottom-0 rounded-3xl bg-gradient-to-b from-emerald-500/20 to-transparent blur-2xl" />
+   238→          <Card className="relative overflow-hidden border-border/60 bg-[oklch(0.14_0.012_250)] shadow-2xl">
+   239→            <div className="flex items-center gap-2 border-b border-border/60 bg-[oklch(0.17_0.012_250)] px-4 py-2.5">
+   240→              <div className="flex gap-1.5">
+   241→                <span className="size-3 rounded-full bg-red-500/70" />
+   242→                <span className="size-3 rounded-full bg-amber-500/70" />
+   243→                <span className="size-3 rounded-full bg-emerald-500/70" />
+   244→              </div>
+   245→              <span className="ml-2 font-mono text-[11px] text-muted-foreground">
+   246→                BloxForge AI — cooldown.lua
+   247→              </span>
+   248→              <Badge className="ml-auto h-5 gap-1 bg-emerald-500/15 px-2 text-[10px] text-emerald-300 hover:bg-emerald-500/20">
+   249→                <Cpu className="size-2.5" /> Qwen2.5-Coder
+   250→              </Badge>
+   251→            </div>
+   252→            <pre className="overflow-x-auto p-5 text-[12.5px] leading-relaxed">
+   253→              <code className="font-mono">
+   254→                <span className="text-violet-400">--!strict</span>
+   255→                {"\n"}
+   256→                <span className="text-violet-400">local</span>{" "}
+   257→                <span className="text-sky-300">TweenService</span> ={" "}
+   258→                <span className="text-sky-300">game</span>:GetService(
+   259→                <span className="text-emerald-300">"TweenService"</span>)
+   260→                {"\n\n"}
+   261→                <span className="text-violet-400">local</span>{" "}
+   262→                <span className="text-amber-300">Cooldown</span> = {}
+   263→                {"\n"}
+   264→                <span className="text-amber-300">Cooldown</span>.__index ={" "}
+   265→                <span className="text-amber-300">Cooldown</span>
+   266→                {"\n\n"}
+   267→                <span className="text-violet-400">function</span>{" "}
+   268→                <span className="text-amber-300">Cooldown</span>.new(duration:{" "}
+   269→                <span className="text-teal-300">number</span>)
+   270→                {"\n"}
+   271→                {"  "}
+   272→                <span className="text-violet-400">return</span> setmetatable({"{"}{"\n"}
+   273→                {"    "}remaining = duration,{"\n"}
+   274→                {"  "}, <span className="text-amber-300">Cooldown</span>)
+   275→                {"\n"}
+   276→                <span className="text-violet-400">end</span>
+   277→                {"\n\n"}
+   278→                <span className="text-slate-500">
+   279→                  -- BloxForge generated ✓ ready to ship
+   280→                </span>
+   281→              </code>
+   282→            </pre>
+   283→          </Card>
+   284→        </motion.div>
+   285→      </div>
+   286→    </section>
+   287→  );
+   288→}
+   289→
+   290→function SectionHeading({
+   291→  eyebrow,
+   292→  title,
+   293→  desc,
+   294→}: {
+   295→  eyebrow: string;
+   296→  title: string;
+   297→  desc?: string;
+   298→}) {
+   299→  return (
+   300→    <div className="mx-auto max-w-2xl text-center">
+   301→      <span className="font-mono text-xs uppercase tracking-[0.2em] text-emerald-400">
+   302→        {eyebrow}
+   303→      </span>
+   304→      <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+   305→        {title}
+   306→      </h2>
+   307→      {desc && <p className="mt-3 text-muted-foreground text-balance">{desc}</p>}
+   308→    </div>
+   309→  );
+   310→}
+   311→
+   312→function Models() {
+   313→  return (
+   314→    <section className="relative border-t border-border/50 py-20">
+   315→      <div className="mx-auto max-w-7xl px-4">
+   316→        <SectionHeading
+   317→          eyebrow="The best models, one forge"
+   318→          title="Frontier NVIDIA models, your call"
+   319→          desc="Switch models mid-session. Each is hosted on NVIDIA NIM and tuned for a different kind of Roblox work."
+   320→        />
+   321→        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+   322→          {MODELS.map((m, i) => (
+   323→            <motion.div
+   324→              key={m.name}
+   325→              initial={{ opacity: 0, y: 20 }}
+   326→              whileInView={{ opacity: 1, y: 0 }}
+   327→              viewport={{ once: true }}
+   328→              transition={{ duration: 0.4, delay: i * 0.08 }}
+   329→            >
+   330→              <Card className="group h-full overflow-hidden border-border/60 bg-card p-5 transition hover:border-emerald-500/40">
+   331→                <div
+   332→                  className={cn(
+   333→                    "mb-4 flex size-11 items-center justify-center rounded-xl bg-gradient-to-br text-slate-950 shadow-lg",
+   334→                    m.accent,
+   335→                  )}
+   336→                >
+   337→                  <Brain className="size-5" />
+   338→                </div>
+   339→                <Badge
+   340→                  variant="secondary"
+   341→                  className="mb-2 h-5 bg-emerald-500/10 text-[10px] text-emerald-300"
+   342→                >
+   343→                  {m.tag}
+   344→                </Badge>
+   345→                <h3 className="font-display text-lg font-bold">{m.name}</h3>
+   346→                <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+   347→                  {m.vendor}
+   348→                </p>
+   349→                <p className="mt-2.5 text-sm text-muted-foreground">{m.desc}</p>
+   350→              </Card>
+   351→            </motion.div>
+   352→          ))}
+   353→        </div>
+   354→      </div>
+   355→    </section>
+   356→  );
+   357→}
+   358→
+   359→function Features() {
+   360→  return (
+   361→    <section className="relative border-t border-border/50 py-20">
+   362→      <div className="mx-auto max-w-7xl px-4">
+   363→        <SectionHeading
+   364→          eyebrow="Everything you need"
+   365→          title="Built for Roblox, not just code"
+   366→          desc="BloxForge knows the engine: services, remotes, attributes, parallel Luau, and the difference between a LocalScript and a Script."
+   367→        />
+   368→        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   369→          {FEATURES.map((f, i) => (
+   370→            <motion.div
+   371→              key={f.title}
+   372→              initial={{ opacity: 0, y: 20 }}
+   373→              whileInView={{ opacity: 1, y: 0 }}
+   374→              viewport={{ once: true }}
+   375→              transition={{ duration: 0.4, delay: i * 0.06 }}
+   376→            >
+   377→              <Card className="group h-full border-border/60 bg-card p-6 transition hover:border-emerald-500/30 hover:bg-accent/20">
+   378→                <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 transition group-hover:bg-emerald-500/20">
+   379→                  <f.icon className="size-5" />
+   380→                </div>
+   381→                <h3 className="font-display text-lg font-bold">{f.title}</h3>
+   382→                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+   383→                  {f.desc}
+   384→                </p>
+   385→              </Card>
+   386→            </motion.div>
+   387→          ))}
+   388→        </div>
+   389→      </div>
+   390→    </section>
+   391→  );
+   392→}
+   393→
+   394→function HowItWorks({ onLaunch }: { onLaunch: () => void }) {
+   395→  return (
+   396→    <section className="relative border-t border-border/50 py-20">
+   397→      <div className="mx-auto max-w-7xl px-4">
+   398→        <SectionHeading
+   399→          eyebrow="From idea to instance"
+   400→          title="Three steps to shipping"
+   401→        />
+   402→        <div className="relative mt-14 grid grid-cols-1 gap-8 md:grid-cols-3">
+   403→          <div className="pointer-events-none absolute left-0 right-0 top-7 hidden h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent md:block" />
+   404→          {STEPS.map((s, i) => (
+   405→            <motion.div
+   406→              key={s.title}
+   407→              initial={{ opacity: 0, y: 20 }}
+   408→              whileInView={{ opacity: 1, y: 0 }}
+   409→              viewport={{ once: true }}
+   410→              transition={{ duration: 0.4, delay: i * 0.1 }}
+   411→              className="relative flex flex-col items-center text-center"
+   412→            >
+   413→              <div className="relative z-10 mb-5 flex size-14 items-center justify-center rounded-2xl border border-emerald-500/30 bg-background shadow-lg shadow-emerald-500/10">
+   414→                <s.icon className="size-6 text-emerald-400" />
+   415→                <span className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+   416→                  {i + 1}
+   417→                </span>
+   418→              </div>
+   419→              <h3 className="font-display text-lg font-bold">{s.title}</h3>
+   420→              <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+   421→                {s.desc}
+   422→              </p>
+   423→            </motion.div>
+   424→          ))}
+   425→        </div>
+   426→        <div className="mt-12 text-center">
+   427→          <Button
+   428→            size="lg"
+   429→            onClick={onLaunch}
+   430→            className="h-12 gap-2 bg-primary px-7 text-base text-primary-foreground hover:bg-primary/90"
+   431→          >
+   432→            <Zap className="size-4" />
+   433→            Start forging now
+   434→          </Button>
+   435→        </div>
+   436→      </div>
+   437→    </section>
+   438→  );
+   439→}
+   440→
+   441→function PluginSection({
+   442→  onGetPlugin,
+   443→  onLaunch,
+   444→}: {
+   445→  onGetPlugin: () => void;
+   446→  onLaunch: () => void;
+   447→}) {
+   448→  return (
+   449→    <section className="relative overflow-hidden border-t border-border/50 py-20">
+   450→      <div className="pointer-events-none absolute right-0 top-1/2 size-96 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
+   451→      <div className="mx-auto max-w-7xl px-4">
+   452→        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
+   453→          <div>
+   454→            <Badge
+   455→              variant="outline"
+   456→              className="mb-4 gap-2 border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+   457→            >
+   458→              <Box className="size-3" /> Roblox Studio Plugin
+   459→            </Badge>
+   460→            <h2 className="font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+   461→              Forge inside Studio,
+   462→              <br />
+   463→              insert with one click
+   464→            </h2>
+   465→            <p className="mt-4 text-muted-foreground">
+   466→              The BloxForge AI plugin lives in your Studio toolbar. Chat with
+   467→              the AI, then drop generated Luau straight into a new Script — no
+   468→              copy-paste, no context switching.
+   469→            </p>
+   470→
+   471→            <div className="mt-6 space-y-4">
+   472→              {PLUGIN_STEPS.map((s) => (
+   473→                <div key={s.step} className="flex gap-3.5">
+   474→                  <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 font-mono text-sm font-bold text-emerald-400">
+   475→                    {s.step}
+   476→                  </div>
+   477→                  <div>
+   478→                    <h4 className="font-medium">{s.title}</h4>
+   479→                    <p className="mt-0.5 text-sm text-muted-foreground">
+   480→                      {s.desc}
+   481→                    </p>
+   482→                  </div>
+   483→                </div>
+   484→              ))}
+   485→            </div>
+   486→
+   487→            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+   488→              <Button
+   489→                size="lg"
+   490→                onClick={onGetPlugin}
+   491→                className="h-12 gap-2 bg-primary px-6 text-primary-foreground hover:bg-primary/90"
+   492→              >
+   493→                <Download className="size-4" />
+   494→                Download plugin (.lua)
+   495→              </Button>
+   496→              <Button
+   497→                size="lg"
+   498→                variant="outline"
+   499→                onClick={onLaunch}
+   500→                className="h-12 gap-2 border-border bg-card/50 hover:bg-accent"
+   501→              >
+   502→                <Terminal className="size-4" />
+   503→                Try the web app
+   504→              </Button>
+   505→            </div>
+   506→          </div>
+   507→
+   508→          {/* Plugin preview mock */}
+   509→          <motion.div
+   510→            initial={{ opacity: 0, scale: 0.96 }}
+   511→            whileInView={{ opacity: 1, scale: 1 }}
+   512→            viewport={{ once: true }}
+   513→            transition={{ duration: 0.5 }}
+   514→          >
+   515→            <Card className="overflow-hidden border-border/60 bg-[oklch(0.14_0.012_250)] shadow-2xl">
+   516→              <div className="flex items-center gap-2 border-b border-border/60 bg-[oklch(0.17_0.012_250)] px-3 py-2">
+   517→                <Logo size={22} />
+   518→                <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+   519→                  DockWidget
+   520→                </span>
+   521→              </div>
+   522→              <div className="space-y-3 p-4">
+   523→                <div className="ml-auto max-w-[80%] rounded-2xl rounded-tr-sm bg-secondary px-3 py-2 text-xs">
+   524→                  Create a cooldown module with a :Reset() method
+   525→                </div>
+   526→                <div className="max-w-[88%] rounded-2xl rounded-tl-sm bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+   527→                  <span className="font-bold text-emerald-400">
+   528→                    BloxForge AI
+   529→                  </span>
+   530→                  <p className="mt-1 text-muted-foreground">
+   531→                    Generated a ModuleScript with :Start, :Reset and a .Finished
+   532→                    signal. Ready to insert 👇
+   533→                  </p>
+   534→                </div>
+   535→                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+   536→                  <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold text-emerald-400">
+   537→                    <Zap className="size-3" /> Code block ready
+   538→                  </div>
+   539→                  <pre className="font-mono text-[10.5px] leading-relaxed text-muted-foreground">
+   540→                    <code>{`local Cooldown = {}
+   541→Cooldown.__index = Cooldown
+   542→
+   543→function Cooldown.new(d)
+   544→  return setmetatable({ ...`}</code>
+   545→                  </pre>
+   546→                  <div className="mt-2 flex justify-end">
+   547→                    <span className="rounded-md bg-emerald-500 px-2 py-1 text-[10px] font-bold text-slate-950">
+   548→                      Insert as Script
+   549→                    </span>
+   550→                  </div>
+   551→                </div>
+   552→              </div>
+   553→            </Card>
+   554→          </motion.div>
+   555→        </div>
+   556→      </div>
+   557→    </section>
+   558→  );
+   559→}
+   560→
+   561→function CTA({ onLaunch }: { onLaunch: () => void }) {
+   562→  return (
+   563→    <section className="relative border-t border-border/50 py-20">
+   564→      <div className="mx-auto max-w-4xl px-4">
+   565→        <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent p-10 text-center sm:p-16">
+   566→          <div className="pointer-events-none absolute inset-0 bg-grid opacity-30 [mask-image:radial-gradient(60%_60%_at_50%_50%,black,transparent)]" />
+   567→          <div className="relative">
+   568→            <Sparkles className="mx-auto mb-4 size-8 text-emerald-400" />
+   569→            <h2 className="font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+   570→              Stop writing boilerplate.
+   571→              <br />
+   572→              Start forging experiences.
+   573→            </h2>
+   574→            <p className="mx-auto mt-4 max-w-md text-muted-foreground">
+   575→              Free to try. No sign-up. NVIDIA-powered. The fastest path from
+   576→              idea to a shipping Roblox game.
+   577→            </p>
+   578→            <Button
+   579→              size="lg"
+   580→              onClick={onLaunch}
+   581→              className="mt-8 h-12 gap-2 bg-primary px-8 text-base text-primary-foreground hover:bg-primary/90 glow-brand"
+   582→            >
+   583→              <Sparkles className="size-4" />
+   584→              Launch BloxForge AI
+   585→              <ArrowRight className="size-4" />
+   586→            </Button>
+   587→          </div>
+   588→        </div>
+   589→      </div>
+   590→    </section>
+   591→  );
+   592→}
+   593→
+   594→function Stats() {
+   595→  const stats = [
+   596→    { value: 5, suffix: "", label: "NVIDIA frontier models" },
+   597→    { value: 128, suffix: "K", label: "Context window per model" },
+   598→    { value: 50, suffix: "+", label: "Luau patterns known" },
+   599→    { value: 1, suffix: "", label: "Click to insert code" },
+   600→  ];
+   601→  return (
+   602→    <section className="border-t border-border/50 py-14">
+   603→      <div className="mx-auto max-w-5xl px-4">
+   604→        <Reveal>
+   605→          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+   606→            {stats.map((s) => (
+   607→              <div key={s.label} className="text-center">
+   608→                <div className="font-display text-3xl font-extrabold tracking-tight text-emerald-400 sm:text-4xl">
+   609→                  <Counter to={s.value} />
+   610→                  {s.suffix}
+   611→                </div>
+   612→                <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+   613→                  {s.label}
+   614→                </p>
+   615→              </div>
+   616→            ))}
+   617→          </div>
+   618→        </Reveal>
+   619→      </div>
+   620→    </section>
+   621→  );
+   622→}
+   623→
+   624→function PricingTeaser({
+   625→  onNavigatePricing,
+   626→  onLaunch,
+   627→}: {
+   628→  onNavigatePricing: () => void;
+   629→  onLaunch: () => void;
+   630→}) {
+   631→  const tiers = [
+   632→    { name: "Free", price: "$0", blurb: "50 msgs/day, 2 models", highlight: false },
+   633→    { name: "Pro", price: "$9", blurb: "Unlimited, all 5 models", highlight: true },
+   634→    { name: "Studio", price: "$31", blurb: "Teams & custom prompts", highlight: false },
+   635→  ];
+   636→  return (
+   637→    <section className="relative border-t border-border/50 py-20">
+   638→      <div className="bg-radial-brand pointer-events-none absolute inset-0 opacity-50" />
+   639→      <div className="relative mx-auto max-w-5xl px-4">
+   640→        <SectionHeading
+   641→          eyebrow="Simple pricing"
+   642→          title="Free to start, scale when ready"
+   643→          desc="Start on Free forever. Upgrade for unlimited messages and frontier models."
+   644→        />
+   645→        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
+   646→          {tiers.map((t, i) => (
+   647→            <Reveal key={t.name} delay={i * 0.08}>
+   648→              <Card
+   649→                className={cn(
+   650→                  "relative h-full overflow-hidden p-6 text-center transition",
+   651→                  t.highlight
+   652→                    ? "border-emerald-500/40 bg-accent/20 glow-brand"
+   653→                    : "border-border/60 bg-card hover:border-emerald-500/20",
+   654→                )}
+   655→              >
+   656→                {t.highlight && (
+   657→                  <Badge className="absolute right-4 top-4 gap-1 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20">
+   658→                    <Crown className="size-3" /> Popular
+   659→                  </Badge>
+   660→                )}
+   661→                <h3 className="font-display text-lg font-bold">{t.name}</h3>
+   662→                <div className="mt-2 flex items-baseline justify-center gap-1">
+   663→                  <span className="font-display text-4xl font-extrabold">
+   664→                    {t.price}
+   665→                  </span>
+   666→                  <span className="text-sm text-muted-foreground">/mo</span>
+   667→                </div>
+   668→                <p className="mt-2 text-sm text-muted-foreground">{t.blurb}</p>
+   669→              </Card>
+   670→            </Reveal>
+   671→          ))}
+   672→        </div>
+   673→        <div className="mt-8 flex justify-center gap-3">
+   674→          <Button
+   675→            variant="outline"
+   676→            onClick={onNavigatePricing}
+   677→            className="gap-2 border-border bg-card/50 hover:bg-accent"
+   678→          >
+   679→            Compare plans
+   680→            <ArrowRight className="size-4" />
+   681→          </Button>
+   682→          <Button
+   683→            onClick={onLaunch}
+   684→            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+   685→          >
+   686→            <Sparkles className="size-4" />
+   687→            Start free
+   688→          </Button>
+   689→        </div>
+   690→      </div>
+   691→    </section>
+   692→  );
+   693→}
+   694→

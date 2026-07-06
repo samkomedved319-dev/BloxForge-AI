@@ -70,6 +70,7 @@ export function useAuth() {
     user,
     usage: usage?.usage,
     plan: usage?.plan,
+    isAdmin: Boolean(usage?.isAdmin),
     loadingUsage,
     refreshUsage,
     signOut,

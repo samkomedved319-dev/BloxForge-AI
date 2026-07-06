@@ -14,6 +14,8 @@ model User {
   name         String?
   passwordHash String
   plan         String   @default("free") // free | pro | studio
+  role         String   @default("user") // user | admin
+  extraCredits Int      @default(0) // admin-granted bonus daily credits
   usageDate    String?  // YYYY-MM-DD for daily reset
   usageCount   Int      @default(0)
   createdAt    DateTime @default(now())
@@ -60,4 +62,19 @@ model Snippet {
   createdAt   DateTime @default(now())
 
   @@map("snippets")
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  label     String
+  provider  String   @default("nvidia") // nvidia | custom
+  baseUrl   String   @default("https://integrate.api.nvidia.com/v1")
+  key       String
+  model     String?  // optional preferred model override
+  active    Boolean  @default(true)
+  priority  Int      @default(0) // higher = preferred
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("api_keys")
 }

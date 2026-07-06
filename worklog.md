@@ -160,3 +160,48 @@ Work Log:
 
 Stage Summary:
 - The plugin HTTP bug is fixed. User must RE-DOWNLOAD the plugin (BloxForgeAI.lua) and re-install it in their Studio Plugins folder (replace the old file), then restart Studio and click Connect again.
+
+---
+Task ID: 4
+Agent: Admin Dashboard Component
+Task: Build the `#admin` admin dashboard view (src/components/bloxforge/admin-dashboard.tsx)
+
+Work Log:
+- Read worklog + pricing.tsx + landing.tsx + site-footer.tsx + globals.css to match the exact emerald-on-dark-slate design language, framer-motion entrance pattern, `font-display` heading style, `bg-radial-brand` background, and SectionHeading/eyebrow conventions.
+- Verified the existing admin API routes already exist and confirmed their exact response shapes: GET /api/usage (returns `isAdmin`), GET /api/admin/stats (`{ totalUsers, admins, planBreakdown, messagesToday, totalConversations, activeApiKeys }`), GET /api/admin/users (`{ users: [...] }` with `_count.conversations`), PATCH/DELETE /api/admin/users/[id] (supports `{ plan, role, extraCredits, resetUsage }`), GET/POST /api/admin/api-keys (POST creates; GET masks key), PATCH/DELETE /api/admin/api-keys/[id] (supports `{ active, priority, label, model }`). Did NOT modify or create any API routes — only the component.
+- Built `AdminDashboard` (`"use client"`, no props) with a 3-state auth guard (loading spinner / "Access denied" card / dashboard) that gates on `isAdmin` from `/api/usage`.
+- Header: emerald eyebrow "BloxForge AI · Internal", gradient "Admin Dashboard" headline, "Back to home" button (`window.location.hash = ""`), `motion.div` fade+rise entrance.
+- Tab 1 Overview: fetches stats on mount → 4 stat cards (Total users, Messages today, Conversations, Active API keys) with emerald icon tiles + `font-display text-3xl font-bold text-emerald-400` numbers, staggered entrance; plus a "Plan breakdown" card with Free/Pro/Studio rows + proportional animated bars (emerald gradient for Free/Pro, amber for Studio).
+- Tab 2 Users: search Input (client-side filter by email/name) + shadcn Table with columns User / Plan (badge: gray/emerald/amber) / Role (admin=emerald+Crown, user=gray) / Credits / Conversations / Actions. Actions: Select to change plan, Grant-credits Popover (number input → PATCH extraCredits), Reset-usage button, Delete button (AlertDialog confirm; disabled when role=admin). Every mutation refetches + toasts; `busyId` disables the row during the request.
+- Tab 3 API Keys: "Add API key" form Card (Label, Provider select: nvidia/custom/openai/openrouter/groq/together, Base URL default https://integrate.api.nvidia.com/v1, API Key password, Model override, Priority) → POST. Existing-keys Table with provider badges (color-coded), truncated mono baseUrl, masked key, priority, active Switch (optimistic PATCH + revert-on-error), delete (AlertDialog confirm). Note Card explaining priority-order usage + that the active key overrides NVIDIA_API_KEY.
+- All fetches use `cache: "no-store"` and a `jsonOrThrow` helper that surfaces server error messages; every error path calls `toast.error`. Fully responsive (single-column → 2/3/4-col grids, horizontally-scrollable tables on mobile).
+
+Stage Summary:
+- Lint clean (`bun run lint` passes). No new API routes or pages created; only `src/components/bloxforge/admin-dashboard.tsx` written.
+- The orchestrator can now wire this component into `src/app/page.tsx` to render when `window.location.hash === "admin"`.
+- Work record saved at /agent-ctx/4-admin-dashboard.md.
+
+---
+Task ID: 20-26
+Agent: Orchestrator (+ subagent for admin dashboard UI)
+Task: Admin account + admin dashboard (users/api-keys/stats) + unlimited AI for admin + AI-named scripts/parts inserted directly into Studio + custom APIs
+
+Work Log:
+- Prisma: added `role` (user|admin) + `extraCredits` to User; added `ApiKey` model (label, provider, baseUrl, key, model, active, priority). Pushed to SQLite.
+- Seeded admin account (samkomedved319@gmail.com / Brabus102) via scripts/seed-admin.ts → role=admin, plan=studio. Added ADMIN_EMAILS env + isAdminEmail() helper; signup auto-promotes configured admin emails.
+- Updated auth.ts: JWT + session now carry `role`. next-auth.d.ts extended. usage API exposes `isAdmin` + `extraCredits`.
+- AI engine rewrite (src/lib/ai.ts): resolveApiKey() checks DB ApiKey table (highest priority active) first, then NVIDIA_API_KEY env, then z-ai fallback. Any OpenAI-compatible endpoint works (NVIDIA/OpenAI/OpenRouter/Groq/Together).
+- Chat API: admins bypass daily limits entirely (unlimited AI) + unlock all personalities. Non-admin effective limit = plan limit + admin-granted extraCredits.
+- Admin API routes: /api/admin/users (list), /api/admin/users/[id] (PATCH plan/role/extraCredits/resetUsage, DELETE), /api/admin/api-keys (GET masked, POST), /api/admin/api-keys/[id] (PATCH active/priority, DELETE), /api/admin/stats (totals + plan breakdown + messages today). All guarded by role=admin check.
+- Subagent built admin-dashboard.tsx: 3 tabs (Overview/Users/API Keys), stat cards, searchable users table with plan-change Select + grant-credits Popover + reset-usage + confirm-delete AlertDialog, API key add-form + table with active Switch + delete. Auth guard via /api/usage isAdmin check.
+- Wired #admin route in page.tsx; added "Admin Dashboard" link to account menu (emerald, Shield icon) visible only to admins.
+- AI-naming: new src/lib/luau-naming.ts deriveInstance() — inspects code for `local Foo = {}` / `function Foo` / `-- Foo` patterns → derives PascalCase name + type (ModuleScript if returns, LocalScript if client-y, else Script) + parent. Updated system prompt so AI names every code block with a `### Name.lua` heading.
+- Markdown component: tracks last h3 heading as the name for the next code block; Insert button now shows "Insert · DerivedName" + a dropdown (ModuleScript/Script/LocalScript/Part/Model) showing the derived name + target parent.
+- Studio insert flow extended: studio-store InsertCommand + insert API + plugin all carry instanceType/instanceName/parent. Plugin creates the right Instance type (Script/LocalScript/ModuleScript/Part/Model) with the derived name in the right service (resolveService by name). Parts get a 4x1x4 anchored part; Models get a Model with a Handle part.
+- Verified end-to-end: admin login → /api/usage returns isAdmin:true → admin dashboard renders (3 users, plan breakdown, 1 API key) → Users tab shows all users with +100 credits on demo user → API Keys tab shows the test key masked → insert API accepts instanceType=ModuleScript, instanceName=HealthManager, parent=ReplicatedStorage → heartbeat drains command with all fields → plugin creates the right instance.
+
+Stage Summary:
+- Lint clean. Server stable.
+- Admin account: samkomedved319@gmail.com / Brabus102 — role=admin, plan=studio, unlimited AI, all personalities unlocked.
+- Admin dashboard at #admin: manage users (upgrade plans, grant credits, reset usage, delete), manage custom API keys (any OpenAI-compatible provider, priority-ordered, active toggle), view stats.
+- AI now names scripts (PascalCase from code) and the Insert button sends instanceType + instanceName + parent so the plugin creates a correctly-named ModuleScript/Script/LocalScript/Part/Model in the right service.

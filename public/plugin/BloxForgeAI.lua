@@ -464,21 +464,62 @@ local function appendInsertLog(text)
         insertLog.Text = (lines .. stamp .. "  " .. text):sub(-200)
 end
 
+-- Resolve a Roblox service by name (falls back to ServerScriptService).
+local function resolveService(name)
+        local ok, svc = pcall(function()
+                return game:GetService(name)
+        end)
+        if ok and svc then return svc end
+        return ServerScriptService
+end
+
 local function executeInsertCommand(cmd)
         local ok = false
         local message = ""
-        local scriptType = "Script"
-        -- Heuristic: ModuleScripts return something at the end; keep it simple
-        -- and default to Script. Users can change the type in Studio.
-        local inst = Instance.new(scriptType)
-        inst.Name = (cmd.title or "BloxForgeScript"):gsub("[^%w_%-]", ""):sub(1, 50)
-        if #inst.Name == 0 then inst.Name = "BloxForgeScript" end
-        inst.Source = cmd.code
-        -- Place into ServerScriptService
-        inst.Parent = ServerScriptService
+        local instanceType = cmd.instanceType or "Script"
+        local instanceName = (cmd.instanceName or cmd.title or "BloxForgeScript")
+                :gsub("[^%w _%-]", ""):gsub("^[%d _%-]+", "")
+        if #instanceName == 0 then instanceName = "BloxForgeScript" end
+        local parent = resolveService(cmd.parent or "ServerScriptService")
+
+        local inst
+        if instanceType == "Part" then
+                inst = Instance.new("Part")
+                inst.Size = Vector3.new(4, 1, 4)
+                inst.Anchored = true
+                inst.Position = Vector3.new(0, 5, 0)
+                inst.BrickColor = BrickColor.Random()
+                inst.Parent = parent
+        elseif instanceType == "Model" then
+                inst = Instance.new("Model")
+                -- A Model with a Part inside so it's visible
+                local part = Instance.new("Part")
+                part.Name = "Handle"
+                part.Size = Vector3.new(4, 1, 4)
+                part.Anchored = true
+                part.Position = Vector3.new(0, 5, 0)
+                part.BrickColor = BrickColor.Random()
+                part.Parent = inst
+                inst.Parent = parent
+        elseif instanceType == "LocalScript" then
+                inst = Instance.new("LocalScript")
+                inst.Source = cmd.code or ""
+                inst.Parent = parent
+        elseif instanceType == "ModuleScript" then
+                inst = Instance.new("ModuleScript")
+                inst.Source = cmd.code or ""
+                inst.Parent = parent
+        else
+                -- default: Script (server)
+                inst = Instance.new("Script")
+                inst.Source = cmd.code or ""
+                inst.Parent = parent
+        end
+
+        inst.Name = instanceName
         Selection:Set({ inst })
         ok = true
-        message = "Inserted " .. inst.Name .. " into ServerScriptService"
+        message = "Inserted " .. inst.ClassName .. " \"" .. inst.Name .. "\" into " .. parent.Name
         appendInsertLog("+" .. inst.Name)
         warnMsg(message)
 

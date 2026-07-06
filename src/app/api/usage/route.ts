@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getPlan } from "@/lib/models";
+import { getPlan, PERSONALITIES } from "@/lib/models";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ authenticated: false });
   }
 
-  // Reset daily usage if date changed
+  const isAdmin = user.role === "admin";
   const today = todayKey();
   let usageCount = user.usageCount;
   if (user.usageDate !== today) {
@@ -34,6 +34,12 @@ export async function GET(_req: NextRequest) {
   }
 
   const plan = getPlan(user.plan);
+  // Admins: unlimited. Otherwise: plan limit + admin-granted extra credits.
+  const effectiveLimit =
+    isAdmin || plan.dailyMessageLimit === -1
+      ? -1
+      : plan.dailyMessageLimit + (user.extraCredits || 0);
+
   return NextResponse.json({
     authenticated: true,
     user: {
@@ -41,23 +47,24 @@ export async function GET(_req: NextRequest) {
       email: user.email,
       name: user.name,
       plan: user.plan,
+      role: user.role,
     },
     usage: {
       used: usageCount,
-      limit: plan.dailyMessageLimit,
+      limit: effectiveLimit,
       remaining:
-        plan.dailyMessageLimit === -1
-          ? -1
-          : Math.max(0, plan.dailyMessageLimit - usageCount),
-      resetsAt: new Date(
-        Date.now() + 24 * 60 * 60 * 1000,
-      ).toISOString(),
+        effectiveLimit === -1 ? -1 : Math.max(0, effectiveLimit - usageCount),
+      extraCredits: user.extraCredits || 0,
+      resetsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     },
     plan: {
       id: plan.id,
       label: plan.label,
       features: plan.features,
-      allowedPersonalities: plan.allowedPersonalities,
+      allowedPersonalities: isAdmin
+        ? PERSONALITIES.map((p) => p.id)
+        : plan.allowedPersonalities,
     },
+    isAdmin,
   });
 }

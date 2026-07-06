@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { isAdminEmail } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,19 +40,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Auto-promote configured admin emails
+    const isAdmin = isAdminEmail(normalizedEmail);
+
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await db.user.create({
       data: {
         email: normalizedEmail,
         name: name?.trim() || null,
         passwordHash,
-        plan: "free",
+        plan: isAdmin ? "studio" : "free",
+        role: isAdmin ? "admin" : "user",
       },
     });
 
     return NextResponse.json({
       ok: true,
-      user: { id: user.id, email: user.email, name: user.name, plan: user.plan },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        plan: user.plan,
+        role: user.role,
+      },
     });
   } catch (err) {
     console.error("[signup] error:", err);

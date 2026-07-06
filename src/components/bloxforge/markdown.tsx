@@ -1,34 +1,58 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
-import { useState, type ReactNode } from "react";
-import { Check, Copy, Plug, Loader2, FileCode2 } from "lucide-react";
+import { useState, useRef, type ReactNode } from "react";
+import { Check, Copy, Plug, Loader2, ChevronDown, FileCode2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { deriveInstance, type InstanceType } from "@/lib/luau-naming";
 
 interface MarkdownProps {
   content: string;
   className?: string;
   /** When Studio is connected, code blocks get an "Insert in Studio" button. */
   studioConnected?: boolean;
-  onInsertCode?: (code: string, language: string) => void;
+  /** Receives (code, language, instanceType, instanceName, parent). */
+  onInsertCode?: (
+    code: string,
+    language: string,
+    instanceType: InstanceType,
+    instanceName: string,
+    parent: string,
+  ) => void;
 }
 
 function CodeBlock({
   language,
+  heading,
   children,
   studioConnected,
   onInsertCode,
 }: {
   language: string;
+  heading?: string;
   children: ReactNode;
   studioConnected?: boolean;
-  onInsertCode?: (code: string, language: string) => void;
+  onInsertCode?: (
+    code: string,
+    language: string,
+    instanceType: InstanceType,
+    instanceName: string,
+    parent: string,
+  ) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [inserting, setInserting] = useState(false);
   const [inserted, setInserted] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const code = typeof children === "string" ? children : String(children ?? "");
+
+  // Strip ".lua" / ".luau" extensions + trailing punctuation from the heading
+  const cleanHeading = (heading || "")
+    .replace(/\.luau?$/i, "")
+    .replace(/[.:]$/, "")
+    .trim();
+
+  const derived = deriveInstance(code, cleanHeading);
 
   const copy = async () => {
     try {
@@ -40,20 +64,17 @@ function CodeBlock({
     }
   };
 
-  const insert = async () => {
+  const insert = (overrideType?: InstanceType) => {
     if (!onInsertCode) return;
+    const instanceType = overrideType || derived.instanceType;
     setInserting(true);
-    try {
-      onInsertCode(code, language);
-      // optimistic — the parent shows a toast with the real result
-      setTimeout(() => {
-        setInserting(false);
-        setInserted(true);
-        setTimeout(() => setInserted(false), 2200);
-      }, 600);
-    } catch {
+    setShowMenu(false);
+    onInsertCode(code, language, instanceType, derived.instanceName, derived.parent);
+    setTimeout(() => {
       setInserting(false);
-    }
+      setInserted(true);
+      setTimeout(() => setInserted(false), 2200);
+    }, 600);
   };
 
   const isInsertable =
@@ -63,30 +84,117 @@ function CodeBlock({
   return (
     <div className="group relative my-3 overflow-hidden rounded-xl border border-border bg-[oklch(0.14_0.012_250)]">
       <div className="flex items-center justify-between border-b border-border/60 bg-[oklch(0.18_0.013_250)] px-3 py-1.5">
-        <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400/90">
-          {language || "code"}
-        </span>
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400/90">
+            {language || "code"}
+          </span>
+          {cleanHeading && (
+            <span className="truncate text-[11px] text-muted-foreground">
+              · {cleanHeading}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1">
           {isInsertable && (
-            <button
-              onClick={insert}
-              disabled={inserting}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-emerald-400 transition hover:bg-emerald-500/15"
-            >
-              {inserting ? (
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu((s) => !s)}
+                disabled={inserting}
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-emerald-400 transition hover:bg-emerald-500/15"
+              >
+                {inserting ? (
+                  <>
+                    <Loader2 className="size-3 animate-spin" /> Sending…
+                  </>
+                ) : inserted ? (
+                  <>
+                    <Check className="size-3" /> Sent
+                  </>
+                ) : (
+                  <>
+                    <Plug className="size-3" />
+                    <span className="hidden sm:inline">
+                      Insert · {derived.instanceName}
+                    </span>
+                    <span className="sm:hidden">Insert</span>
+                    <ChevronDown className="size-3" />
+                  </>
+                )}
+              </button>
+              {showMenu && !inserting && !inserted && (
                 <>
-                  <Loader2 className="size-3 animate-spin" /> Sending…
-                </>
-              ) : inserted ? (
-                <>
-                  <Check className="size-3" /> Sent
-                </>
-              ) : (
-                <>
-                  <Plug className="size-3" /> Insert in Studio
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowMenu(false)}
+                  />
+                  <div className="absolute right-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-lg border border-border bg-popover shadow-2xl">
+                    <div className="border-b border-border px-3 py-1.5">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        Name
+                      </p>
+                      <p className="font-mono text-xs text-emerald-400">
+                        {derived.instanceName}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => insert("ModuleScript")}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent"
+                    >
+                      <FileCode2 className="size-3.5 text-emerald-400" />
+                      ModuleScript
+                      {derived.instanceType === "ModuleScript" && (
+                        <Check className="ml-auto size-3 text-emerald-400" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => insert("Script")}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent"
+                    >
+                      <FileCode2 className="size-3.5 text-emerald-400" />
+                      Script (server)
+                      {derived.instanceType === "Script" && (
+                        <Check className="ml-auto size-3 text-emerald-400" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => insert("LocalScript")}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent"
+                    >
+                      <FileCode2 className="size-3.5 text-emerald-400" />
+                      LocalScript (client)
+                      {derived.instanceType === "LocalScript" && (
+                        <Check className="ml-auto size-3 text-emerald-400" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => insert("Part")}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent"
+                    >
+                      <FileCode2 className="size-3.5 text-emerald-400" />
+                      Part
+                      {derived.instanceType === "Part" && (
+                        <Check className="ml-auto size-3 text-emerald-400" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => insert("Model")}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent"
+                    >
+                      <FileCode2 className="size-3.5 text-emerald-400" />
+                      Model
+                      {derived.instanceType === "Model" && (
+                        <Check className="ml-auto size-3 text-emerald-400" />
+                      )}
+                    </button>
+                    <div className="border-t border-border px-3 py-1.5">
+                      <p className="text-[10px] text-muted-foreground">
+                        → {derived.parent}
+                      </p>
+                    </div>
+                  </div>
                 </>
               )}
-            </button>
+            </div>
           )}
           <button
             onClick={copy}
@@ -117,6 +225,9 @@ export function Markdown({
   studioConnected,
   onInsertCode,
 }: MarkdownProps) {
+  // Track the most recent h3 heading so the next code block can use it as its name.
+  const lastHeadingRef = useRef<string | undefined>(undefined);
+
   return (
     <div
       className={cn(
@@ -136,14 +247,16 @@ export function Markdown({
               {children}
             </h2>
           ),
-          h3: ({ children }) => (
-            <h3 className="mt-4 mb-2 font-display text-base font-semibold">
-              {children}
-            </h3>
-          ),
-          p: ({ children }) => (
-            <p className="my-2.5 first:mt-0 last:mb-0">{children}</p>
-          ),
+          h3: ({ children }) => {
+            const text = extractText(children);
+            lastHeadingRef.current = text;
+            return (
+              <h3 className="mt-4 mb-2 font-display text-base font-semibold">
+                {children}
+              </h3>
+            );
+          },
+          p: ({ children }) => <p className="my-2.5 first:mt-0 last:mb-0">{children}</p>,
           ul: ({ children }) => (
             <ul className="my-2.5 list-disc space-y-1 pl-5">{children}</ul>
           ),
@@ -184,9 +297,12 @@ export function Markdown({
                 </code>
               );
             }
+            const heading = lastHeadingRef.current;
+            lastHeadingRef.current = undefined; // consume so the next block without a heading doesn't reuse
             return (
               <CodeBlock
                 language={match?.[1] ?? ""}
+                heading={heading}
                 studioConnected={studioConnected}
                 onInsertCode={onInsertCode}
               >
@@ -213,4 +329,13 @@ export function Markdown({
       </ReactMarkdown>
     </div>
   );
+}
+
+function extractText(node: ReactNode): string {
+  if (typeof node === "string") return node;
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (node && typeof node === "object" && "props" in node) {
+    return extractText((node as any).props?.children);
+  }
+  return "";
 }
