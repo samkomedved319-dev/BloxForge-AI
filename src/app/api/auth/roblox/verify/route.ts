@@ -77,10 +77,17 @@ export async function POST(req: NextRequest) {
         },
       });
     } else {
-      // Update cached username
+      // Update cached username + re-check admin status (so adding an ID to
+      // ADMIN_ROBLOX_IDS promotes existing users on their next sign-in)
+      const updateData: any = { robloxUsername: username, name: username };
+      if (isAdminRoblox && user.role !== "admin") {
+        updateData.role = "admin";
+        updateData.plan = "studio";
+        updateData.approved = true;
+      }
       user = await db.user.update({
         where: { id: user.id },
-        data: { robloxUsername: username, name: username },
+        data: updateData,
       });
     }
 
