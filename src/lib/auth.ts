@@ -96,10 +96,24 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        // Initial sign-in — set from the authorize result
         token.id = (user as any).id;
         token.plan = (user as any).plan ?? "free";
         token.role = (user as any).role ?? "user";
         token.approved = (user as any).approved ?? false;
+      }
+      // Refresh from DB on every JWT render so approval/role/plan changes
+      // by an admin take effect without requiring the user to re-sign-in.
+      if (token.id) {
+        const dbUser = await db.user.findUnique({
+          where: { id: token.id },
+          select: { plan: true, role: true, approved: true },
+        });
+        if (dbUser) {
+          token.plan = dbUser.plan;
+          token.role = dbUser.role;
+          token.approved = dbUser.approved;
+        }
       }
       return token;
     },

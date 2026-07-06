@@ -388,3 +388,18 @@ Stage Summary:
 - All source files scrubbed of real credentials, user IDs, and competitor references.
 - Public release files: README.md, LICENSE, .env.example, .gitignore.
 - The project is ready to release publicly. Users clone → cp .env.example .env → fill in their own values → bun install → bun run db:push → bun run scripts/seed-admin.ts → bun run dev.
+
+---
+Task ID: 67
+Agent: Orchestrator
+Task: Fix AI not working after account is granted (approved)
+
+Work Log:
+- Root cause: the chat route checked `session.user.approved` from the JWT, but the JWT caches `approved: false` at sign-in time. When an admin approved a user, the DB updated to `approved: true`, but the user's JWT still said `false` → 403 "not-approved" on every chat request. The user had to sign out + sign back in to get a fresh JWT.
+- Fix 1: chat route now fetches the LIVE user from the DB (role, approved, plan, extraCredits, usage) instead of trusting the stale JWT. Admin approval takes effect immediately — no re-sign-in needed. Also removed a redundant DB query by reusing the liveUser object for usage-limit checks.
+- Fix 2: auth.ts jwt callback now refreshes plan/role/approved from the DB on every JWT render, so the frontend (chat-app useAuth hook, account menu) also reflects admin changes without re-sign-in. The "pending approval" banner disappears once the admin approves.
+- Verified: admin chat streams ("Hello! I'm BloxForge..."), guest chat works, demo@bloxforge.dev approved in DB → can chat immediately.
+
+Stage Summary:
+- Lint clean. Server stable.
+- Admin approval now takes effect IMMEDIATELY — no sign-out/sign-in required. Both the chat API and the frontend UI update in real-time.

@@ -57,9 +57,24 @@ export async function POST(req: NextRequest) {
   // ── Auth + usage limits ──────────────────────────────────────────────
   const session = await getServerSession(authOptions);
   const isGuest = !session?.user?.id;
-  const plan = getPlan(session?.user?.plan);
-  const isAdmin = (session?.user as any)?.role === "admin";
-  const isApproved = isAdmin || (session?.user as any)?.approved === true;
+
+  // Always fetch the LIVE user from the DB — the JWT may be stale (e.g. an
+  // admin just approved the user, but their JWT still says approved=false).
+  let liveUser = null;
+  if (!isGuest) {
+    liveUser = await db.user.findUnique({
+      where: { id: session!.user.id },
+      select: { id: true, plan: true, role: true, approved: true, extraCredits: true, usageCount: true, usageDate: true },
+    });
+    // If the user was deleted, treat as guest
+    if (!liveUser) {
+      return NextResponse.json({ error: "Account not found" }, { status: 401 });
+    }
+  }
+
+  const plan = getPlan(liveUser?.plan || session?.user?.plan);
+  const isAdmin = liveUser?.role === "admin";
+  const isApproved = isAdmin || liveUser?.approved === true;
   // Admins unlock everything regardless of plan
   const allowedPersonalities = isAdmin
     ? PERSONALITIES.map((p) => p.id)
@@ -93,33 +108,30 @@ export async function POST(req: NextRequest) {
   }
 
   // Enforce daily limit for signed-in non-admin users. Admins = unlimited.
-  if (!isGuest && !isAdmin) {
-    const user = await db.user.findUnique({ where: { id: session!.user.id } });
-    if (user) {
-      const today = todayKey();
-      // effective limit = plan limit + admin-granted extra credits
-      const effectiveLimit =
-        plan.dailyMessageLimit === -1 ? -1 : plan.dailyMessageLimit + (user.extraCredits || 0);
-      if (user.usageDate !== today) {
-        await db.user.update({
-          where: { id: user.id },
-          data: { usageDate: today, usageCount: 1 },
-        });
-      } else {
-        if (effectiveLimit !== -1 && user.usageCount >= effectiveLimit) {
-          return NextResponse.json(
-            {
-              error: "limit-reached",
-              message: `You've reached your daily limit of ${effectiveLimit} messages. Upgrade for unlimited.`,
-            },
-            { status: 429 },
-          );
-        }
-        await db.user.update({
-          where: { id: user.id },
-          data: { usageCount: { increment: 1 } },
-        });
+  if (!isGuest && !isAdmin && liveUser) {
+    const today = todayKey();
+    // effective limit = plan limit + admin-granted extra credits
+    const effectiveLimit =
+      plan.dailyMessageLimit === -1 ? -1 : plan.dailyMessageLimit + (liveUser.extraCredits || 0);
+    if (liveUser.usageDate !== today) {
+      await db.user.update({
+        where: { id: liveUser.id },
+        data: { usageDate: today, usageCount: 1 },
+      });
+    } else {
+      if (effectiveLimit !== -1 && liveUser.usageCount >= effectiveLimit) {
+        return NextResponse.json(
+          {
+            error: "limit-reached",
+            message: `You've reached your daily limit of ${effectiveLimit} messages. Upgrade for unlimited.`,
+          },
+          { status: 429 },
+        );
       }
+      await db.user.update({
+        where: { id: liveUser.id },
+        data: { usageCount: { increment: 1 } },
+      });
     }
   }
 
