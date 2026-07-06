@@ -11,9 +11,21 @@ import { Pricing } from "@/components/bloxforge/pricing";
 import { AdminDashboard } from "@/components/bloxforge/admin-dashboard";
 import { UserDashboard } from "@/components/bloxforge/user-dashboard";
 import { Settings } from "@/components/bloxforge/settings";
+import { LegalPage } from "@/components/bloxforge/legal-page";
+import { OauthSetupGuide } from "@/components/bloxforge/oauth-setup-guide";
 import { AuthModal } from "@/components/bloxforge/auth-modal";
 
-type View = "landing" | "app" | "plugin" | "pricing" | "admin" | "dashboard" | "settings";
+type View =
+  | "landing"
+  | "app"
+  | "plugin"
+  | "pricing"
+  | "admin"
+  | "dashboard"
+  | "settings"
+  | "privacy"
+  | "tos"
+  | "oauth-setup";
 
 function subscribe(callback: () => void) {
   window.addEventListener("hashchange", callback);
@@ -28,7 +40,10 @@ function getSnapshot(): View {
     h === "pricing" ||
     h === "admin" ||
     h === "dashboard" ||
-    h === "settings"
+    h === "settings" ||
+    h === "privacy" ||
+    h === "tos" ||
+    h === "oauth-setup"
   )
     return h;
   return "landing";
@@ -104,6 +119,12 @@ export default function Home() {
         <UserDashboard onBack={() => navigate("landing")} />
       ) : isSettings ? (
         <Settings onBack={() => navigate("landing")} />
+      ) : view === "privacy" ? (
+        <LegalPage type="privacy" />
+      ) : view === "tos" ? (
+        <LegalPage type="tos" />
+      ) : view === "oauth-setup" ? (
+        <OauthSetupGuide />
       ) : view === "plugin" ? (
         <PluginPage
           onBack={() => navigate("landing")}

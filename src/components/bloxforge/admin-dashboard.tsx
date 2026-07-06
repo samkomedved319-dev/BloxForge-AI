@@ -438,34 +438,26 @@ function OverviewTab() {
               </h3>
               <p className="mt-1 text-sm text-amber-200/80">
                 Users are falling back to manual profile-code verification.
-                Enable secure app-permissions sign-in:
+                Enable secure app-permissions sign-in with the step-by-step
+                guide:
               </p>
-              <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs text-amber-200/70">
-                <li>
-                  Register an OAuth app at{" "}
-                  <a
-                    href="https://create.roblox.com/credentials"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline"
-                  >
-                    create.roblox.com/credentials
-                  </a>
-                </li>
-                <li>
-                  Set redirect URI to:{" "}
-                  <code className="rounded bg-black/30 px-1 py-0.5 font-mono text-[10px]">
-                    {oauthSetup.expectedCallback}
-                  </code>
-                </li>
-                <li>
-                  Set env vars:{" "}
-                  <code className="font-mono text-[10px]">ROBLOX_CLIENT_ID</code>,{" "}
-                  <code className="font-mono text-[10px]">ROBLOX_CLIENT_SECRET</code>,{" "}
-                  <code className="font-mono text-[10px]">ROBLOX_REDIRECT_URI</code>
-                </li>
-                <li>Restart the server</li>
-              </ol>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => (window.location.hash = "oauth-setup")}
+                  className="gap-2 bg-amber-500 text-amber-950 hover:bg-amber-400"
+                >
+                  Open OAuth setup guide →
+                </Button>
+                <a
+                  href="https://create.roblox.com/credentials"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/30 px-3 py-1.5 text-xs text-amber-300 hover:bg-amber-500/10"
+                >
+                  Roblox Creator Hub ↗
+                </a>
+              </div>
               {oauthSetup.adminRobloxIds && (
                 <p className="mt-2 text-[11px] text-amber-200/60">
                   Auto-admin Roblox IDs:{" "}

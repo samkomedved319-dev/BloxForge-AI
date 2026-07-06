@@ -324,3 +324,22 @@ Stage Summary:
 - Roblox OAuth2 = the verified "app permissions" flow: user clicks "Continue with Roblox" → redirected to Roblox → Roblox shows consent screen asking to grant BloxForge access to their profile → user approves → redirected back with code → server exchanges for token → fetches userinfo → signs in. This is the official, secure Roblox authentication.
 - Donkykong_87 (ID 8417604297) is in ADMIN_ROBLOX_IDS → auto-admin + auto-approved on sign-in.
 - Admin dashboard shows a clear OAuth setup guide when not configured.
+
+---
+Task ID: 51-55
+Agent: Orchestrator
+Task: Create all things needed to complete the Roblox OAuth2 app registration form
+
+Work Log:
+- User showed the Roblox Creator Hub OAuth2 app registration form screenshot. Issues: URLs had typo (:zai), redirect URL was wrong (/app instead of /api/auth/roblox/oauth/callback), no Privacy Policy or Terms of Service URLs (Roblox requires them).
+- Built LegalPage component (#privacy + #tos): full Privacy Policy (11 sections: overview, Roblox account data, conversations, Studio connector, usage data, cookies, AI provider, data retention, rights, children's privacy, changes) + full Terms of Service (13 sections: acceptance, description, beta access, account, acceptable use, generated content, plugin, IP, disclaimer, liability, termination, changes, contact).
+- Built OauthSetupGuide component (#oauth-setup): step-by-step copy-paste guide with all exact values for the Roblox form — Application Name, Description, Entry Link, Privacy Policy URL, Terms of Service URL, Redirect URL (highlighted as critical), required scopes (openid + profile), and the .env vars to set after creating the app. Each field has a copy button.
+- Wired #privacy, #tos, #oauth-setup routes in page.tsx.
+- Updated SiteFooter with clickable links: Privacy Policy, Terms of Service, OAuth Setup Guide (plus Product + Resources columns now link properly too).
+- Updated admin dashboard OAuth setup banner: replaced the inline instructions with a prominent "Open OAuth setup guide →" button linking to #oauth-setup + a "Roblox Creator Hub ↗" external link.
+
+Stage Summary:
+- Lint clean. Server stable.
+- Everything the user needs to complete the Roblox OAuth2 form is now at #oauth-setup with copy-paste values.
+- Privacy Policy at #privacy and Terms of Service at #tos — both required by Roblox.
+- Footer links all three legal/setup pages.
