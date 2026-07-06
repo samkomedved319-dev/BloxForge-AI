@@ -493,3 +493,20 @@ Stage Summary:
 - Lint clean. Server stable.
 - Stripe is fully wired but not configured (no STRIPE_SECRET_KEY set). When an admin adds their Stripe keys + price IDs, the pricing page CTAs redirect to Stripe Checkout, webhooks sync the user's plan, and settings shows a "Manage billing" button.
 - Graceful degradation: when Stripe isn't configured, checkout returns 503 with a clear message, pricing falls back to launching the app, settings shows "Stripe billing is not configured".
+
+---
+Task ID: 94-97
+Agent: Orchestrator
+Task: Add Roblox Store link for plugin installation
+
+Work Log:
+- Added "Get from Roblox Store" button (Roblox blue #00A2FF with Roblox logo icon) to the plugin page hero section — next to the Download button + Try web app button.
+- Added "Easiest method" highlighted section on the plugin install page: blue-bordered card explaining "Install directly from the Roblox Creator Store — it auto-installs to Studio with one click." with a prominent "Install from Roblox Store" button linking to https://create.roblox.com/store/asset/100772789550446/BloxForgeAI.
+- Added "Or install manually" divider below the Store section, then the existing 3-step manual install guide.
+- Added "Get from Roblox Store" button at the bottom CTA of the plugin page (next to the second Download button).
+- Added "Roblox Store" button to the landing page's PluginSection (next to Download plugin + Try web app).
+- All store links open in a new tab pointing to https://create.roblox.com/store/asset/100772789550446/BloxForgeAI.
+
+Stage Summary:
+- Lint clean. Server stable.
+- Users now have two installation options: Roblox Store (easiest, one-click auto-install) or manual download (.lua file + copy to Plugins folder). Both options are clearly presented on the plugin page and landing page.

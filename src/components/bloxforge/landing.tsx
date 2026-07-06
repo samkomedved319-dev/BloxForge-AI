@@ -494,6 +494,21 @@ function PluginSection({
                 <Download className="size-4" />
                 Download plugin (.lua)
               </Button>
+              <a
+                href="https://create.roblox.com/store/asset/100772789550446/BloxForgeAI"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Button
+                  size="lg"
+                  className="h-12 gap-2 bg-[#00A2FF] px-6 text-white hover:bg-[#0090E0]"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 4c1.5 0 2.5 1 2.5 2.5S13.5 11 12 11s-2.5-1-2.5-2.5S10.5 6 12 6zm0 12c-2 0-3.8-1-5-2.5.1-1.5 3-2.5 5-2.5s4.9 1 5 2.5C15.8 17 14 18 12 18z" />
+                  </svg>
+                  Roblox Store
+                </Button>
+              </a>
               <Button
                 size="lg"
                 variant="outline"

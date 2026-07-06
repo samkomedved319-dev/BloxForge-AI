@@ -118,6 +118,21 @@ export function PluginPage({
                   <Download className="size-4" />
                   Download BloxForgeAI.lua
                 </Button>
+                <a
+                  href="https://create.roblox.com/store/asset/100772789550446/BloxForgeAI"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Button
+                    size="lg"
+                    className="h-12 gap-2 bg-[#00A2FF] px-6 text-white hover:bg-[#0090E0]"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 4c1.5 0 2.5 1 2.5 2.5S13.5 11 12 11s-2.5-1-2.5-2.5S10.5 6 12 6zm0 12c-2 0-3.8-1-5-2.5.1-1.5 3-2.5 5-2.5s4.9 1 5 2.5C15.8 17 14 18 12 18z" />
+                    </svg>
+                    Get from Roblox Store
+                  </Button>
+                </a>
                 <Button
                   size="lg"
                   variant="outline"
@@ -218,19 +233,46 @@ export function PluginPage({
             Install in 60 seconds
           </h2>
           <p className="mt-2 text-center text-muted-foreground">
-            Three steps. No build tools, no dependencies.
+            Two ways to install. No build tools, no dependencies.
           </p>
 
-          <div className="mt-10 space-y-5">
-            <InstallStep
-              n={1}
-              title="Download the connector"
-              desc="Save BloxForgeAI.lua from the button above."
-            />
-            <InstallStep
-              n={2}
-              title="Move it to your Studio Plugins folder"
-              desc="Pick your OS and copy the path below."
+          {/* Easiest: Roblox Store */}
+          <div className="mt-8 rounded-xl border border-[#00A2FF]/30 bg-[#00A2FF]/5 p-5 text-center">
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-[#00A2FF]">
+              Easiest method
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Install directly from the Roblox Creator Store — it auto-installs
+              to Studio with one click.
+            </p>
+            <a
+              href="https://create.roblox.com/store/asset/100772789550446/BloxForgeAI"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#00A2FF] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#0090E0]"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 4c1.5 0 2.5 1 2.5 2.5S13.5 11 12 11s-2.5-1-2.5-2.5S10.5 6 12 6zm0 12c-2 0-3.8-1-5-2.5.1-1.5 3-2.5 5-2.5s4.9 1 5 2.5C15.8 17 14 18 12 18z" />
+              </svg>
+              Install from Roblox Store
+            </a>
+          </div>
+
+          {/* Manual install */}
+          <div className="mt-6">
+            <p className="mb-4 text-center font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              Or install manually
+            </p>
+            <div className="space-y-5">
+              <InstallStep
+                n={1}
+                title="Download the connector"
+                desc="Save BloxForgeAI.lua from the button above."
+              />
+              <InstallStep
+                n={2}
+                title="Move it to your Studio Plugins folder"
+                desc="Pick your OS and copy the path below."
             >
               <div className="mt-3 rounded-xl border border-border bg-card p-3">
                 <div className="mb-2 flex gap-2">
@@ -270,6 +312,7 @@ export function PluginPage({
               title="Pair with the web app"
               desc="In the web app, click “Connect Studio” and copy the server URL + pairing code. In the Studio plugin, paste both and click Connect. The AI chat stays in your browser — the plugin just syncs your selected script and inserts generated code."
             />
+            </div>
           </div>
 
           <div className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
@@ -307,14 +350,31 @@ export function PluginPage({
           </div>
 
           <div className="mt-8 text-center">
-            <Button
-              size="lg"
-              onClick={handleDownload}
-              className="h-12 gap-2 bg-primary px-8 text-primary-foreground hover:bg-primary/90"
-            >
-              <Download className="size-4" />
-              Download BloxForgeAI.lua
-            </Button>
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <Button
+                size="lg"
+                onClick={handleDownload}
+                className="h-12 gap-2 bg-primary px-8 text-primary-foreground hover:bg-primary/90"
+              >
+                <Download className="size-4" />
+                Download BloxForgeAI.lua
+              </Button>
+              <a
+                href="https://create.roblox.com/store/asset/100772789550446/BloxForgeAI"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Button
+                  size="lg"
+                  className="h-12 gap-2 bg-[#00A2FF] px-6 text-white hover:bg-[#0090E0]"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 4c1.5 0 2.5 1 2.5 2.5S13.5 11 12 11s-2.5-1-2.5-2.5S10.5 6 12 6zm0 12c-2 0-3.8-1-5-2.5.1-1.5 3-2.5 5-2.5s4.9 1 5 2.5C15.8 17 14 18 12 18z" />
+                  </svg>
+                  Get from Roblox Store
+                </Button>
+              </a>
+            </div>
           </div>
         </div>
       </section>
