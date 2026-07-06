@@ -205,3 +205,21 @@ Stage Summary:
 - Admin account: samkomedved319@gmail.com / Brabus102 — role=admin, plan=studio, unlimited AI, all personalities unlocked.
 - Admin dashboard at #admin: manage users (upgrade plans, grant credits, reset usage, delete), manage custom API keys (any OpenAI-compatible provider, priority-ordered, active toggle), view stats.
 - AI now names scripts (PascalCase from code) and the Insert button sends instanceType + instanceName + parent so the plugin creates a correctly-named ModuleScript/Script/LocalScript/Part/Model in the right service.
+
+---
+Task ID: 27-31
+Agent: Orchestrator
+Task: Add user dashboard + settings pages (complement the admin dashboard)
+
+Work Log:
+- Built API routes: /api/dashboard (personal stats: totalConversations, totalMessages, usageToday, 7-day usage buckets, recent conversations), /api/account/profile (PATCH name), /api/account/delete (DELETE with x-confirm header, admin-protected), /api/account/reset-sessions (POST, deletes all user conversations).
+- Built user-dashboard.tsx (#dashboard): 4 stat cards (conversations, messages, today's usage, plan), today's usage card with animated progress bar + upgrade CTA, 7-day usage bar chart, recent sessions list (clickable → app). Auth guard (sign-in required).
+- Built settings.tsx (#settings): 4 sections — Profile (name edit + read-only email with plan/role badges), Default preferences (personality + mode dropdowns, saved to localStorage, read by chat-app on new sessions), Plan & credits (current plan + upgrade button for free users), Danger zone (reset all sessions with AlertDialog confirm, delete account with AlertDialog confirm + admin-protection, sign out).
+- Wired #dashboard + #settings routes in page.tsx (footer hidden on these views).
+- Added Dashboard + Settings links to the account menu (replaced "Settings coming soon" placeholder). Dashboard link uses LayoutDashboard icon; Settings uses gear icon.
+- Chat-app now reads default personality/mode from localStorage on mount so settings prefs apply to new sessions.
+
+Stage Summary:
+- Lint clean. Server stable.
+- Agent Browser verified: dashboard renders (stats, 7-day chart, recent sessions, unlimited badge for admin), settings renders (profile, preferences, plan, danger zone with reset/delete), account menu shows Dashboard + Settings links.
+- Every signed-in user now has: #dashboard (personal overview) + #settings (profile/prefs/account). Admins additionally have #admin (user/key management).

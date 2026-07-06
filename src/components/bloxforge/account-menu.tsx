@@ -12,6 +12,7 @@ import {
   Sparkles,
   Settings,
   Shield,
+  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -171,7 +172,17 @@ export function AccountMenu({
                 <button
                   onClick={() => {
                     setOpen(false);
-                    toast.info("Settings coming soon");
+                    window.location.hash = "dashboard";
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-accent"
+                >
+                  <LayoutDashboard className="size-4 text-muted-foreground" />
+                  <span className="flex-1">Dashboard</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    window.location.hash = "settings";
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground"
                 >

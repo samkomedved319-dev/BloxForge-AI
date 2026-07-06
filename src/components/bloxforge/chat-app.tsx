@@ -105,8 +105,14 @@ export function ChatApp({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [personality, setPersonality] = useState("swift");
-  const [mode, setMode] = useState("normal");
+  const [personality, setPersonality] = useState(() => {
+    if (typeof window === "undefined") return "swift";
+    return localStorage.getItem("bloxforge:defaultPersonality") || "swift";
+  });
+  const [mode, setMode] = useState(() => {
+    if (typeof window === "undefined") return "normal";
+    return localStorage.getItem("bloxforge:defaultMode") || "normal";
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loadingConv, setLoadingConv] = useState(false);
   const [showLimitBanner, setShowLimitBanner] = useState(false);

@@ -8,9 +8,11 @@ import { ChatApp } from "@/components/bloxforge/chat-app";
 import { PluginPage } from "@/components/bloxforge/plugin-page";
 import { Pricing } from "@/components/bloxforge/pricing";
 import { AdminDashboard } from "@/components/bloxforge/admin-dashboard";
+import { UserDashboard } from "@/components/bloxforge/user-dashboard";
+import { Settings } from "@/components/bloxforge/settings";
 import { AuthModal } from "@/components/bloxforge/auth-modal";
 
-type View = "landing" | "app" | "plugin" | "pricing" | "admin";
+type View = "landing" | "app" | "plugin" | "pricing" | "admin" | "dashboard" | "settings";
 
 function subscribe(callback: () => void) {
   window.addEventListener("hashchange", callback);
@@ -19,7 +21,15 @@ function subscribe(callback: () => void) {
 
 function getSnapshot(): View {
   const h = window.location.hash.replace("#", "");
-  if (h === "app" || h === "plugin" || h === "pricing" || h === "admin") return h;
+  if (
+    h === "app" ||
+    h === "plugin" ||
+    h === "pricing" ||
+    h === "admin" ||
+    h === "dashboard" ||
+    h === "settings"
+  )
+    return h;
   return "landing";
 }
 
@@ -50,6 +60,8 @@ export default function Home() {
 
   const isApp = view === "app";
   const isAdmin = view === "admin";
+  const isDashboard = view === "dashboard";
+  const isSettings = view === "settings";
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -62,6 +74,10 @@ export default function Home() {
         />
       ) : isAdmin ? (
         <AdminDashboard />
+      ) : isDashboard ? (
+        <UserDashboard onBack={() => navigate("landing")} />
+      ) : isSettings ? (
+        <Settings onBack={() => navigate("landing")} />
       ) : view === "plugin" ? (
         <PluginPage
           onBack={() => navigate("landing")}
@@ -79,7 +95,7 @@ export default function Home() {
           onNavigatePricing={() => navigate("pricing")}
         />
       )}
-      {!isApp && !isAdmin && <SiteFooter />}
+      {!isApp && !isAdmin && !isDashboard && !isSettings && <SiteFooter />}
 
       <AuthModal
         open={authOpen}
