@@ -223,3 +223,21 @@ Stage Summary:
 - Lint clean. Server stable.
 - Agent Browser verified: dashboard renders (stats, 7-day chart, recent sessions, unlimited badge for admin), settings renders (profile, preferences, plan, danger zone with reset/delete), account menu shows Dashboard + Settings links.
 - Every signed-in user now has: #dashboard (personal overview) + #settings (profile/prefs/account). Admins additionally have #admin (user/key management).
+
+---
+Task ID: 32-35
+Agent: Orchestrator
+Task: Fix plugin insert (silently failing) + add custom API model selection
+
+Work Log:
+- ISSUE 1 (plugin doesn't create things in Studio): root cause was executeInsertCommand ran inside task.spawn which silently swallowed ALL errors. If setting .Source or Instance.new failed, the user saw nothing. Fixed by wrapping executeInsertCommand body in pcall — errors now surface in the insert log ("✗ <error>") + the Studio Output window + are acked back to the server. Also reordered: set .Source BEFORE .Parent (required for plugin-created scripts).
+- Added a "Test insert (create a sample script)" button to the plugin's connected view. Clicking it runs executeInsertCommand locally with a sample ModuleScript — bypasses the server entirely so the user can verify the plugin CAN create instances (isolates insert issues from connection issues). If the test works, the problem is the connection; if it fails, the error shows in the log.
+- ISSUE 2 (custom API model selection): added /api/admin/api-keys/test-models endpoint. POST { baseUrl, apiKey } → fetches GET {baseUrl}/models with the key, returns { ok, models: [{id,label}] }. Works with any OpenAI-compatible provider (NVIDIA NIM, OpenAI, OpenRouter, Groq, Together). Admin-only.
+- Updated admin dashboard API key form: replaced the plain "Model override" text input with a "Fetch available models" button + dropdown. Click fetch → calls test-models → populates a <select> with every model the provider offers (NVIDIA returns 122 models). Admin picks one → saved on the ApiKey record. When this key is active, the AI engine uses key.modelOverride for ALL personalities (already wired in streamOpenAICompatible: const model = key.modelOverride || opts.model).
+- Verified: test-models endpoint returned 122 real NVIDIA models; browser fetch button populated the dropdown; admin selected "01-ai/yi-large" and saved the key successfully.
+
+Stage Summary:
+- Lint clean. Server stable.
+- Plugin: errors now visible (pcall + insert log), .Source set before .Parent, "Test insert" button lets users verify instance creation works.
+- Custom API keys: admins can fetch the provider's model list and pick which model to use. The selected model overrides all personalities when that key is active.
+- User must RE-DOWNLOAD the plugin (BloxForgeAI.lua) and re-install in Studio for the insert fix + test button.

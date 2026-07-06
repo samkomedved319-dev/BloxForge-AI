@@ -430,6 +430,18 @@ insertLog.TextXAlignment = Enum.TextXAlignment.Left
 insertLog.TextYAlignment = Enum.TextYAlignment.Top
 insertLog.Parent = connectedView
 
+local testInsertBtn = Instance.new("TextButton")
+testInsertBtn.Position = UDim2.new(0, 0, 1, -76)
+testInsertBtn.Size = UDim2.new(1, 0, 0, 32)
+testInsertBtn.BackgroundColor3 = ACCENT
+testInsertBtn.TextColor3 = Color3.fromRGB(8, 12, 20)
+testInsertBtn.Text = "Test insert (create a sample script)"
+testInsertBtn.Font = Enum.Font.GothamBold
+testInsertBtn.TextSize = 12
+testInsertBtn.Parent = connectedView
+local tiCorner = Instance.new("UICorner", testInsertBtn)
+tiCorner.CornerRadius = UDim.new(0, 6)
+
 local disconnectBtn = Instance.new("TextButton")
 disconnectBtn.Position = UDim2.new(0, 0, 1, -36)
 disconnectBtn.Size = UDim2.new(1, 0, 0, 36)
@@ -474,54 +486,59 @@ local function resolveService(name)
 end
 
 local function executeInsertCommand(cmd)
-        local ok = false
-        local message = ""
-        local instanceType = cmd.instanceType or "Script"
-        local instanceName = (cmd.instanceName or cmd.title or "BloxForgeScript")
-                :gsub("[^%w _%-]", ""):gsub("^[%d _%-]+", "")
-        if #instanceName == 0 then instanceName = "BloxForgeScript" end
-        local parent = resolveService(cmd.parent or "ServerScriptService")
+        -- Wrap in pcall so errors are visible in the insert log + Output
+        local ok, err = pcall(function()
+                local instanceType = cmd.instanceType or "Script"
+                local instanceName = (cmd.instanceName or cmd.title or "BloxForgeScript")
+                        :gsub("[^%w _%-]", ""):gsub("^[%d _%-]+", "")
+                if #instanceName == 0 then instanceName = "BloxForgeScript" end
+                local parent = resolveService(cmd.parent or "ServerScriptService")
+                local code = cmd.code or ""
 
-        local inst
-        if instanceType == "Part" then
-                inst = Instance.new("Part")
-                inst.Size = Vector3.new(4, 1, 4)
-                inst.Anchored = true
-                inst.Position = Vector3.new(0, 5, 0)
-                inst.BrickColor = BrickColor.Random()
+                local inst
+                if instanceType == "Part" then
+                        inst = Instance.new("Part")
+                        inst.Size = Vector3.new(4, 1, 4)
+                        inst.Anchored = true
+                        inst.Position = Vector3.new(0, 5, 0)
+                        inst.BrickColor = BrickColor.Random()
+                elseif instanceType == "Model" then
+                        inst = Instance.new("Model")
+                        local part = Instance.new("Part")
+                        part.Name = "Handle"
+                        part.Size = Vector3.new(4, 1, 4)
+                        part.Anchored = true
+                        part.Position = Vector3.new(0, 5, 0)
+                        part.BrickColor = BrickColor.Random()
+                        part.Parent = inst
+                elseif instanceType == "LocalScript" then
+                        inst = Instance.new("LocalScript")
+                elseif instanceType == "ModuleScript" then
+                        inst = Instance.new("ModuleScript")
+                else
+                        inst = Instance.new("Script")
+                end
+
+                -- Set Source BEFORE parenting (required for plugin-created scripts)
+                if instanceType == "Script" or instanceType == "LocalScript" or instanceType == "ModuleScript" then
+                        inst.Source = code
+                end
+                inst.Name = instanceName
                 inst.Parent = parent
-        elseif instanceType == "Model" then
-                inst = Instance.new("Model")
-                -- A Model with a Part inside so it's visible
-                local part = Instance.new("Part")
-                part.Name = "Handle"
-                part.Size = Vector3.new(4, 1, 4)
-                part.Anchored = true
-                part.Position = Vector3.new(0, 5, 0)
-                part.BrickColor = BrickColor.Random()
-                part.Parent = inst
-                inst.Parent = parent
-        elseif instanceType == "LocalScript" then
-                inst = Instance.new("LocalScript")
-                inst.Source = cmd.code or ""
-                inst.Parent = parent
-        elseif instanceType == "ModuleScript" then
-                inst = Instance.new("ModuleScript")
-                inst.Source = cmd.code or ""
-                inst.Parent = parent
+                Selection:Set({ inst })
+                return inst
+        end)
+
+        local message
+        if ok and err then
+                message = "Inserted " .. err.ClassName .. " \"" .. err.Name .. "\""
+                appendInsertLog("+" .. err.Name)
+                warnMsg(message)
         else
-                -- default: Script (server)
-                inst = Instance.new("Script")
-                inst.Source = cmd.code or ""
-                inst.Parent = parent
+                message = "Insert FAILED: " .. tostring(err)
+                appendInsertLog("✗ " .. tostring(err):sub(1, 40))
+                warnMsg("Insert FAILED: " .. tostring(err))
         end
-
-        inst.Name = instanceName
-        Selection:Set({ inst })
-        ok = true
-        message = "Inserted " .. inst.ClassName .. " \"" .. inst.Name .. "\" into " .. parent.Name
-        appendInsertLog("+" .. inst.Name)
-        warnMsg(message)
 
         -- Ack the result
         task.spawn(function()
@@ -703,6 +720,19 @@ end
 
 connectBtn.MouseButton1Click:Connect(doConnect)
 disconnectBtn.MouseButton1Click:Connect(doDisconnect)
+
+-- Test insert: creates a sample ModuleScript directly, bypassing the server.
+-- This verifies the plugin CAN create instances (isolates insert issues from
+-- connection issues).
+testInsertBtn.MouseButton1Click:Connect(function()
+        executeInsertCommand({
+                id = "test-" .. tostring(os.time()),
+                instanceType = "ModuleScript",
+                instanceName = "BloxForgeTestScript",
+                parent = "ServerScriptService",
+                code = "--!strict\n-- Created by BloxForge test insert\nlocal module = {}\n\nfunction module:Hello()\n\tprint(\"BloxForge test insert worked!\")\nend\n\nreturn module\n",
+        })
+end)
 
 -- React to selection changes immediately (context sync feels live)
 Selection.SelectionChanged:Connect(function()

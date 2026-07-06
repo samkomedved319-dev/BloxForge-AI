@@ -924,6 +924,43 @@ function ApiKeysTab() {
     priority: "0",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [availableModels, setAvailableModels] = useState<
+    { id: string; label: string }[]
+  >([]);
+  const [fetchingModels, setFetchingModels] = useState(false);
+
+  const fetchModels = useCallback(async () => {
+    if (!form.key) {
+      toast.error("Enter an API key first");
+      return;
+    }
+    setFetchingModels(true);
+    try {
+      const res = await fetch("/api/admin/api-keys/test-models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baseUrl: form.baseUrl.trim() || DEFAULT_BASE_URL,
+          apiKey: form.key,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.models)) {
+        if (data.models.length === 0) {
+          toast.info("No models returned by this provider");
+        } else {
+          setAvailableModels(data.models);
+          toast.success(`Found ${data.models.length} models`);
+        }
+      } else {
+        toast.error(data.error || "Failed to fetch models");
+      }
+    } catch {
+      toast.error("Failed to fetch models");
+    } finally {
+      setFetchingModels(false);
+    }
+  }, [form.baseUrl, form.key]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1108,17 +1145,51 @@ function ApiKeysTab() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ak-model" className="text-xs">
-              Model override{" "}
-              <span className="text-muted-foreground">(optional)</span>
-            </Label>
-            <Input
-              id="ak-model"
-              value={form.model}
-              onChange={(e) => updateForm("model", e.target.value)}
-              placeholder="nvidia/llama-3.1-nemotron-70b-instruct"
-              className="h-9 font-mono text-xs"
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="ak-model" className="text-xs">
+                Model to use
+              </Label>
+              <button
+                onClick={fetchModels}
+                disabled={fetchingModels}
+                className="flex items-center gap-1.5 rounded-md border border-emerald-500/30 px-2 py-1 text-[11px] text-emerald-400 transition hover:bg-emerald-500/10 disabled:opacity-50"
+              >
+                {fetchingModels ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <Search className="size-3" />
+                )}
+                Fetch available models
+              </button>
+            </div>
+            {availableModels.length > 0 ? (
+              <select
+                id="ak-model"
+                value={form.model}
+                onChange={(e) => updateForm("model", e.target.value)}
+                className="h-9 w-full rounded-md border border-border bg-background px-3 font-mono text-xs focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              >
+                <option value="">— Select a model —</option>
+                {availableModels.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                id="ak-model"
+                value={form.model}
+                onChange={(e) => updateForm("model", e.target.value)}
+                placeholder="Type a model ID or click 'Fetch available models'"
+                className="h-9 font-mono text-xs"
+              />
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              {form.model
+                ? `All chat requests will use: ${form.model}`
+                : "If left blank, each personality uses its default model."}
+            </p>
           </div>
 
           <div className="space-y-1.5">
