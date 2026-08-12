@@ -9,7 +9,12 @@
           2. Receives "insert this code" commands from the web app and creates a new
              Script in ServerScriptService with the generated Luau.
 
-        There is NO chat UI inside Studio — the plugin is just a connector.
+        Features:
+          - Automatic Roblox account detection
+          - Manual sign-in option for troubleshooting
+          - Enhanced modern UI with smooth animations
+          - Real-time connection status indicators
+          - Context-aware script synchronization
 
         Setup:
           1. Save this file as BloxForgeAI.lua in your Studio Plugins folder
@@ -27,7 +32,7 @@
 -- Configuration
 --========================================================================
 
-local PLUGIN_NAME = "BloxForge Connector"
+local PLUGIN_NAME = "BloxForge AI"
 local PLUGIN_ID = "BloxForgeConnector"
 local DEFAULT_API_URL = "" -- user must enter their BloxForge server URL
 local HEARTBEAT_INTERVAL = 3 -- seconds between heartbeats
@@ -41,6 +46,8 @@ local HttpService = game:GetService("HttpService")
 local Selection = game:GetService("Selection")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 --========================================================================
 -- State
@@ -52,6 +59,8 @@ local connected = false
 local heartbeatRunning = false
 local lastScriptRef = nil
 local lastContextHash = ""
+local currentUser = nil
+local isAutoSignedIn = false
 
 --========================================================================
 -- Helpers
