@@ -7,6 +7,8 @@ import {
   getPersonality,
   getMode,
   getPlan,
+  estimateCredits,
+  shouldShowPlan,
   PERSONALITIES,
   MODES,
   DEFAULT_PERSONALITY_ID,
@@ -83,6 +85,15 @@ export async function POST(req: NextRequest) {
 
   const personalityId = body.personality || DEFAULT_PERSONALITY_ID;
   const modeId = body.mode || DEFAULT_MODE_ID;
+  const currentMode = getMode(modeId);
+
+  // BloxForge-only modes (Dev, Web Search, Deep Thinking) require the
+  // bloxforge-luau personality. If a non-bloxforge personality is selected,
+  // silently fall back to normal mode.
+  let effectiveModeId = modeId;
+  if (currentMode?.bloxforgeOnly && personalityId !== "bloxforge-luau") {
+    effectiveModeId = "normal";
+  }
 
   // Beta: signed-in but unapproved users cannot chat
   if (!isGuest && !isApproved) {
@@ -108,37 +119,50 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Enforce daily limit for signed-in non-admin users. Admins = unlimited.
+  // ── Credit estimation: analyze task complexity (1-5 credits) ──
+  const creditEstimate = estimateCredits({
+    message: userMessage,
+    hasImage: Boolean(body.image),
+    hasContext: Boolean((body.context ?? "").trim()),
+    mode: effectiveModeId,
+  });
+
+  // Enforce daily credit limit for signed-in non-admin users. Admins = unlimited.
   if (!isGuest && !isAdmin && liveUser) {
     const today = todayKey();
-    // effective limit = plan limit + admin-granted extra credits
     const effectiveLimit =
-      plan.dailyMessageLimit === -1 ? -1 : plan.dailyMessageLimit + (liveUser.extraCredits || 0);
+      plan.dailyCreditLimit === -1 ? -1 : plan.dailyCreditLimit + (liveUser.extraCredits || 0);
+    const currentUsage = liveUser.usageDate === today ? liveUser.usageCount : 0;
+
+    if (effectiveLimit !== -1 && currentUsage + creditEstimate.cost > effectiveLimit) {
+      return NextResponse.json(
+        {
+          error: "limit-reached",
+          message: `This task costs ${creditEstimate.cost} credits but you only have ${Math.max(0, effectiveLimit - currentUsage)} remaining today (${effectiveLimit} total). Upgrade for more credits.`,
+          creditsNeeded: creditEstimate.cost,
+          creditsRemaining: Math.max(0, effectiveLimit - currentUsage),
+        },
+        { status: 429 },
+      );
+    }
+
+    // Deduct credits
     if (liveUser.usageDate !== today) {
       await db.user.update({
         where: { id: liveUser.id },
-        data: { usageDate: today, usageCount: 1 },
+        data: { usageDate: today, usageCount: creditEstimate.cost },
       });
     } else {
-      if (effectiveLimit !== -1 && liveUser.usageCount >= effectiveLimit) {
-        return NextResponse.json(
-          {
-            error: "limit-reached",
-            message: `You've reached your daily limit of ${effectiveLimit} messages. Upgrade for unlimited.`,
-          },
-          { status: 429 },
-        );
-      }
       await db.user.update({
         where: { id: liveUser.id },
-        data: { usageCount: { increment: 1 } },
+        data: { usageCount: { increment: creditEstimate.cost } },
       });
     }
   }
 
   const personality = getPersonality(personalityId);
   const model = resolveModel(personalityId);
-  const systemPrompt = buildSystemPrompt(modeId, personalityId);
+  const systemPrompt = buildSystemPrompt(effectiveModeId, personalityId);
 
   const prior: ChatMessage[] = Array.isArray(body.history)
     ? body.history.filter(
@@ -186,10 +210,43 @@ export async function POST(req: NextRequest) {
     ? `\n\n[Reference image description]\n${imageDescription}\n\nRecreate this in Roblox based on the description above. Generate complete Luau code that builds it.`
     : "";
 
+  // ── Complex task plan: if the task is complex, ask the AI to present a
+  // plan first and wait for user approval before generating code. ──
+  const taskPlan = shouldShowPlan(userMessage);
+  const planInstruction = taskPlan.needsApproval
+    ? `\n\n[IMPORTANT — This is a complex task. Before writing any code, present a plan as a numbered list under a "## Plan" heading. Include: what scripts/modules you'll create, what each does, and the order of implementation. End with: "Reply 'approve' to proceed, or tell me what to change." Then STOP — do not write code until the user approves.]`
+    : "";
+
+  // ── Web search (Dev + Web Search modes, BloxForge Luau only) ──
+  let searchBlock = "";
+  const effectiveMode = getMode(effectiveModeId);
+  if (effectiveMode?.useWebSearch && userMessage.length > 5) {
+    try {
+      const ZAI = (await import("z-ai-web-dev-sdk")).default;
+      const zai = await ZAI.create();
+      const searchQuery = `Roblox Luau ${userMessage.slice(0, 200)}`;
+      const searchResults = await zai.functions.invoke("web_search", {
+        query: searchQuery,
+        num: 5,
+      });
+      if (Array.isArray(searchResults) && searchResults.length > 0) {
+        const formatted = searchResults
+          .map(
+            (r: any, i: number) =>
+              `${i + 1}. ${r.name || r.title || "Untitled"}\n   URL: ${r.url || r.link || ""}\n   ${r.snippet || r.description || ""}`,
+          )
+          .join("\n\n");
+        searchBlock = `\n\n[Web search results for "${searchQuery}"]\n${formatted}\n\nUse these search results to provide accurate, up-to-date information. Cite sources with URLs.`;
+      }
+    } catch (e) {
+      console.error("[chat] web search failed:", e);
+    }
+  }
+
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
     ...prior.slice(-20),
-    { role: "user", content: userMessage + contextBlock + imageBlock },
+    { role: "user", content: userMessage + contextBlock + imageBlock + searchBlock + planInstruction },
   ];
 
   // ── Persist conversation + user message ──────────────────────────────
@@ -236,12 +293,15 @@ export async function POST(req: NextRequest) {
             personalityLabel: personality.label,
             model,
             mode: modeId,
+            creditsUsed: creditEstimate.cost,
+            creditReason: creditEstimate.reason,
+            isPlan: taskPlan.needsApproval,
           })}\n\n`,
         ),
       );
 
       try {
-        for await (const chunk of streamChat({ model, messages })) {
+        for await (const chunk of streamChat({ model, messages, deepThinking: effectiveMode?.useDeepThinking, personalityId })) {
           if (chunk.meta) meta = chunk.meta;
           if (chunk.delta) {
             assistantContent += chunk.delta;

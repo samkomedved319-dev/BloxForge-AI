@@ -85,7 +85,7 @@ function CodeBlock({
     <div className="group relative my-3 overflow-hidden rounded-xl border border-border bg-[oklch(0.14_0.012_250)]">
       <div className="flex items-center justify-between border-b border-border/60 bg-[oklch(0.18_0.013_250)] px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400/90">
+          <span className="font-mono text-[11px] uppercase tracking-wider text-violet-400/90">
             {language || "code"}
           </span>
           {cleanHeading && (
@@ -100,7 +100,7 @@ function CodeBlock({
               <button
                 onClick={() => setShowMenu((s) => !s)}
                 disabled={inserting}
-                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-emerald-400 transition hover:bg-emerald-500/15"
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-violet-400 transition hover:bg-violet-500/15"
               >
                 {inserting ? (
                   <>
@@ -132,7 +132,7 @@ function CodeBlock({
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                         Name
                       </p>
-                      <p className="font-mono text-xs text-emerald-400">
+                      <p className="font-mono text-xs text-violet-400">
                         {derived.instanceName}
                       </p>
                     </div>
@@ -140,50 +140,50 @@ function CodeBlock({
                       onClick={() => insert("ModuleScript")}
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent"
                     >
-                      <FileCode2 className="size-3.5 text-emerald-400" />
+                      <FileCode2 className="size-3.5 text-violet-400" />
                       ModuleScript
                       {derived.instanceType === "ModuleScript" && (
-                        <Check className="ml-auto size-3 text-emerald-400" />
+                        <Check className="ml-auto size-3 text-violet-400" />
                       )}
                     </button>
                     <button
                       onClick={() => insert("Script")}
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent"
                     >
-                      <FileCode2 className="size-3.5 text-emerald-400" />
+                      <FileCode2 className="size-3.5 text-violet-400" />
                       Script (server)
                       {derived.instanceType === "Script" && (
-                        <Check className="ml-auto size-3 text-emerald-400" />
+                        <Check className="ml-auto size-3 text-violet-400" />
                       )}
                     </button>
                     <button
                       onClick={() => insert("LocalScript")}
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent"
                     >
-                      <FileCode2 className="size-3.5 text-emerald-400" />
+                      <FileCode2 className="size-3.5 text-violet-400" />
                       LocalScript (client)
                       {derived.instanceType === "LocalScript" && (
-                        <Check className="ml-auto size-3 text-emerald-400" />
+                        <Check className="ml-auto size-3 text-violet-400" />
                       )}
                     </button>
                     <button
                       onClick={() => insert("Part")}
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent"
                     >
-                      <FileCode2 className="size-3.5 text-emerald-400" />
+                      <FileCode2 className="size-3.5 text-violet-400" />
                       Part
                       {derived.instanceType === "Part" && (
-                        <Check className="ml-auto size-3 text-emerald-400" />
+                        <Check className="ml-auto size-3 text-violet-400" />
                       )}
                     </button>
                     <button
                       onClick={() => insert("Model")}
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-accent"
                     >
-                      <FileCode2 className="size-3.5 text-emerald-400" />
+                      <FileCode2 className="size-3.5 text-violet-400" />
                       Model
                       {derived.instanceType === "Model" && (
-                        <Check className="ml-auto size-3 text-emerald-400" />
+                        <Check className="ml-auto size-3 text-violet-400" />
                       )}
                     </button>
                     <div className="border-t border-border px-3 py-1.5">
@@ -202,7 +202,7 @@ function CodeBlock({
           >
             {copied ? (
               <>
-                <Check className="size-3 text-emerald-400" /> Copied
+                <Check className="size-3 text-violet-400" /> Copied
               </>
             ) : (
               <>
@@ -269,7 +269,7 @@ export function Markdown({
               href={href}
               target="_blank"
               rel="noreferrer"
-              className="text-emerald-400 underline decoration-emerald-400/40 underline-offset-2 hover:decoration-emerald-400"
+              className="text-violet-400 underline decoration-violet-400/40 underline-offset-2 hover:decoration-violet-400"
             >
               {children}
             </a>
@@ -279,7 +279,7 @@ export function Markdown({
           ),
           em: ({ children }) => <em className="italic">{children}</em>,
           blockquote: ({ children }) => (
-            <blockquote className="my-3 border-l-2 border-emerald-500/50 bg-emerald-500/5 py-1 pl-4 text-muted-foreground">
+            <blockquote className="my-3 border-l-2 border-violet-500/50 bg-violet-500/5 py-1 pl-4 text-muted-foreground">
               {children}
             </blockquote>
           ),
@@ -290,7 +290,7 @@ export function Markdown({
             if (isInline) {
               return (
                 <code
-                  className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[12.5px] text-emerald-300"
+                  className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[12.5px] text-violet-300"
                   {...props}
                 >
                   {children}

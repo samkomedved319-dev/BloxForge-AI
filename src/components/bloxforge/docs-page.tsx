@@ -150,7 +150,7 @@ export function DocsPage() {
                       <s.icon className="size-4 shrink-0" />
                       <span className="flex-1">{s.title}</span>
                       {active === s.id && (
-                        <ChevronRight className="size-3.5 text-emerald-400" />
+                        <ChevronRight className="size-3.5 text-violet-400" />
                       )}
                     </button>
                   ))}
@@ -201,7 +201,7 @@ export function DocsPage() {
             transition={{ duration: 0.25 }}
           >
             <div className="mb-6 flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
                 <activeSection.icon className="size-5" />
               </div>
               <div>
@@ -330,7 +330,7 @@ function OL({ children }: { children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[12.5px] text-emerald-300">
+    <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[12.5px] text-violet-300">
       {children}
     </code>
   );
@@ -354,7 +354,7 @@ function Callout({
   children: React.ReactNode;
 }) {
   const styles = {
-    info: "border-emerald-500/30 bg-emerald-500/5 text-emerald-200",
+    info: "border-violet-500/30 bg-violet-500/5 text-violet-200",
     warn: "border-amber-500/30 bg-amber-500/5 text-amber-200",
     tip: "border-violet-500/30 bg-violet-500/5 text-violet-200",
   };
@@ -447,7 +447,7 @@ function GettingStartedDoc() {
         To insert generated code directly into Roblox Studio:
       </P>
       <OL>
-        <li>Go to the <button onClick={() => (window.location.hash = "plugin")} className="text-emerald-400 hover:underline">Plugin page</button> and download <Code>BloxForgeAI.lua</Code>.</li>
+        <li>Go to the <button onClick={() => (window.location.hash = "plugin")} className="text-violet-400 hover:underline">Plugin page</button> and download <Code>BloxForgeAI.lua</Code>.</li>
         <li>Move it to your Studio Plugins folder (Windows: <Code>%localappdata%\Roblox\Plugins</Code>, macOS: <Code>~/Documents/Roblox/Plugins</Code>).</li>
         <li>Restart Roblox Studio.</li>
         <li>In the web app, click <Code>Connect Studio</Code> to get a pairing code.</li>
@@ -533,7 +533,7 @@ function PluginDoc() {
 
       <H2>Installation</H2>
       <OL>
-        <li>Download <Code>BloxForgeAI.lua</Code> from the <button onClick={() => (window.location.hash = "plugin")} className="text-emerald-400 hover:underline">Plugin page</button>.</li>
+        <li>Download <Code>BloxForgeAI.lua</Code> from the <button onClick={() => (window.location.hash = "plugin")} className="text-violet-400 hover:underline">Plugin page</button>.</li>
         <li>Move the file to your Studio Plugins folder:
           <UL>
             <li><b>Windows:</b> <Code>%localappdata%\Roblox\Plugins</Code></li>
@@ -646,7 +646,7 @@ function RobloxAuthDoc() {
         A full copy-paste setup guide is available at{" "}
         <button
           onClick={() => (window.location.hash = "oauth-setup")}
-          className="text-emerald-400 hover:underline"
+          className="text-violet-400 hover:underline"
         >
           #oauth-setup
         </button>
@@ -655,7 +655,7 @@ function RobloxAuthDoc() {
 
       <H3>1. Register an OAuth2 app</H3>
       <OL>
-        <li>Go to <a href="https://create.roblox.com/credentials" target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">create.roblox.com/credentials</a>.</li>
+        <li>Go to <a href="https://create.roblox.com/credentials" target="_blank" rel="noreferrer" className="text-violet-400 hover:underline">create.roblox.com/credentials</a>.</li>
         <li>Set the Application Name to <Code>BloxForge AI</Code>.</li>
         <li>Set the Entry Link to <Code>{appOrigin}</Code>.</li>
         <li>Set the Privacy Policy URL to <Code>{appOrigin}/#privacy</Code>.</li>
@@ -750,7 +750,7 @@ function AdminDoc() {
       <P>
         Add custom OpenAI-compatible API keys (NVIDIA NIM, OpenAI, OpenRouter,
         Groq, Together, etc.). See{" "}
-        <button onClick={() => (window.location.hash = "api-keys")} className="text-emerald-400 hover:underline">
+        <button onClick={() => (window.location.hash = "api-keys")} className="text-violet-400 hover:underline">
           Custom API Keys
         </button>{" "}
         for details.
@@ -935,11 +935,11 @@ function PrivacyDoc() {
       </P>
       <H2>7. Contact</H2>
       <P>
-        Questions? Email <a href="mailto:support@bloxforge.ai" className="text-emerald-400 hover:underline">support@bloxforge.ai</a>.
+        Questions? Email <a href="mailto:support@bloxforge.ai" className="text-violet-400 hover:underline">support@bloxforge.ai</a>.
       </P>
       <Callout type="info" title="Full policy">
         This is a summary. The full Privacy Policy is at{" "}
-        <button onClick={() => (window.location.hash = "privacy")} className="text-emerald-400 hover:underline">
+        <button onClick={() => (window.location.hash = "privacy")} className="text-violet-400 hover:underline">
           #privacy
         </button>
         .
@@ -972,11 +972,11 @@ function TosDoc() {
       </P>
       <H2>5. Contact</H2>
       <P>
-        Questions? Email <a href="mailto:support@bloxforge.ai" className="text-emerald-400 hover:underline">support@bloxforge.ai</a>.
+        Questions? Email <a href="mailto:support@bloxforge.ai" className="text-violet-400 hover:underline">support@bloxforge.ai</a>.
       </P>
       <Callout type="info" title="Full terms">
         This is a summary. The full Terms of Service is at{" "}
-        <button onClick={() => (window.location.hash = "tos")} className="text-emerald-400 hover:underline">
+        <button onClick={() => (window.location.hash = "tos")} className="text-violet-400 hover:underline">
           #tos
         </button>
         .

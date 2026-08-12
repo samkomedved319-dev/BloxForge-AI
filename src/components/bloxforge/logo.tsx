@@ -10,7 +10,7 @@ export function Logo({
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
       <div
-        className="relative flex items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 text-slate-950 shadow-lg shadow-emerald-500/20"
+        className="relative flex items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 text-white shadow-lg shadow-violet-500/20"
         style={{ width: size, height: size }}
       >
         <svg
@@ -50,7 +50,7 @@ export function Logo({
       </div>
       <span className="font-display text-lg font-extrabold tracking-tight">
         BloxForge
-        <span className="ml-1 bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+        <span className="ml-1 bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
           AI
         </span>
       </span>

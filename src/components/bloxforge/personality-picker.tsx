@@ -20,7 +20,7 @@ function speedDots(speed: 1 | 2 | 3) {
           key={i}
           className={cn(
             "size-1 rounded-full",
-            i <= speed ? "bg-emerald-400" : "bg-muted-foreground/30",
+            i <= speed ? "bg-violet-400" : "bg-muted-foreground/30",
           )}
         />
       ))}
@@ -34,12 +34,16 @@ export function PersonalityPicker({
   onPersonalityChange,
   onModeChange,
   allowedPersonalities,
+  isAdmin,
+  activeModelLabel,
 }: {
   personalityId: string;
   modeId: string;
   onPersonalityChange: (id: string) => void;
   onModeChange: (id: string) => void;
   allowedPersonalities?: string[];
+  isAdmin?: boolean;
+  activeModelLabel?: string;
 }) {
   const allowed = allowedPersonalities || PERSONALITIES.map((p) => p.id);
   const currentPersonality =
@@ -50,8 +54,8 @@ export function PersonalityPicker({
     <div className="flex items-center gap-2">
       <Dropdown
         label="MODEL"
-        value={currentPersonality.label}
-        icon={<Sparkles className="size-3.5 text-emerald-400" />}
+        value={isAdmin && activeModelLabel ? `${currentPersonality.label} · ${activeModelLabel}` : currentPersonality.label}
+        icon={<Sparkles className="size-3.5 text-violet-400" />}
       >
         {(close) => (
           <div className="min-w-[280px] p-1.5">
@@ -80,7 +84,7 @@ export function PersonalityPicker({
                     "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md",
                     p.beta
                       ? "bg-amber-500/10 text-amber-400"
-                      : "bg-emerald-500/10 text-emerald-400",
+                      : "bg-violet-500/10 text-violet-400",
                   )}>
                     {p.beta ? (
                       <Sparkles className="size-3.5" />
@@ -100,7 +104,7 @@ export function PersonalityPicker({
                           variant="secondary"
                           className={cn(
                             "h-4 px-1.5 text-[10px]",
-                            p.beta ? "text-amber-400" : "text-emerald-400",
+                            p.beta ? "text-amber-400" : "text-violet-400",
                           )}
                         >
                           {p.badge}
@@ -123,10 +127,15 @@ export function PersonalityPicker({
                       <span className="font-mono text-[10px] text-muted-foreground">
                         {p.vendor.split(" / ")[0]}
                       </span>
+                      {isAdmin && (
+                        <span className="font-mono text-[9px] text-violet-400/60">
+                          {p.model}
+                        </span>
+                      )}
                     </div>
                   </div>
                   {p.id === personalityId && (
-                    <Check className="mt-1 size-4 shrink-0 text-emerald-400" />
+                    <Check className="mt-1 size-4 shrink-0 text-violet-400" />
                   )}
                 </button>
               );
@@ -138,36 +147,61 @@ export function PersonalityPicker({
       <Dropdown
         label="MODE"
         value={currentMode.label}
-        icon={<Gauge className="size-3.5 text-emerald-400" />}
+        icon={<Gauge className="size-3.5 text-violet-400" />}
       >
         {(close) => (
           <div className="min-w-[240px] p-1.5">
             <p className="px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
               Response style
             </p>
-            {MODES.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => {
-                  onModeChange(m.id);
-                  close();
-                }}
-                className={cn(
-                  "flex w-full items-start gap-3 rounded-lg px-2.5 py-2 text-left transition hover:bg-accent",
-                  m.id === modeId && "bg-accent/60",
-                )}
-              >
-                <div className="min-w-0 flex-1">
-                  <span className="text-sm font-medium">{m.label}</span>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {m.description}
-                  </p>
-                </div>
-                {m.id === modeId && (
-                  <Check className="mt-0.5 size-4 shrink-0 text-emerald-400" />
-                )}
-              </button>
-            ))}
+            {MODES.map((m) => {
+              // BloxForge-only modes are only shown when BloxForge Luau is
+              // selected (or always shown but greyed out if not selected)
+              const isBloxforgeMode = m.bloxforgeOnly;
+              const isBloxforgePersonality = personalityId === "bloxforge-luau";
+              const isLocked = isBloxforgeMode && !isBloxforgePersonality;
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => {
+                    onModeChange(m.id);
+                    close();
+                  }}
+                  className={cn(
+                    "flex w-full items-start gap-3 rounded-lg px-2.5 py-2 text-left transition",
+                    isLocked
+                      ? "cursor-not-allowed opacity-40"
+                      : "hover:bg-accent",
+                    m.id === modeId && "bg-accent/60",
+                  )}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{m.label}</span>
+                      {isBloxforgeMode && (
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "h-4 px-1.5 text-[10px]",
+                            isLocked
+                              ? "text-muted-foreground"
+                              : "text-amber-400",
+                          )}
+                        >
+                          {isLocked ? "BloxForge only" : "BloxForge"}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {m.description}
+                    </p>
+                  </div>
+                  {m.id === modeId && (
+                    <Check className="mt-0.5 size-4 shrink-0 text-violet-400" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
       </Dropdown>
@@ -204,7 +238,7 @@ function Dropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 transition hover:border-emerald-500/30 hover:bg-accent/40"
+        className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 transition hover:border-violet-500/30 hover:bg-accent/40"
       >
         <span className="hidden font-mono text-[10px] uppercase tracking-wider text-muted-foreground sm:inline">
           {label}

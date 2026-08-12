@@ -21,10 +21,12 @@ export interface ChatMessage {
 }
 
 export interface ChatOptions {
-  model: string; // real model id for the chosen provider
+  model: string;
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
+  deepThinking?: boolean;
+  personalityId?: string; // used to select the right API key (e.g. "groq")
 }
 
 export type EngineProvider = "nvidia" | "custom" | "zai";
@@ -50,12 +52,35 @@ export interface ResolvedKey {
 }
 
 /**
- * Resolve the best available API key.
- * 1. Highest-priority active custom key from the DB (admin-configured).
- * 2. NVIDIA_API_KEY env var.
- * 3. None → fall back to z-ai demo engine.
+ * Resolve the best available API key for a given personality.
+ * 1. If personality is "groq", look for a Groq-specific key in the DB.
+ * 2. Highest-priority active custom key from the DB (admin-configured).
+ * 3. NVIDIA_API_KEY env var.
+ * 4. None → fall back to z-ai demo engine.
  */
-export async function resolveApiKey(): Promise<ResolvedKey | null> {
+export async function resolveApiKey(personalityId?: string): Promise<ResolvedKey | null> {
+  // ── Groq: look for a Groq API key ──
+  if (personalityId === "groq") {
+    try {
+      const groqKey = await db.apiKey.findFirst({
+        where: { active: true, provider: "groq" },
+        orderBy: { priority: "desc" },
+      });
+      if (groqKey) {
+        return {
+          provider: "custom",
+          baseUrl: groqKey.baseUrl || "https://api.groq.com/openai/v1",
+          apiKey: groqKey.key,
+          label: groqKey.label || "Groq",
+          modelOverride: groqKey.model,
+        };
+      }
+    } catch (e) {
+      console.error("[ai] failed to load Groq key:", e);
+    }
+  }
+
+  // ── Default: highest-priority active custom key ──
   try {
     const custom = await db.apiKey.findFirst({
       where: { active: true },
@@ -93,15 +118,20 @@ export async function resolveApiKey(): Promise<ResolvedKey | null> {
 export async function* streamChat(
   opts: ChatOptions,
 ): AsyncGenerator<{ delta: string; meta?: EngineMeta; done?: boolean }> {
-  const key = await resolveApiKey();
+  // For GLM-based personalities (model starts with "glm"), always use the
+  // z-ai SDK directly — it's the native GLM provider and handles it best.
+  const isGlmModel = opts.model && opts.model.toLowerCase().startsWith("glm");
 
-  if (key) {
-    try {
-      yield* streamOpenAICompatible(opts, key);
-      return;
-    } catch (err) {
-      console.error("[bloxforge] stream failed, falling back to z-ai:", err);
-      // fall through to z-ai
+  if (!isGlmModel) {
+    const key = await resolveApiKey(opts.personalityId);
+    if (key) {
+      try {
+        yield* streamOpenAICompatible(opts, key);
+        return;
+      } catch (err) {
+        console.error("[bloxforge] stream failed, falling back to z-ai:", err);
+        // fall through to z-ai
+      }
     }
   }
 
@@ -203,12 +233,20 @@ async function* streamZai(
 
   const completion = await zai.chat.completions.create({
     messages: opts.messages,
-    thinking: { type: "disabled" },
+    thinking: { type: opts.deepThinking ? "enabled" : "disabled" },
   });
 
-  const content: string = completion?.choices?.[0]?.message?.content ?? "";
+  let content: string = completion?.choices?.[0]?.message?.content ?? "";
 
-  const chunkSize = 6;
+  // If deep thinking produced reasoning tokens, strip them and keep only the
+  // final answer (the content already has the final answer from the SDK).
+  if (opts.deepThinking && content) {
+    // Remove any <think>...</think> blocks if present
+    content = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  }
+
+  // Stream in larger chunks for a more natural feel
+  const chunkSize = 4;
   for (let i = 0; i < content.length; i += chunkSize) {
     yield { delta: content.slice(i, i + chunkSize) };
   }

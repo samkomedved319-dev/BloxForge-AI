@@ -83,7 +83,7 @@ export function OauthSetupGuide() {
               href="https://create.roblox.com/credentials"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-0.5 text-emerald-400 hover:underline"
+              className="inline-flex items-center gap-0.5 text-violet-400 hover:underline"
             >
               Roblox Creator Hub OAuth app form <ExternalLink className="size-3" />
             </a>
@@ -95,7 +95,7 @@ export function OauthSetupGuide() {
         {/* Step 1: App info */}
         <Card className="mt-8 border-border/60 bg-card p-6">
           <div className="mb-4 flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/15 font-display text-sm font-bold text-emerald-400">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-violet-500/15 font-display text-sm font-bold text-violet-400">
               1
             </span>
             <h2 className="font-display text-lg font-bold">General Information</h2>
@@ -111,7 +111,7 @@ export function OauthSetupGuide() {
         {/* Step 2: Permissions */}
         <Card className="mt-4 border-border/60 bg-card p-6">
           <div className="mb-4 flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/15 font-display text-sm font-bold text-emerald-400">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-violet-500/15 font-display text-sm font-bold text-violet-400">
               2
             </span>
             <h2 className="font-display text-lg font-bold">Permissions (Scopes)</h2>
@@ -127,14 +127,14 @@ export function OauthSetupGuide() {
                 key={s.id}
                 className="flex items-start gap-3 rounded-lg border border-border bg-background p-3"
               >
-                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-400" />
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-violet-400" />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <code className="font-mono text-sm font-medium text-foreground">
                       {s.label}
                     </code>
                     {s.required && (
-                      <Badge variant="secondary" className="h-4 text-[10px] text-emerald-400">
+                      <Badge variant="secondary" className="h-4 text-[10px] text-violet-400">
                         Required
                       </Badge>
                     )}
@@ -149,7 +149,7 @@ export function OauthSetupGuide() {
         {/* Step 3: After creating the app */}
         <Card className="mt-4 border-border/60 bg-card p-6">
           <div className="mb-4 flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/15 font-display text-sm font-bold text-emerald-400">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-violet-500/15 font-display text-sm font-bold text-violet-400">
               3
             </span>
             <h2 className="font-display text-lg font-bold">After creating the app</h2>
@@ -161,7 +161,7 @@ export function OauthSetupGuide() {
           </p>
 
           <div className="mt-3 rounded-lg border border-border bg-[oklch(0.14_0.012_250)] p-4">
-            <pre className="font-mono text-xs text-emerald-300">
+            <pre className="font-mono text-xs text-violet-300">
 {`ROBLOX_CLIENT_ID=your_client_id_here
 ROBLOX_CLIENT_SECRET=your_client_secret_here
 ROBLOX_REDIRECT_URI=${callbackUrl}`}
@@ -221,14 +221,14 @@ function FieldRow({
       <div className="mb-1 flex items-center justify-between">
         <label className="text-xs font-medium text-foreground">{label}</label>
         {highlight && (
-          <Badge variant="outline" className="h-5 gap-1 border-emerald-500/40 text-[10px] text-emerald-400">
+          <Badge variant="outline" className="h-5 gap-1 border-violet-500/40 text-[10px] text-violet-400">
             <AlertCircle className="size-2.5" /> Critical
           </Badge>
         )}
       </div>
       <div
         className={`flex items-center gap-2 rounded-lg border bg-background px-3 py-2 ${
-          highlight ? "border-emerald-500/40 bg-emerald-500/5" : "border-border"
+          highlight ? "border-violet-500/40 bg-violet-500/5" : "border-border"
         }`}
       >
         <code className="flex-1 truncate font-mono text-xs text-foreground">
@@ -239,7 +239,7 @@ function FieldRow({
           className="shrink-0 rounded-md p-1.5 text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
         >
           {copied ? (
-            <Check className="size-3.5 text-emerald-400" />
+            <Check className="size-3.5 text-violet-400" />
           ) : (
             <Copy className="size-3.5" />
           )}

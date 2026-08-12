@@ -36,9 +36,9 @@ export async function GET() {
 
   const plan = getPlan(user.plan);
   const effectiveLimit =
-    isAdmin || plan.dailyMessageLimit === -1
+    isAdmin || plan.dailyCreditLimit === -1
       ? -1
-      : plan.dailyMessageLimit + (user.extraCredits || 0);
+      : plan.dailyCreditLimit + (user.extraCredits || 0);
 
   const [totalConversations, totalMessages, recentConversations, messagesLast7] =
     await Promise.all([

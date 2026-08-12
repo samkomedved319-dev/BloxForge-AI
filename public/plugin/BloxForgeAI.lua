@@ -509,81 +509,99 @@ local function executeInsertCommand(cmd)
 
                 local inst
                 if scriptTypes[instanceType] then
+                        -- Script types: create with the AI's code as Source
                         inst = Instance.new(instanceType)
-                elseif instanceType == "Part" then
-                        -- If the code builds the Part programmatically (Instance.new),
-                        -- store it as a ModuleScript so the user can require it to
-                        -- get the fully-configured Part.
-                        if code and code:find("Instance%.new") then
-                                inst = Instance.new("ModuleScript")
-                        else
-                                inst = Instance.new("Part")
-                                inst.Size = Vector3.new(4, 1, 4)
-                                inst.Anchored = true
-                                inst.Position = Vector3.new(0, 5, 0)
-                                inst.BrickColor = BrickColor.Random()
-                                inst.Material = Enum.Material.SmoothPlastic
-                                inst.TopSurface = Enum.SurfaceType.Smooth
-                                inst.BottomSurface = Enum.SurfaceType.Smooth
-                        end
-                elseif instanceType == "Model" then
-                        if code and code:find("Instance%.new") then
-                                inst = Instance.new("ModuleScript")
-                        else
-                                inst = Instance.new("Model")
-                                local part = Instance.new("Part")
-                                part.Name = "Handle"
-                                part.Size = Vector3.new(4, 1, 4)
-                                part.Anchored = true
-                                part.Position = Vector3.new(0, 5, 0)
-                                part.BrickColor = BrickColor.Random()
-                                part.Material = Enum.Material.SmoothPlastic
-                                part.Parent = inst
-                                inst.PrimaryPart = part
-                                inst.WorldPivot = CFrame.new(0, 5, 0)
-                        end
-                elseif uiTypes[instanceType] then
-                        -- If the code builds the UI programmatically, store as ModuleScript
-                        if code and code:find("Instance%.new") then
-                                inst = Instance.new("ModuleScript")
-                        else
-                                inst = Instance.new(instanceType)
-                                if instanceType == "ScreenGui" then
-                                        inst.ResetOnSpawn = false
-                                        inst.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-                                elseif instanceType == "Frame" or instanceType == "ScrollingFrame" then
-                                        inst.Size = UDim2.fromOffset(200, 100)
-                                        inst.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-                                        inst.BorderSizePixel = 0
-                                elseif instanceType == "TextLabel" or instanceType == "TextButton" then
-                                        inst.Size = UDim2.fromOffset(200, 40)
-                                        inst.Text = instanceName
-                                        inst.TextColor3 = Color3.fromRGB(255, 255, 255)
-                                        inst.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-                                        inst.Font = Enum.Font.Gotham
-                                        inst.TextSize = 14
-                                elseif instanceType == "TextBox" then
-                                        inst.Size = UDim2.fromOffset(200, 30)
-                                        inst.PlaceholderText = "Enter text…"
-                                        inst.Text = ""
-                                        inst.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-                                        inst.TextColor3 = Color3.fromRGB(255, 255, 255)
-                                elseif instanceType == "UICorner" then
-                                        inst.CornerRadius = UDim.new(0, 8)
+                        inst.Source = code
+                elseif code and code:find("Instance%.new") then
+                        -- ── EXECUTE the AI's code to actually create instances ──
+                        -- The AI generated Luau code that calls Instance.new to build
+                        -- Parts, Models, UI, etc. We execute it in a sandboxed
+                        -- ModuleScript so the instances actually get created in Studio.
+                        inst = Instance.new("ModuleScript")
+                        -- Wrap the code so it executes on require and returns the
+                        -- created instance (or the last expression)
+                        local wrappedCode = code
+                        -- If the code doesn't already end with `return`, append one
+                        -- that returns the last variable assigned
+                        if not wrappedCode:find("return%s") then
+                                -- Try to find the last `local X = Instance.new(...)` and return X
+                                local lastVar = nil
+                                for varName in wrappedCode:gmatch("local%s+([%w_]+)%s*=%s*Instance%.new") do
+                                        lastVar = varName
+                                end
+                                if lastVar then
+                                        wrappedCode = wrappedCode .. "\nreturn " .. lastVar
                                 end
                         end
+                        inst.Source = wrappedCode
+                        -- Execute the ModuleScript immediately to create the instances
+                        local execOk, execResult = pcall(function()
+                                local result = require(inst)
+                                -- If require returned an Instance, select it
+                                if typeof(result) == "Instance" then
+                                        return result
+                                end
+                                return inst
+                        end)
+                        if execOk and typeof(execResult) == "Instance" and execResult ~= inst then
+                                -- The code created an instance — use that as the main instance
+                                inst = execResult
+                        end
+                elseif instanceType == "Part" then
+                        inst = Instance.new("Part")
+                        inst.Size = Vector3.new(4, 1, 4)
+                        inst.Anchored = true
+                        inst.Position = Vector3.new(0, 5, 0)
+                        inst.BrickColor = BrickColor.Random()
+                        inst.Material = Enum.Material.SmoothPlastic
+                        inst.TopSurface = Enum.SurfaceType.Smooth
+                        inst.BottomSurface = Enum.SurfaceType.Smooth
+                elseif instanceType == "Model" then
+                        inst = Instance.new("Model")
+                        local part = Instance.new("Part")
+                        part.Name = "Handle"
+                        part.Size = Vector3.new(4, 1, 4)
+                        part.Anchored = true
+                        part.Position = Vector3.new(0, 5, 0)
+                        part.BrickColor = BrickColor.Random()
+                        part.Material = Enum.Material.SmoothPlastic
+                        part.Parent = inst
+                        inst.PrimaryPart = part
+                        inst.WorldPivot = CFrame.new(0, 5, 0)
+                elseif uiTypes[instanceType] then
+                        inst = Instance.new(instanceType)
+                        if instanceType == "ScreenGui" then
+                                inst.ResetOnSpawn = false
+                                inst.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+                        elseif instanceType == "Frame" or instanceType == "ScrollingFrame" then
+                                inst.Size = UDim2.fromOffset(200, 100)
+                                inst.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+                                inst.BorderSizePixel = 0
+                        elseif instanceType == "TextLabel" or instanceType == "TextButton" then
+                                inst.Size = UDim2.fromOffset(200, 40)
+                                inst.Text = instanceName
+                                inst.TextColor3 = Color3.fromRGB(255, 255, 255)
+                                inst.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+                                inst.Font = Enum.Font.Gotham
+                                inst.TextSize = 14
+                        elseif instanceType == "TextBox" then
+                                inst.Size = UDim2.fromOffset(200, 30)
+                                inst.PlaceholderText = "Enter text…"
+                                inst.Text = ""
+                                inst.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+                                inst.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        elseif instanceType == "UICorner" then
+                                inst.CornerRadius = UDim.new(0, 8)
+                        end
                 else
-                        -- Fallback: try to create the instance type directly
                         inst = Instance.new(instanceType)
                 end
 
-                -- Set Source BEFORE parenting (required for plugin-created scripts)
-                -- Also set Source for ModuleScripts created from Part/Model/UI code
-                if scriptTypes[instanceType] or inst.ClassName == "ModuleScript" then
-                        inst.Source = code
-                end
                 inst.Name = instanceName
-                inst.Parent = parent
+                -- Only parent if not already parented by the executed code
+                if not inst.Parent then
+                        inst.Parent = parent
+                end
                 Selection:Set({ inst })
                 return inst
         end)

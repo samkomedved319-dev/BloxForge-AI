@@ -319,12 +319,12 @@ export function StudioConnectDialog({
             className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="pointer-events-none absolute -top-24 left-1/2 size-48 -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
+            <div className="pointer-events-none absolute -top-24 left-1/2 size-48 -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl" />
 
             <div className="relative max-h-[85vh] overflow-y-auto">
               <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card p-4">
                 <div className="flex items-center gap-2">
-                  <Plug className="size-4 text-emerald-400" />
+                  <Plug className="size-4 text-violet-400" />
                   <span className="font-display font-bold">Connect Roblox Studio</span>
                 </div>
                 <button
@@ -356,9 +356,9 @@ export function StudioConnectDialog({
                           ① Your pairing code
                         </p>
                         <div className="flex items-center gap-2">
-                          <div className="flex flex-1 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/5 py-4">
+                          <div className="flex flex-1 items-center justify-center rounded-xl border border-violet-500/30 bg-violet-500/5 py-4">
                             {pairingCode ? (
-                              <span className="font-mono text-3xl font-bold tracking-[0.3em] text-emerald-400">
+                              <span className="font-mono text-3xl font-bold tracking-[0.3em] text-violet-400">
                                 {pairingCode}
                               </span>
                             ) : (
@@ -372,7 +372,7 @@ export function StudioConnectDialog({
                             title="Copy pairing code"
                           >
                             {copiedCode ? (
-                              <Check className="size-4 text-emerald-400" />
+                              <Check className="size-4 text-violet-400" />
                             ) : (
                               <Copy className="size-4" />
                             )}
@@ -398,7 +398,7 @@ export function StudioConnectDialog({
                             title="Copy server URL"
                           >
                             {copiedUrl ? (
-                              <Check className="size-4 text-emerald-400" />
+                              <Check className="size-4 text-violet-400" />
                             ) : (
                               <Copy className="size-4" />
                             )}
@@ -424,7 +424,7 @@ export function StudioConnectDialog({
                       </div>
 
                       <div className="mt-5 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="size-4 animate-spin text-emerald-400" />
+                        <Loader2 className="size-4 animate-spin text-violet-400" />
                         Waiting for Studio to connect…
                       </div>
 
@@ -433,7 +433,7 @@ export function StudioConnectDialog({
                         {onSimulate && (
                           <button
                             onClick={onSimulate}
-                            className="flex items-center justify-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs font-medium text-emerald-300 transition hover:bg-emerald-500/15"
+                            className="flex items-center justify-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/5 px-3 py-2 text-xs font-medium text-violet-300 transition hover:bg-violet-500/15"
                             title="Simulate a Studio connection for testing without Roblox Studio"
                           >
                             <FlaskConical className="size-3.5" />
@@ -510,9 +510,9 @@ export function StudioConnectDialog({
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: "spring", damping: 14, delay: 0.1 }}
-                        className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-500/15"
+                        className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-violet-500/15"
                       >
-                        <Check className="size-8 text-emerald-400" />
+                        <Check className="size-8 text-violet-400" />
                       </motion.div>
                       <h3 className="font-display text-xl font-bold">
                         Studio connected
@@ -532,7 +532,7 @@ export function StudioConnectDialog({
 
                       {state?.context ? (
                         <div className="mt-4 flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-left">
-                          <FileCode2 className="size-4 shrink-0 text-emerald-400" />
+                          <FileCode2 className="size-4 shrink-0 text-violet-400" />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-xs font-medium">
                               {state.context.scriptName}
@@ -581,7 +581,7 @@ export function StudioConnectDialog({
 function Step({ n, children }: { n: number; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2.5 text-sm">
-      <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-emerald-500/15 text-[11px] font-bold text-emerald-400">
+      <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-violet-500/15 text-[11px] font-bold text-violet-400">
         {n}
       </span>
       <span className="text-muted-foreground">{children}</span>
@@ -607,7 +607,7 @@ export function StudioBadge({
         "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition",
         isDemo
           ? "border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
-          : "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20",
+          : "border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20",
       )}
       title={
         isDemo
@@ -621,25 +621,25 @@ export function StudioBadge({
         <span
           className={cn(
             "absolute inline-flex size-full animate-ping rounded-full opacity-75",
-            isDemo ? "bg-amber-400" : "bg-emerald-400",
+            isDemo ? "bg-amber-400" : "bg-violet-400",
           )}
         />
         <span
           className={cn(
             "relative inline-flex size-2 rounded-full",
-            isDemo ? "bg-amber-400" : "bg-emerald-400",
+            isDemo ? "bg-amber-400" : "bg-violet-400",
           )}
         />
       </span>
       {isDemo ? (
         <FlaskConical className="size-3.5 text-amber-400" />
       ) : (
-        <Plug className="size-3.5 text-emerald-400" />
+        <Plug className="size-3.5 text-violet-400" />
       )}
       <span
         className={cn(
           "hidden font-medium sm:inline",
-          isDemo ? "text-amber-300" : "text-emerald-300",
+          isDemo ? "text-amber-300" : "text-violet-300",
         )}
       >
         {context ? context.scriptName : isDemo ? "Studio (demo)" : "Studio"}
@@ -653,7 +653,7 @@ export function ConnectStudioButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs transition hover:border-emerald-500/30 hover:bg-accent/40"
+      className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs transition hover:border-violet-500/30 hover:bg-accent/40"
       title="Connect Roblox Studio"
     >
       <Plug className="size-3.5 text-muted-foreground" />

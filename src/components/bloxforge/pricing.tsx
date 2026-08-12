@@ -50,7 +50,7 @@ const TIERS: Tier[] = [
     ctaVariant: "outline",
     icon: Sparkles,
     features: [
-      "50 AI messages / day",
+      "5 credits / day",
       "Qwen2.5 Coder + Llama 3.3 models",
       "Saved sessions (up to 10)",
       "Community support",
@@ -69,10 +69,11 @@ const TIERS: Tier[] = [
     highlight: true,
     icon: Crown,
     features: [
-      "Unlimited messages",
-      "All 5 NVIDIA models incl. DeepSeek R1 & Llama 405B",
+      "30 credits / day",
+      "All NVIDIA models incl. DeepSeek R1 & Llama 405B",
       "Unlimited saved sessions",
       "Priority streaming",
+      "Reference image upload",
       "Code context (select-a-script)",
       "Email support",
     ],
@@ -89,6 +90,8 @@ const TIERS: Tier[] = [
     icon: Users,
     features: [
       "Everything in Pro",
+      "Unlimited credits",
+      "BloxForge Luau (Beta)",
       "Team shared sessions",
       "Custom system prompts",
       "Usage analytics",
@@ -155,7 +158,7 @@ function SectionHeading({
 }) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <span className="font-mono text-xs uppercase tracking-[0.2em] text-emerald-400">
+      <span className="font-mono text-xs uppercase tracking-[0.2em] text-violet-400">
         {eyebrow}
       </span>
       <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
@@ -177,7 +180,7 @@ function PricingHero({
     <section className="relative overflow-hidden">
       <div className="bg-radial-brand pointer-events-none absolute inset-0" />
       <div className="bg-grid pointer-events-none absolute inset-0 opacity-40 [mask-image:radial-gradient(60%_50%_at_50%_0%,black,transparent)]" />
-      <div className="pointer-events-none absolute -top-24 left-1/4 size-72 rounded-full bg-emerald-500/20 blur-3xl animate-blob" />
+      <div className="pointer-events-none absolute -top-24 left-1/4 size-72 rounded-full bg-violet-500/20 blur-3xl animate-blob" />
       <div className="pointer-events-none absolute -top-16 right-1/4 size-72 rounded-full bg-teal-500/15 blur-3xl animate-blob [animation-delay:4s]" />
 
       <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-16 sm:pt-24">
@@ -189,14 +192,14 @@ function PricingHero({
         >
           <Badge
             variant="outline"
-            className="mx-auto mb-6 gap-2 border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-emerald-300"
+            className="mx-auto mb-6 gap-2 border-violet-500/30 bg-violet-500/10 px-3 py-1 text-violet-300"
           >
             <Zap className="size-3" /> Simple, developer-first pricing
           </Badge>
 
           <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-balance sm:text-6xl">
             Pick your{" "}
-            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-violet-400 via-teal-300 to-violet-400 bg-clip-text text-transparent">
               forge
             </span>
           </h1>
@@ -237,7 +240,7 @@ function PricingHero({
                     "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
                     annual
                       ? "bg-primary-foreground/20 text-primary-foreground"
-                      : "bg-emerald-500/15 text-emerald-300",
+                      : "bg-violet-500/15 text-violet-300",
                   )}
                 >
                   Save 25%
@@ -333,16 +336,16 @@ function PricingTiers({
                 className={cn(
                   "relative flex h-full w-full flex-col gap-0 overflow-hidden border-border/60 bg-card p-6 transition",
                   tier.highlight
-                    ? "border-emerald-500/40 glow-brand"
-                    : "hover:border-emerald-500/30",
+                    ? "border-violet-500/40 glow-brand"
+                    : "hover:border-violet-500/30",
                 )}
               >
                 {tier.highlight && (
-                  <div className="pointer-events-none absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent" />
+                  <div className="pointer-events-none absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-violet-400/70 to-transparent" />
                 )}
 
                 <div className="flex items-center justify-between">
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+                  <div className="flex size-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
                     <tier.icon className="size-5" />
                   </div>
                   <Badge
@@ -351,7 +354,7 @@ function PricingTiers({
                       "h-6 px-2.5 text-[11px]",
                       tier.highlight
                         ? "bg-primary text-primary-foreground"
-                        : "bg-emerald-500/10 text-emerald-300",
+                        : "bg-violet-500/10 text-violet-300",
                     )}
                   >
                     {tier.highlight && (
@@ -376,7 +379,7 @@ function PricingTiers({
                     {tier.monthly === 0 ? "/ forever" : "/ mo"}
                   </span>
                 </div>
-                <p className="mt-1 h-4 font-mono text-[11px] text-emerald-400">
+                <p className="mt-1 h-4 font-mono text-[11px] text-violet-400">
                   {tier.monthly === 0
                     ? "No card required"
                     : annual
@@ -417,8 +420,8 @@ function PricingTiers({
                           className={cn(
                             "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full",
                             tier.highlight
-                              ? "bg-emerald-500 text-slate-950"
-                              : "bg-emerald-500/15 text-emerald-400",
+                              ? "bg-violet-500 text-slate-950"
+                              : "bg-violet-500/15 text-violet-400",
                           )}
                         >
                           <Check className="size-3" strokeWidth={3} />
@@ -474,11 +477,11 @@ function FAQ() {
         </motion.div>
 
         <div className="mt-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <ShieldCheck className="size-4 text-emerald-400" />
+          <ShieldCheck className="size-4 text-violet-400" />
           Still have questions?{" "}
           <button
             type="button"
-            className="font-medium text-emerald-400 underline-offset-4 hover:underline"
+            className="font-medium text-violet-400 underline-offset-4 hover:underline"
           >
             Talk to us
           </button>
@@ -498,10 +501,10 @@ function PricingCTA({
   return (
     <section className="relative border-t border-border/50 py-20">
       <div className="mx-auto max-w-4xl px-4">
-        <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent p-10 text-center sm:p-16">
+        <div className="relative overflow-hidden rounded-3xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 via-teal-500/5 to-transparent p-10 text-center sm:p-16">
           <div className="pointer-events-none absolute inset-0 bg-grid opacity-30 [mask-image:radial-gradient(60%_60%_at_50%_50%,black,transparent)]" />
           <div className="relative">
-            <Sparkles className="mx-auto mb-4 size-8 text-emerald-400" />
+            <Sparkles className="mx-auto mb-4 size-8 text-violet-400" />
             <h2 className="font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
               Ready to forge?
             </h2>

@@ -15,6 +15,7 @@ import { LegalPage } from "@/components/bloxforge/legal-page";
 import { OauthSetupGuide } from "@/components/bloxforge/oauth-setup-guide";
 import { DocsPage } from "@/components/bloxforge/docs-page";
 import { AuthModal } from "@/components/bloxforge/auth-modal";
+import { AppGate } from "@/components/bloxforge/app-gate";
 
 type View =
   | "landing"
@@ -60,8 +61,10 @@ export default function Home() {
   const view = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
+  const [showChatApp, setShowChatApp] = useState(false);
 
   const navigate = useCallback((v: View) => {
+    if (v !== "app") setShowChatApp(false);
     const next = v === "landing" ? "" : `#${v}`;
     if (v === "landing" && window.location.hash) {
       history.replaceState(null, "", window.location.pathname + window.location.search);
@@ -111,11 +114,19 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <SiteHeader view={view} onNavigate={navigate} onOpenAuth={() => openAuth("signup")} />
       {isApp ? (
-        <ChatApp
-          onExit={() => navigate("landing")}
-          onOpenAuth={() => openAuth("signup")}
-          onNavigatePricing={() => navigate("pricing")}
-        />
+        showChatApp ? (
+          <ChatApp
+            onExit={() => navigate("landing")}
+            onOpenAuth={() => openAuth("signup")}
+            onNavigatePricing={() => navigate("pricing")}
+          />
+        ) : (
+          <AppGate
+            onOpenAuth={() => openAuth("signup")}
+            onNavigatePricing={() => navigate("pricing")}
+            onApproved={() => setShowChatApp(true)}
+          />
+        )
       ) : isAdmin ? (
         <AdminDashboard />
       ) : isDashboard ? (

@@ -203,7 +203,7 @@ export function AuthModal({
             className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="pointer-events-none absolute -top-24 left-1/2 size-48 -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
+            <div className="pointer-events-none absolute -top-24 left-1/2 size-48 -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl" />
 
             <div className="relative">
               <div className="flex items-center justify-between border-b border-border p-4">
@@ -257,7 +257,7 @@ export function AuthModal({
 
                           {/* Permissions explanation */}
                           <div className="mt-3 rounded-lg border border-border bg-background/50 p-3">
-                            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
+                            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-400">
                               <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M9 12l2 2 4-4" />
                                 <circle cx="12" cy="12" r="10" />
@@ -445,8 +445,8 @@ export function AuthModal({
                           Your verification code
                         </Label>
                         <div className="flex items-center gap-2">
-                          <div className="flex flex-1 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/5 py-3">
-                            <span className="font-mono text-lg font-bold tracking-wider text-emerald-400">
+                          <div className="flex flex-1 items-center justify-center rounded-xl border border-violet-500/30 bg-violet-500/5 py-3">
+                            <span className="font-mono text-lg font-bold tracking-wider text-violet-400">
                               {code}
                             </span>
                           </div>
@@ -455,7 +455,7 @@ export function AuthModal({
                             className="flex size-11 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition hover:text-foreground"
                           >
                             {copied ? (
-                              <Check className="size-4 text-emerald-400" />
+                              <Check className="size-4 text-violet-400" />
                             ) : (
                               <Copy className="size-4" />
                             )}
@@ -474,7 +474,7 @@ export function AuthModal({
                               href="https://www.roblox.com/my/account"
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-0.5 text-emerald-400 hover:underline"
+                              className="inline-flex items-center gap-0.5 text-violet-400 hover:underline"
                             >
                               Roblox settings <ExternalLink className="size-3" />
                             </a>
@@ -527,7 +527,7 @@ export function AuthModal({
                       exit={{ opacity: 0 }}
                       className="flex flex-col items-center py-8 text-center"
                     >
-                      <Loader2 className="size-10 animate-spin text-emerald-400" />
+                      <Loader2 className="size-10 animate-spin text-violet-400" />
                       <p className="mt-4 text-sm text-muted-foreground">
                         Signing you in…
                       </p>

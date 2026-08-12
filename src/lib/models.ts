@@ -26,32 +26,47 @@ export interface Personality {
 }
 
 export interface Mode {
-  id: string; // "normal" | "concise" | ...
-  label: string; // "Normal" | "Concise" | ...
+  id: string;
+  label: string;
   description: string;
-  promptModifier: string; // appended to system prompt
+  promptModifier: string;
   icon?: string;
+  bloxforgeOnly?: boolean; // only available with BloxForge Luau
+  useWebSearch?: boolean; // triggers web search
+  useDeepThinking?: boolean; // enables chain-of-thought reasoning
 }
 
 export const PERSONALITIES: Personality[] = [
   {
     id: "bloxforge-luau",
-    label: "BloxForge Luau",
-    model: "qwen/qwen2.5-coder-32b-instruct",
-    vendor: "BloxForge AI",
+    label: "BloxForge AI",
+    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    vendor: "NVIDIA Nemotron · OpenRouter",
     tier: "code",
-    tagline: "Our own AI — specialized for Roblox Luau. Best in class.",
+    tagline: "Our flagship model — NVIDIA Nemotron reasoning. Best for Roblox Luau, UI, and parts.",
     badge: "Beta",
     speed: 2,
-    strength: "Roblox Luau, engine APIs, game systems",
+    strength: "Roblox Luau, engine APIs, game systems, UI, 3D parts",
     beta: true,
+    studioOnly: true,
+  },
+  {
+    id: "groq",
+    label: "Groq",
+    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    vendor: "NVIDIA Nemotron · OpenRouter",
+    tier: "code",
+    tagline: "Ultra-fast inference via Groq. Great for scripts, UI, and parts.",
+    badge: "Studio",
+    speed: 3,
+    strength: "Fast code gen, UI building, Part creation",
     studioOnly: true,
   },
   {
     id: "thoughtful",
     label: "Thoughtful",
-    model: "deepseek-ai/deepseek-r1",
-    vendor: "DeepSeek / NVIDIA NIM",
+    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    vendor: "NVIDIA Nemotron · OpenRouter",
     tier: "reasoning",
     tagline: "Deep reasoning for architecture & hard problems.",
     badge: "Reasoning",
@@ -61,8 +76,8 @@ export const PERSONALITIES: Personality[] = [
   {
     id: "swift",
     label: "Swift",
-    model: "qwen/qwen2.5-coder-32b-instruct",
-    vendor: "Alibaba / NVIDIA NIM",
+    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    vendor: "NVIDIA Nemotron · OpenRouter",
     tier: "code",
     tagline: "Fast, accurate Luau code generation.",
     badge: "Recommended",
@@ -72,8 +87,8 @@ export const PERSONALITIES: Personality[] = [
   {
     id: "balanced",
     label: "Balanced",
-    model: "meta/llama-3.3-70b-instruct",
-    vendor: "Meta / NVIDIA NIM",
+    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    vendor: "NVIDIA Nemotron · OpenRouter",
     tier: "general",
     tagline: "All-rounder for docs, ideas & code.",
     speed: 2,
@@ -82,8 +97,8 @@ export const PERSONALITIES: Personality[] = [
   {
     id: "flagship",
     label: "Flagship",
-    model: "meta/llama-3.1-405b-instruct",
-    vendor: "Meta / NVIDIA NIM",
+    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    vendor: "NVIDIA Nemotron · OpenRouter",
     tier: "flagship",
     tagline: "Frontier-scale model. Maximum capability.",
     badge: "Flagship",
@@ -93,8 +108,8 @@ export const PERSONALITIES: Personality[] = [
   {
     id: "nemotron",
     label: "Nemotron",
-    model: "nvidia/llama-3.1-nemotron-70b-instruct",
-    vendor: "NVIDIA",
+    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    vendor: "NVIDIA Nemotron · OpenRouter",
     tier: "general",
     tagline: "NVIDIA-tuned for natural game design.",
     speed: 2,
@@ -137,6 +152,33 @@ export const MODES: Mode[] = [
     promptModifier:
       "Focus on debugging. First give a short root-cause diagnosis, then the minimal fix as code. Call out any related risks.",
   },
+  {
+    id: "dev",
+    label: "Dev",
+    description: "Developer mode — web search + deep analysis. Best for researching Roblox APIs and current best practices.",
+    promptModifier:
+      "Developer mode. You have access to web search results. Use them to provide the most current and accurate information about Roblox APIs, Luau features, and best practices. Always cite sources. Write production-quality code with error handling.",
+    bloxforgeOnly: true,
+    useWebSearch: true,
+  },
+  {
+    id: "search",
+    label: "Web Search",
+    description: "Search the web for the latest Roblox docs, API changes, and community solutions.",
+    promptModifier:
+      "Web search mode. Use the provided search results to answer the user's question with the most current information. Cite sources with URLs. Focus on Roblox documentation, DevForum posts, and official Roblox Creator Hub content.",
+    bloxforgeOnly: true,
+    useWebSearch: true,
+  },
+  {
+    id: "deep",
+    label: "Deep Thinking",
+    description: "Chain-of-thought reasoning. Thinks step by step before answering. Best for architecture and complex problems.",
+    promptModifier:
+      "Deep thinking mode. Think through the problem step by step before writing any code. Consider multiple approaches, trade-offs, edge cases, and performance implications. Then write the best solution with full explanations. This is for complex architecture decisions, not simple tasks.",
+    bloxforgeOnly: true,
+    useDeepThinking: true,
+  },
 ];
 
 export const DEFAULT_PERSONALITY_ID = "swift";
@@ -162,7 +204,7 @@ export function resolveModel(personalityId: string): string {
 /**
  * The BloxForge base system prompt — makes any model a Roblox/Luau expert.
  */
-export const BLOXFORGE_SYSTEM_PROMPT = `You are BloxForge AI, an elite Roblox/Luau development companion powered by NVIDIA NIM models.
+export const BLOXFORGE_SYSTEM_PROMPT = `You are BloxForge AI, an elite Roblox/Luau development companion powered by GLM-4.6.
 
 You help Roblox developers write, debug, refactor and design Luau code for Roblox experiences.
 You have deep knowledge of:
@@ -174,17 +216,15 @@ You have deep knowledge of:
 
 Rules:
 1. Always respond in clear Markdown.
-2. When you write code, ALWAYS wrap it in fenced code blocks tagged \`luau\`, \`lua\` or the relevant language.
-3. Name every code block with a descriptive heading just above it in the format \`### InstanceName\` (no .lua extension). The name MUST be a valid Roblox instance name: PascalCase, no spaces. This name is used to create the instance in Studio automatically.
-4. Prefer complete, runnable ModuleScripts / LocalScripts / Scripts. Include a short usage example.
-5. Pick the right script type: ModuleScript for reusable modules (must \`return\` something), LocalScript for client-only code (player input, UI, camera), Script for server logic.
-6. When the user asks for a UI element (button, label, frame, menu, HUD), generate a Luau code block that builds the UI programmatically using Instance.new. Start with the main UI class name as the heading (e.g. \`### HealthBar\`). The code should create the ScreenGui + child elements and return the main instance. This lets the connector auto-insert it.
-7. When the user asks for a Part, Model, or other Instance, generate a Luau code block that creates it with Instance.new and sets key properties. The connector will insert it.
-8. Briefly explain WHY, not just WHAT. Keep prose tight.
-9. If a request is ambiguous, make a reasonable Roblox-idiomatic assumption and state it.
-10. Never invent APIs that don't exist in the Roblox engine. If unsure, say so.
-11. For bugs, give a diagnosis then the fixed code.
-12. Keep tone encouraging and professional. You are a teammate, not a lecturer.
+2. When you write code, ALWAYS wrap it in fenced code blocks tagged \`\`\`luau.
+3. Name every code block with a heading just above it: \`### InstanceName\` (PascalCase, no extension). This name creates the instance in Studio.
+4. Prefer complete, runnable ModuleScripts / LocalScripts / Scripts with --!strict.
+5. Pick the right script type: ModuleScript for reusable modules (must return something), LocalScript for client-only code, Script for server logic.
+6. When the user asks for UI: generate Luau code that builds the full UI with Instance.new — ScreenGui + Frames + Labels + Buttons + UICorner + UIStroke. MUST end with \`return screenGui\`.
+7. When the user asks for a Part/Model: generate Luau code that creates it with Instance.new, sets ALL properties (Size, Position, Color, Material, Anchored, CanCollide). MUST end with \`return <variable>\`.
+8. Keep prose minimal — lead with code, explain briefly after.
+9. Never invent APIs that don't exist in the Roblox engine.
+10. For bugs: diagnosis first, then the fixed code.
 
 Today's Roblox context: Luau, modern Studio, parity with Roblox documentation.`;
 
@@ -217,7 +257,7 @@ CRITICAL RULES:
    - Sets ALL relevant properties explicitly: Size (Vector3), Position (Vector3), Color (Color3.fromRGB or BrickColor), Material (Enum.Material), Anchored, CanCollide, CanTouch, Transparency, Reflectance, CastShadow, Name
    - For Parts: set TopSurface and BottomSurface to Enum.SurfaceType.Smooth
    - For Models: create a PrimaryPart named "Handle" or "MainPart", set Model.WorldPivot or PrimaryPart.CFrame, weld all child parts with WeldConstraint
-   - Returns the created instance(s) at the end so the connector can insert it
+   - MUST end with \`return <mainInstanceVariable>\` — the connector EXECUTES this code to create the instance in Studio. Without a return, nothing gets created.
 4. When asked to create UI, generate code that builds the full UI hierarchy programmatically:
    - Creates ScreenGui with ResetOnSpawn=false, IgnoreGuiInset=true, ZIndexBehavior=Enum.ZIndexBehavior.Sibling
    - Creates all child elements (Frames, Labels, Buttons) with proper Size (UDim2), Position (UDim2), BackgroundColor3 (Color3.fromRGB), BackgroundTransparency, Text, TextColor3, TextSize, Font, AnchorPoint
@@ -226,7 +266,7 @@ CRITICAL RULES:
    - Adds UIStroke for borders (Color, Thickness, Transparency)
    - Adds UIPadding for inner spacing
    - Uses UIListLayout or UIGridLayout for automatic arrangement
-   - Returns the main ScreenGui instance at the end
+   - MUST end with \`return screenGui\` (or the main GUI variable) — the connector EXECUTES this code
 5. For scripts, always use --!strict where possible, include full type annotations, export types, and return modules at the end.
 6. Every generated Part MUST have: Size, Position, Anchored, CanCollide, Color, Material set explicitly.
 7. Every generated Model MUST have: a PrimaryPart, WorldPivot set, all child parts welded.
@@ -258,7 +298,7 @@ export function buildSystemPrompt(modeId: string, personalityId?: string): strin
 export interface Plan {
   id: "free" | "pro" | "studio";
   label: string;
-  dailyMessageLimit: number; // -1 = unlimited
+  dailyCreditLimit: number; // -1 = unlimited
   allowedPersonalities: string[]; // personality ids
   features: string[];
 }
@@ -267,10 +307,10 @@ export const PLANS: Record<string, Plan> = {
   free: {
     id: "free",
     label: "Free",
-    dailyMessageLimit: 50,
+    dailyCreditLimit: 5,
     allowedPersonalities: ["swift", "balanced"],
     features: [
-      "50 AI messages / day",
+      "5 credits / day",
       "Swift & Balanced personalities",
       "10 saved sessions",
       "Roblox Studio plugin",
@@ -279,22 +319,24 @@ export const PLANS: Record<string, Plan> = {
   pro: {
     id: "pro",
     label: "Pro",
-    dailyMessageLimit: -1,
+    dailyCreditLimit: 30,
     allowedPersonalities: PERSONALITIES.filter((p) => !p.studioOnly).map((p) => p.id),
     features: [
-      "Unlimited messages",
+      "30 credits / day",
       "All NVIDIA personalities",
       "Unlimited saved sessions",
       "Priority streaming",
+      "Reference image upload",
     ],
   },
   studio: {
     id: "studio",
     label: "Studio",
-    dailyMessageLimit: -1,
+    dailyCreditLimit: -1,
     allowedPersonalities: PERSONALITIES.map((p) => p.id),
     features: [
       "Everything in Pro",
+      "Unlimited credits",
       "BloxForge Luau (Beta) — specialized Roblox AI",
       "Team shared sessions",
       "Custom system prompts",
@@ -305,4 +347,153 @@ export const PLANS: Record<string, Plan> = {
 
 export function getPlan(planId: string | undefined | null): Plan {
   return PLANS[planId || "free"] ?? PLANS.free;
+}
+
+// ── Complex task plan detection ──────────────────────────────────────────
+
+export interface TaskPlan {
+  isComplex: boolean;
+  needsApproval: boolean;
+  planText?: string; // The plan the AI should present before executing
+}
+
+/**
+ * Detect if a task is complex enough to warrant a plan approval step.
+ * If so, the AI should first present a plan, then wait for user approval
+ * before generating code.
+ */
+export function shouldShowPlan(message: string): TaskPlan {
+  const msg = message.toLowerCase();
+
+  // Complex keywords that warrant a plan
+  const complexKeywords = [
+    "combat system", "inventory system", "economy", "matchmaking",
+    "full game", "complete game", "entire game", "whole game",
+    "datastore system", "save system", "shop system", "trading system",
+    "skill tree", "quest system", "dialogue system", "leaderboard system",
+    "admin panel", "anti-cheat", "security system",
+    "rpg", "tycoon", "simulator", "obby generator",
+    "multiple scripts", "multiple modules", "architecture",
+    "framework", "service-oriented",
+  ];
+
+  const isComplex = complexKeywords.some((kw) => msg.includes(kw)) ||
+    (msg.length > 200 && /\b(system|architecture|framework|multiple|complete|full)\b/.test(msg));
+
+  if (!isComplex) {
+    return { isComplex: false, needsApproval: false };
+  }
+
+  return {
+    isComplex: true,
+    needsApproval: true,
+    planText: "PLAN",
+  };
+}
+
+// ── Credit estimator ─────────────────────────────────────────────────────
+
+export interface CreditEstimate {
+  cost: number; // 1-5
+  reason: string;
+}
+
+/**
+ * Estimate how many credits a task will cost based on complexity.
+ * The AI doesn't decide — we analyze the request heuristically:
+ *
+ * 1 credit  — simple questions, explanations, quick lookups
+ * 2 credits — small code generation (single function, simple script)
+ * 3 credits — medium tasks (ModuleScript, UI element, refactor)
+ * 4 credits — complex tasks (full system, multiple scripts, game mechanic)
+ * 5 credits — max complexity (full game system + image, large architecture)
+ */
+export function estimateCredits(params: {
+  message: string;
+  hasImage?: boolean;
+  hasContext?: boolean;
+  mode?: string;
+}): CreditEstimate {
+  const msg = params.message.toLowerCase();
+  let score = 1; // base cost
+  const reasons: string[] = [];
+
+  // ── Keyword-based complexity scoring ──
+
+  // Simple tasks (stay at 1)
+  if (/^(hi|hello|hey|thanks|what|why|how does|explain|what is|can you)/.test(msg) && msg.length < 80) {
+    // Could be a simple question
+  }
+
+  // Code generation keywords → bump to 2
+  if (/\b(write|create|make|generate|build|code|script|function)\b/.test(msg)) {
+    score = Math.max(score, 2);
+    reasons.push("code generation");
+  }
+
+  // Module/system keywords → bump to 3
+  if (/\b(module|class|system|service|manager|controller|handler|component)\b/.test(msg)) {
+    score = Math.max(score, 3);
+    reasons.push("module/system");
+  }
+
+  // UI keywords → bump to 3
+  if (/\b(ui|gui|interface|button|label|frame|menu|hud|screen|dialog|popup|sidebar)\b/.test(msg)) {
+    score = Math.max(score, 3);
+    reasons.push("UI creation");
+  }
+
+  // Complex system keywords → bump to 4
+  if (/\b(combat|inventory|matchmaking|economy|quest|dialogue|save|datastore|leaderboard|shop|trading|auction|crafting|skill tree|ability)\b/.test(msg)) {
+    score = Math.max(score, 4);
+    reasons.push("complex game system");
+  }
+
+  // Multiple components → bump to 4
+  if (/\b(and|with|plus|also|including|multiple|several)\b/.test(msg) && score >= 3) {
+    score = Math.max(score, 4);
+    reasons.push("multiple components");
+  }
+
+  // Full game / architecture → bump to 5
+  if (/\b(full|complete|entire|whole|architecture|framework|all|everything|game|obby|tycoon|simulator|rpg)\b/.test(msg)) {
+    score = Math.max(score, 5);
+    reasons.push("full-scale task");
+  }
+
+  // Long message (>500 chars) → complexity bump
+  if (params.message.length > 500) {
+    score = Math.max(score, Math.min(score + 1, 5));
+    reasons.push("detailed request");
+  }
+
+  // Image attached → always at least 3 (vision processing + recreation)
+  if (params.hasImage) {
+    score = Math.max(score, 3);
+    reasons.push("image analysis");
+    // Image + complex request → 4-5
+    if (score >= 4) score = Math.max(score, 4);
+  }
+
+  // Studio context shared → slight bump (the AI has more to work with)
+  if (params.hasContext) {
+    reasons.push("script context");
+  }
+
+  // Debug/refactor modes are lighter (working with existing code)
+  if (params.mode === "debug" || params.mode === "refactor") {
+    score = Math.max(1, score - 1);
+    reasons.push(`${params.mode} mode (lighter)`);
+  }
+
+  // Explain mode is medium
+  if (params.mode === "explain" && score > 2) {
+    score = Math.max(2, score - 1);
+  }
+
+  // Clamp to 1-5
+  score = Math.max(1, Math.min(5, score));
+
+  const reason = reasons.length > 0 ? reasons.join(", ") : "simple question";
+  return { cost: score, reason };
 }

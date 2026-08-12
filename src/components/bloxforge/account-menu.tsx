@@ -56,7 +56,7 @@ export function AccountMenu({
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2 rounded-lg border border-border bg-card/50 px-2.5 py-1.5 text-sm transition hover:bg-accent"
       >
-        <div className="flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-emerald-400 to-teal-600 text-xs font-bold text-slate-950">
+        <div className="flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-violet-400 to-purple-700 text-xs font-bold text-slate-950">
           {(user?.name || user?.email || "U").charAt(0).toUpperCase()}
         </div>
         <ChevronDown
@@ -81,7 +81,7 @@ export function AccountMenu({
               {/* Header */}
               <div className="border-b border-border p-4">
                 <div className="flex items-center gap-2">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 text-sm font-bold text-slate-950">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-400 to-purple-700 text-sm font-bold text-slate-950">
                     {(user?.name || user?.email || "U").charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -100,7 +100,7 @@ export function AccountMenu({
                       "gap-1",
                       isFree
                         ? "border-muted-foreground/30 text-muted-foreground"
-                        : "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
+                        : "border-violet-500/40 bg-violet-500/10 text-violet-400",
                     )}
                   >
                     {isFree ? <Zap className="size-3" /> : <Crown className="size-3" />}
@@ -120,7 +120,7 @@ export function AccountMenu({
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
                     <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500"
+                      className="h-full rounded-full bg-gradient-to-r from-violet-400 to-purple-500"
                       initial={{ width: 0 }}
                       animate={{ width: `${pct}%` }}
                       transition={{ duration: 0.4 }}
@@ -134,7 +134,7 @@ export function AccountMenu({
 
               {!isFree && (
                 <div className="border-b border-border p-4">
-                  <div className="flex items-center gap-2 text-xs text-emerald-400">
+                  <div className="flex items-center gap-2 text-xs text-violet-400">
                     <Sparkles className="size-3.5" />
                     Unlimited messages
                   </div>
@@ -149,7 +149,7 @@ export function AccountMenu({
                       setOpen(false);
                       window.location.hash = "admin";
                     }}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-emerald-400 transition hover:bg-emerald-500/10"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-violet-400 transition hover:bg-violet-500/10"
                   >
                     <Shield className="size-4" />
                     <span className="flex-1 font-medium">Admin Dashboard</span>
@@ -164,7 +164,7 @@ export function AccountMenu({
                     }}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-accent"
                   >
-                    <Crown className="size-4 text-emerald-400" />
+                    <Crown className="size-4 text-violet-400" />
                     <span className="flex-1">Upgrade plan</span>
                     <span className="text-xs text-muted-foreground">→</span>
                   </button>
@@ -192,8 +192,10 @@ export function AccountMenu({
                 <button
                   onClick={() => {
                     setOpen(false);
-                    signOut({ callbackUrl: "/" });
                     toast.success("Signed out");
+                    signOut({ callbackUrl: "/", redirect: true }).then(() => {
+                      window.location.href = "/";
+                    });
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
                 >

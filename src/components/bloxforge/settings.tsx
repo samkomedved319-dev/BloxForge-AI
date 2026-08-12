@@ -191,7 +191,7 @@ export function Settings({ onBack }: { onBack: () => void }) {
                     {plan?.label || "Free"}
                   </Badge>
                   {isAdmin && (
-                    <Badge className="gap-1 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20">
+                    <Badge className="gap-1 bg-violet-500/15 text-violet-300 hover:bg-violet-500/20">
                       <Shield className="size-3" /> Admin
                     </Badge>
                   )}
@@ -228,7 +228,7 @@ export function Settings({ onBack }: { onBack: () => void }) {
                   <select
                     value={defaultPersonality}
                     onChange={(e) => setDefaultPersonality(e.target.value)}
-                    className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
                   >
                     <option value="swift">Swift (Qwen Coder)</option>
                     <option value="thoughtful">Thoughtful (DeepSeek R1)</option>
@@ -242,7 +242,7 @@ export function Settings({ onBack }: { onBack: () => void }) {
                   <select
                     value={defaultMode}
                     onChange={(e) => setDefaultMode(e.target.value)}
-                    className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
                   >
                     <option value="normal">Normal</option>
                     <option value="concise">Concise</option>
@@ -255,7 +255,7 @@ export function Settings({ onBack }: { onBack: () => void }) {
               <Button
                 onClick={savePrefs}
                 variant="outline"
-                className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                className="gap-2 border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
               >
                 <Check className="size-4" /> Save preferences
               </Button>
@@ -371,8 +371,10 @@ export function Settings({ onBack }: { onBack: () => void }) {
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    signOut({ callbackUrl: "/" });
                     toast.success("Signed out");
+                    signOut({ callbackUrl: "/", redirect: true }).then(() => {
+                      window.location.href = "/";
+                    });
                   }}
                   className="gap-2 text-muted-foreground hover:text-foreground"
                 >
@@ -418,7 +420,7 @@ function Section({
             className={
               danger
                 ? "flex size-9 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive"
-                : "flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400"
+                : "flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400"
             }
           >
             <Icon className="size-4" />
@@ -502,9 +504,9 @@ function BillingSection({
 
       {/* Stripe billing management */}
       {billing?.hasSubscription && billing.canManage && (
-        <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+        <div className="flex items-center justify-between rounded-lg border border-violet-500/20 bg-violet-500/5 p-4">
           <div className="flex items-center gap-2">
-            <CreditCard className="size-4 text-emerald-400" />
+            <CreditCard className="size-4 text-violet-400" />
             <div>
               <p className="text-sm font-medium">Stripe subscription active</p>
               <p className="text-xs text-muted-foreground">
@@ -516,7 +518,7 @@ function BillingSection({
             onClick={openPortal}
             disabled={portalLoading}
             variant="outline"
-            className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+            className="gap-2 border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
           >
             {portalLoading ? (
               <Loader2 className="size-4 animate-spin" />

@@ -1,5 +1,5 @@
 import { Logo } from "./logo";
-import { Heart } from "lucide-react";
+import { Heart, MessageCircle } from "lucide-react";
 
 export function SiteFooter() {
   const go = (hash: string) => () => {
@@ -15,6 +15,15 @@ export function SiteFooter() {
             <p className="mt-3 max-w-xs text-sm text-muted-foreground">
               The NVIDIA-powered AI coding companion for Roblox developers.
             </p>
+            <a
+              href="https://discord.gg/jrerzH5Bm"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-[#5865F2]/40 hover:text-foreground"
+            >
+              <MessageCircle className="size-3.5 text-[#5865F2]" />
+              Join our Discord
+            </a>
           </div>
 
           <div>

@@ -92,13 +92,13 @@ export function PluginPage({
             >
               <Badge
                 variant="outline"
-                className="mb-4 gap-2 border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                className="mb-4 gap-2 border-violet-500/30 bg-violet-500/10 text-violet-300"
               >
                 <Plug className="size-3" /> v1.0.0 · Free & Open
               </Badge>
               <h1 className="font-display text-4xl font-extrabold tracking-tight text-balance sm:text-5xl">
                 BloxForge Connector for{" "}
-                <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
                   Roblox Studio
                 </span>
               </h1>
@@ -148,7 +148,7 @@ export function PluginPage({
                 {["~24 KB", "Zero dependencies", "MIT licensed", "HttpService"].map(
                   (t) => (
                     <span key={t} className="flex items-center gap-1.5">
-                      <Check className="size-3.5 text-emerald-400" />
+                      <Check className="size-3.5 text-violet-400" />
                       {t}
                     </span>
                   ),
@@ -180,11 +180,11 @@ export function PluginPage({
                     {"\n\n"}
                     <span className="text-violet-400">local</span> Http ={" "}
                     <span className="text-sky-300">game</span>:GetService(
-                    <span className="text-emerald-300">"HttpService"</span>)
+                    <span className="text-violet-300">"HttpService"</span>)
                     {"\n"}
                     <span className="text-violet-400">local</span> Selection ={" "}
                     <span className="text-sky-300">game</span>:GetService(
-                    <span className="text-emerald-300">"Selection"</span>)
+                    <span className="text-violet-300">"Selection"</span>)
                     {"\n\n"}
                     <span className="text-slate-500">{`-- heartbeat: report selected script +`}</span>
                     {"\n"}
@@ -215,7 +215,7 @@ export function PluginPage({
                 key={f.title}
                 className="border-border/60 bg-card p-5"
               >
-                <div className="mb-3 flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
                   <f.icon className="size-5" />
                 </div>
                 <h3 className="font-semibold">{f.title}</h3>
@@ -291,7 +291,7 @@ export function PluginPage({
                   ))}
                 </div>
                 <div className="flex items-center justify-between gap-2 rounded-lg bg-background px-3 py-2">
-                  <code className="overflow-x-auto font-mono text-xs text-emerald-300">
+                  <code className="overflow-x-auto font-mono text-xs text-violet-300">
                     {INSTALL_COMMANDS[os]}
                   </code>
                   <button
@@ -299,7 +299,7 @@ export function PluginPage({
                     className="shrink-0 text-muted-foreground hover:text-foreground"
                   >
                     {copied ? (
-                      <Check className="size-4 text-emerald-400" />
+                      <Check className="size-4 text-violet-400" />
                     ) : (
                       <Copy className="size-4" />
                     )}
@@ -332,14 +332,14 @@ export function PluginPage({
             </p>
           </div>
 
-          <div className="mt-10 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+          <div className="mt-10 rounded-xl border border-violet-500/20 bg-violet-500/5 p-5">
             <div className="flex items-start gap-3">
-              <ShieldCheck className="mt-0.5 size-5 shrink-0 text-emerald-400" />
+              <ShieldCheck className="mt-0.5 size-5 shrink-0 text-violet-400" />
               <div className="text-sm">
                 <p className="font-semibold">Deploying your own server?</p>
                 <p className="mt-1 text-muted-foreground">
                   The plugin talks to a BloxForge web app endpoint (
-                  <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-xs text-emerald-300">
+                  <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-xs text-violet-300">
                     /api/plugin/ask
                   </code>
                   ) which forwards requests to NVIDIA NIM. Run this Next.js app
@@ -395,7 +395,7 @@ function InstallStep({
 }) {
   return (
     <div className="flex gap-4">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 font-display text-lg font-bold text-emerald-400">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 font-display text-lg font-bold text-violet-400">
         {n}
       </div>
       <div className="flex-1 pb-2">

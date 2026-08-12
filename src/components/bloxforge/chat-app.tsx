@@ -53,6 +53,9 @@ interface ChatMessage {
   content: string;
   personality?: string;
   mode?: string;
+  creditsUsed?: number;
+  creditReason?: string;
+  isPlan?: boolean;
 }
 interface ConversationSummary {
   id: string;
@@ -103,11 +106,11 @@ export function ChatApp({
   onOpenAuth: () => void;
   onNavigatePricing: () => void;
 }) {
-  const { isAuthenticated, user, usage, plan, refreshUsage, isApproved } = useAuth();
+  const { isAuthenticated, user, usage, plan, refreshUsage, isApproved, isAdmin } = useAuth();
   const studio = useStudioConnection();
   const [studioDialogOpen, setStudioDialogOpen] = useState(false);
   const [includeStudioContext, setIncludeStudioContext] = useState(true);
-  const [autoInsert, setAutoInsert] = useState(false);
+  const [autoInsert, setAutoInsert] = useState(true); // ON by default — always insert when Studio connected
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -287,7 +290,7 @@ export function ChatApp({
       ) {
         setShowLimitBanner(true);
         toast.error("Daily limit reached", {
-          description: "Upgrade to Pro for unlimited messages.",
+          description: "Upgrade to Pro for 30 credits/day.",
           action: { label: "Upgrade", onClick: onNavigatePricing },
         });
         return;
@@ -405,8 +408,25 @@ export function ChatApp({
                       : m,
                   ),
                 );
-              } else if (evt.type === "meta" && evt.conversationId && !activeId) {
-                setActiveId(evt.conversationId);
+              } else if (evt.type === "meta") {
+                if (evt.conversationId && !activeId) {
+                  setActiveId(evt.conversationId);
+                }
+                // Store credit cost on the assistant message
+                if (evt.creditsUsed) {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantMsg.id
+                        ? {
+                            ...m,
+                            creditsUsed: evt.creditsUsed,
+                            creditReason: evt.creditReason,
+                            isPlan: evt.isPlan,
+                          }
+                        : m,
+                    ),
+                  );
+                }
               } else if (evt.type === "error") {
                 setMessages((prev) =>
                   prev.map((m) =>
@@ -427,7 +447,7 @@ export function ChatApp({
 
         // ── Auto-insert: if Studio is connected + autoInsert is on, parse
         // the AI response for code blocks and insert each one automatically.
-        if (autoInsert && studio.isConnected && accumulatedContent) {
+        if (autoInsert && studio.isConnected && accumulatedContent && !accumulatedContent.includes("## Plan")) {
           const blocks = extractCodeBlocks(accumulatedContent);
           const insertable = blocks.filter((b) => isInsertable(b.language));
           if (insertable.length > 0) {
@@ -554,13 +574,13 @@ export function ChatApp({
 
         {/* Usage / Upgrade card */}
         {!isAuthenticated ? (
-          <div className="m-3 rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent p-3.5">
+          <div className="m-3 rounded-xl border border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent p-3.5">
             <div className="flex items-center gap-2 text-sm font-medium">
-              <Sparkles className="size-4 text-emerald-400" />
+              <Sparkles className="size-4 text-violet-400" />
               Create a free account
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Save sessions, unlock all 5 models & get 50 messages/day.
+              Save sessions, unlock all 5 models & get 5 credits/day.
             </p>
             <Button
               size="sm"
@@ -581,7 +601,7 @@ export function ChatApp({
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all"
+                className="h-full rounded-full bg-gradient-to-r from-violet-400 to-purple-500 transition-all"
                 style={{
                   width: `${usage && usage.limit !== -1 ? Math.min(100, (usage.used / usage.limit) * 100) : 0}%`,
                 }}
@@ -591,7 +611,7 @@ export function ChatApp({
               size="sm"
               variant="outline"
               onClick={onNavigatePricing}
-              className="mt-2.5 w-full gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+              className="mt-2.5 w-full gap-1.5 border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
             >
               <Zap className="size-3.5" /> Upgrade to Pro
             </Button>
@@ -626,6 +646,7 @@ export function ChatApp({
               onPersonalityChange={setPersonality}
               onModeChange={setMode}
               allowedPersonalities={allowedPersonalities}
+              isAdmin={isAdmin}
             />
           </div>
           <div className="flex items-center gap-2">
@@ -642,7 +663,7 @@ export function ChatApp({
                   className={cn(
                     "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition",
                     autoInsert
-                      ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
+                      ? "border-violet-500/40 bg-violet-500/15 text-violet-300"
                       : "border-border bg-card text-muted-foreground hover:text-foreground",
                   )}
                   title={
@@ -651,7 +672,7 @@ export function ChatApp({
                       : "Auto-insert is OFF — click to enable automatic insertion"
                   }
                 >
-                  <Zap className={cn("size-3.5", autoInsert && "text-emerald-400")} />
+                  <Zap className={cn("size-3.5", autoInsert && "text-violet-400")} />
                   <span className="hidden sm:inline">Auto-insert</span>
                 </button>
               </>
@@ -660,9 +681,9 @@ export function ChatApp({
             )}
             <Badge
               variant="outline"
-              className="gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+              className="gap-1.5 border-violet-500/30 bg-violet-500/10 text-violet-400"
             >
-              <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+              <span className="size-1.5 animate-pulse rounded-full bg-violet-400" />
               Live
             </Badge>
           </div>
@@ -693,8 +714,8 @@ export function ChatApp({
               <div className="flex items-center gap-3 px-4 py-2.5 text-sm">
                 <Lock className="size-4 shrink-0 text-amber-400" />
                 <span className="flex-1 text-amber-200">
-                  You've reached your free daily limit. Upgrade to Pro for
-                  unlimited messages and all 5 NVIDIA models.
+                  You've reached your daily credit limit. Upgrade to Pro for
+                  30 credits/day and all NVIDIA models.
                 </span>
                 <Button
                   size="sm"
@@ -747,7 +768,7 @@ export function ChatApp({
                   className={cn(
                     "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition",
                     includeStudioContext
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                      ? "border-violet-500/40 bg-violet-500/10 text-violet-300"
                       : "border-border bg-card text-muted-foreground hover:text-foreground",
                   )}
                   title={
@@ -764,7 +785,7 @@ export function ChatApp({
                     {studio.context.lineCount}L
                   </span>
                   {includeStudioContext ? (
-                    <Check className="size-3 text-emerald-400" />
+                    <Check className="size-3 text-violet-400" />
                   ) : (
                     <Plus className="size-3" />
                   )}
@@ -775,7 +796,7 @@ export function ChatApp({
               </div>
             )}
             <div
-              className="relative rounded-2xl border border-border bg-card focus-within:border-emerald-500/50 focus-within:ring-2 focus-within:ring-emerald-500/20"
+              className="relative rounded-2xl border border-border bg-card focus-within:border-violet-500/50 focus-within:ring-2 focus-within:ring-violet-500/20"
               onPaste={handleImagePaste}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -924,7 +945,7 @@ function MessageBubble({
             You
           </div>
         ) : (
-          <div className="flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-emerald-400 to-teal-600 text-[11px] font-bold text-slate-950">
+          <div className="flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-violet-400 to-purple-700 text-[11px] font-bold text-slate-950">
             BF
           </div>
         )}
@@ -932,7 +953,7 @@ function MessageBubble({
           {isUser ? "You" : "BloxForge AI"}
         </span>
         {!isUser && message.personality && (
-          <span className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[10px] capitalize text-emerald-400">
+          <span className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[10px] capitalize text-violet-400">
             {message.personality}
           </span>
         )}
@@ -941,13 +962,22 @@ function MessageBubble({
             {message.mode}
           </span>
         )}
+        {!isUser && message.creditsUsed && (
+          <span
+            className="flex items-center gap-0.5 rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10px] text-amber-400"
+            title={message.creditReason || "Credit cost"}
+          >
+            <Zap className="size-2.5" />
+            {message.creditsUsed} credit{message.creditsUsed > 1 ? "s" : ""}
+          </span>
+        )}
         {!isUser && message.content && (
           <button
             onClick={copy}
             className="ml-auto opacity-0 transition group-hover:opacity-100"
           >
             {copied ? (
-              <Check className="size-3.5 text-emerald-400" />
+              <Check className="size-3.5 text-violet-400" />
             ) : (
               <Copy className="size-3.5 text-muted-foreground hover:text-foreground" />
             )}
@@ -967,8 +997,36 @@ function MessageBubble({
           />
         ) : (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Sparkles className="size-3.5 animate-pulse text-emerald-400" />
+            <Sparkles className="size-3.5 animate-pulse text-violet-400" />
             Forging…
+          </div>
+        )}
+        {/* Plan approval buttons — shown when the message contains a plan */}
+        {!isUser && message.content && message.content.includes("## Plan") && (
+          <div className="mt-4 flex items-center gap-2 rounded-lg border border-violet-500/30 bg-violet-500/5 p-3">
+            <Check className="size-4 text-violet-400" />
+            <span className="flex-1 text-sm text-violet-300">
+              Review the plan above, then:
+            </span>
+            <Button
+              size="sm"
+              onClick={() => {
+                // Send "approve" as the next message
+                const input = document.querySelector("textarea") as HTMLTextAreaElement;
+                if (input) {
+                  input.value = "approve";
+                  input.dispatchEvent(new Event("input", { bubbles: true }));
+                  setTimeout(() => {
+                    const sendBtn = document.querySelector('button[class*="bg-primary"][class*="size-9"]') as HTMLButtonElement;
+                    if (sendBtn) sendBtn.click();
+                  }, 100);
+                }
+              }}
+              className="gap-1.5 bg-violet-500 text-slate-950 hover:bg-violet-400"
+            >
+              <Check className="size-3.5" />
+              Approve & proceed
+            </Button>
           </div>
         )}
       </div>
@@ -983,7 +1041,7 @@ function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", damping: 18 }}
-        className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 shadow-xl shadow-emerald-500/30"
+        className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-400 to-purple-700 shadow-xl shadow-violet-500/30"
       >
         <Sparkles className="size-8 text-slate-950" />
       </motion.div>
@@ -1012,10 +1070,10 @@ function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 + i * 0.06 }}
             onClick={() => onPick(ex.prompt)}
-            className="group flex flex-col gap-1.5 rounded-xl border border-border bg-card p-4 text-left transition hover:border-emerald-500/40 hover:bg-accent/40"
+            className="group flex flex-col gap-1.5 rounded-xl border border-border bg-card p-4 text-left transition hover:border-violet-500/40 hover:bg-accent/40"
           >
             <div className="flex items-center gap-2">
-              <ex.icon className="size-4 text-emerald-400" />
+              <ex.icon className="size-4 text-violet-400" />
               <span className="text-sm font-medium">{ex.title}</span>
             </div>
             <span className="line-clamp-2 text-xs text-muted-foreground">

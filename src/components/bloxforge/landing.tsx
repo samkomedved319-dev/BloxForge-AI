@@ -65,7 +65,7 @@ const MODELS = [
     vendor: "Alibaba / NVIDIA NIM",
     tag: "Recommended",
     desc: "Purpose-built code model. Best-in-class for Luau scripting.",
-    accent: "from-emerald-400 to-teal-500",
+    accent: "from-violet-400 to-purple-500",
   },
   {
     name: "DeepSeek R1",
@@ -161,7 +161,7 @@ function Hero({
     <section className="relative overflow-hidden">
       <div className="bg-radial-brand pointer-events-none absolute inset-0" />
       <div className="bg-grid pointer-events-none absolute inset-0 opacity-40 [mask-image:radial-gradient(60%_50%_at_50%_0%,black,transparent)]" />
-      <div className="pointer-events-none absolute -top-24 left-1/4 size-72 rounded-full bg-emerald-500/20 blur-3xl animate-blob" />
+      <div className="pointer-events-none absolute -top-24 left-1/4 size-72 rounded-full bg-violet-500/20 blur-3xl animate-blob" />
       <div className="pointer-events-none absolute -top-16 right-1/4 size-72 rounded-full bg-teal-500/15 blur-3xl animate-blob [animation-delay:4s]" />
 
       <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-16 sm:pt-24">
@@ -181,7 +181,7 @@ function Hero({
 
           <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-balance sm:text-6xl">
             The AI coding companion for{" "}
-            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-violet-400 via-teal-300 to-violet-400 bg-clip-text text-transparent">
               Roblox developers
             </span>
           </h1>
@@ -221,7 +221,7 @@ function Hero({
               "Saved sessions",
             ].map((t) => (
               <span key={t} className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-3.5 text-emerald-400" />
+                <CheckCircle2 className="size-3.5 text-violet-400" />
                 {t}
               </span>
             ))}
@@ -235,18 +235,18 @@ function Hero({
           transition={{ duration: 0.6, delay: 0.2 }}
           className="relative mx-auto mt-14 max-w-4xl"
         >
-          <div className="absolute -inset-x-8 -top-6 bottom-0 rounded-3xl bg-gradient-to-b from-emerald-500/20 to-transparent blur-2xl" />
+          <div className="absolute -inset-x-8 -top-6 bottom-0 rounded-3xl bg-gradient-to-b from-violet-500/20 to-transparent blur-2xl" />
           <Card className="relative overflow-hidden border-border/60 bg-[oklch(0.14_0.012_250)] shadow-2xl">
             <div className="flex items-center gap-2 border-b border-border/60 bg-[oklch(0.17_0.012_250)] px-4 py-2.5">
               <div className="flex gap-1.5">
                 <span className="size-3 rounded-full bg-red-500/70" />
                 <span className="size-3 rounded-full bg-amber-500/70" />
-                <span className="size-3 rounded-full bg-emerald-500/70" />
+                <span className="size-3 rounded-full bg-violet-500/70" />
               </div>
               <span className="ml-2 font-mono text-[11px] text-muted-foreground">
                 BloxForge AI — cooldown.lua
               </span>
-              <Badge className="ml-auto h-5 gap-1 bg-emerald-500/15 px-2 text-[10px] text-emerald-300 hover:bg-emerald-500/20">
+              <Badge className="ml-auto h-5 gap-1 bg-violet-500/15 px-2 text-[10px] text-violet-300 hover:bg-violet-500/20">
                 <Cpu className="size-2.5" /> Qwen2.5-Coder
               </Badge>
             </div>
@@ -257,7 +257,7 @@ function Hero({
                 <span className="text-violet-400">local</span>{" "}
                 <span className="text-sky-300">TweenService</span> ={" "}
                 <span className="text-sky-300">game</span>:GetService(
-                <span className="text-emerald-300">"TweenService"</span>)
+                <span className="text-violet-300">"TweenService"</span>)
                 {"\n\n"}
                 <span className="text-violet-400">local</span>{" "}
                 <span className="text-amber-300">Cooldown</span> = {}
@@ -299,7 +299,7 @@ function SectionHeading({
 }) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <span className="font-mono text-xs uppercase tracking-[0.2em] text-emerald-400">
+      <span className="font-mono text-xs uppercase tracking-[0.2em] text-violet-400">
         {eyebrow}
       </span>
       <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
@@ -328,7 +328,7 @@ function Models() {
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.08 }}
             >
-              <Card className="group h-full overflow-hidden border-border/60 bg-card p-5 transition hover:border-emerald-500/40">
+              <Card className="group h-full overflow-hidden border-border/60 bg-card p-5 transition hover:border-violet-500/40">
                 <div
                   className={cn(
                     "mb-4 flex size-11 items-center justify-center rounded-xl bg-gradient-to-br text-slate-950 shadow-lg",
@@ -339,7 +339,7 @@ function Models() {
                 </div>
                 <Badge
                   variant="secondary"
-                  className="mb-2 h-5 bg-emerald-500/10 text-[10px] text-emerald-300"
+                  className="mb-2 h-5 bg-violet-500/10 text-[10px] text-violet-300"
                 >
                   {m.tag}
                 </Badge>
@@ -375,8 +375,8 @@ function Features() {
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.06 }}
             >
-              <Card className="group h-full border-border/60 bg-card p-6 transition hover:border-emerald-500/30 hover:bg-accent/20">
-                <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 transition group-hover:bg-emerald-500/20">
+              <Card className="group h-full border-border/60 bg-card p-6 transition hover:border-violet-500/30 hover:bg-accent/20">
+                <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400 transition group-hover:bg-violet-500/20">
                   <f.icon className="size-5" />
                 </div>
                 <h3 className="font-display text-lg font-bold">{f.title}</h3>
@@ -401,7 +401,7 @@ function HowItWorks({ onLaunch }: { onLaunch: () => void }) {
           title="Three steps to shipping"
         />
         <div className="relative mt-14 grid grid-cols-1 gap-8 md:grid-cols-3">
-          <div className="pointer-events-none absolute left-0 right-0 top-7 hidden h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent md:block" />
+          <div className="pointer-events-none absolute left-0 right-0 top-7 hidden h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent md:block" />
           {STEPS.map((s, i) => (
             <motion.div
               key={s.title}
@@ -411,8 +411,8 @@ function HowItWorks({ onLaunch }: { onLaunch: () => void }) {
               transition={{ duration: 0.4, delay: i * 0.1 }}
               className="relative flex flex-col items-center text-center"
             >
-              <div className="relative z-10 mb-5 flex size-14 items-center justify-center rounded-2xl border border-emerald-500/30 bg-background shadow-lg shadow-emerald-500/10">
-                <s.icon className="size-6 text-emerald-400" />
+              <div className="relative z-10 mb-5 flex size-14 items-center justify-center rounded-2xl border border-violet-500/30 bg-background shadow-lg shadow-violet-500/10">
+                <s.icon className="size-6 text-violet-400" />
                 <span className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                   {i + 1}
                 </span>
@@ -448,13 +448,13 @@ function PluginSection({
 }) {
   return (
     <section className="relative overflow-hidden border-t border-border/50 py-20">
-      <div className="pointer-events-none absolute right-0 top-1/2 size-96 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute right-0 top-1/2 size-96 -translate-y-1/2 rounded-full bg-violet-500/10 blur-3xl" />
       <div className="mx-auto max-w-7xl px-4">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           <div>
             <Badge
               variant="outline"
-              className="mb-4 gap-2 border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+              className="mb-4 gap-2 border-violet-500/30 bg-violet-500/10 text-violet-300"
             >
               <Box className="size-3" /> Roblox Studio Plugin
             </Badge>
@@ -472,7 +472,7 @@ function PluginSection({
             <div className="mt-6 space-y-4">
               {PLUGIN_STEPS.map((s) => (
                 <div key={s.step} className="flex gap-3.5">
-                  <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 font-mono text-sm font-bold text-emerald-400">
+                  <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 font-mono text-sm font-bold text-violet-400">
                     {s.step}
                   </div>
                   <div>
@@ -539,8 +539,8 @@ function PluginSection({
                 <div className="ml-auto max-w-[80%] rounded-2xl rounded-tr-sm bg-secondary px-3 py-2 text-xs">
                   Create a cooldown module with a :Reset() method
                 </div>
-                <div className="max-w-[88%] rounded-2xl rounded-tl-sm bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
-                  <span className="font-bold text-emerald-400">
+                <div className="max-w-[88%] rounded-2xl rounded-tl-sm bg-violet-500/10 px-3 py-2 text-xs text-emerald-100">
+                  <span className="font-bold text-violet-400">
                     BloxForge AI
                   </span>
                   <p className="mt-1 text-muted-foreground">
@@ -548,8 +548,8 @@ function PluginSection({
                     signal. Ready to insert 👇
                   </p>
                 </div>
-                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
-                  <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold text-emerald-400">
+                <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-3">
+                  <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold text-violet-400">
                     <Zap className="size-3" /> Code block ready
                   </div>
                   <pre className="font-mono text-[10.5px] leading-relaxed text-muted-foreground">
@@ -560,7 +560,7 @@ function Cooldown.new(d)
   return setmetatable({ ...`}</code>
                   </pre>
                   <div className="mt-2 flex justify-end">
-                    <span className="rounded-md bg-emerald-500 px-2 py-1 text-[10px] font-bold text-slate-950">
+                    <span className="rounded-md bg-violet-500 px-2 py-1 text-[10px] font-bold text-slate-950">
                       Insert as Script
                     </span>
                   </div>
@@ -578,10 +578,10 @@ function CTA({ onLaunch }: { onLaunch: () => void }) {
   return (
     <section className="relative border-t border-border/50 py-20">
       <div className="mx-auto max-w-4xl px-4">
-        <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent p-10 text-center sm:p-16">
+        <div className="relative overflow-hidden rounded-3xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 via-teal-500/5 to-transparent p-10 text-center sm:p-16">
           <div className="pointer-events-none absolute inset-0 bg-grid opacity-30 [mask-image:radial-gradient(60%_60%_at_50%_50%,black,transparent)]" />
           <div className="relative">
-            <Sparkles className="mx-auto mb-4 size-8 text-emerald-400" />
+            <Sparkles className="mx-auto mb-4 size-8 text-violet-400" />
             <h2 className="font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
               Stop writing boilerplate.
               <br />
@@ -591,15 +591,28 @@ function CTA({ onLaunch }: { onLaunch: () => void }) {
               Free to try. No sign-up. NVIDIA-powered. The fastest path from
               idea to a shipping Roblox game.
             </p>
-            <Button
-              size="lg"
-              onClick={onLaunch}
-              className="mt-8 h-12 gap-2 bg-primary px-8 text-base text-primary-foreground hover:bg-primary/90 glow-brand"
-            >
-              <Sparkles className="size-4" />
-              Launch BloxForge AI
-              <ArrowRight className="size-4" />
-            </Button>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button
+                size="lg"
+                onClick={onLaunch}
+                className="h-12 gap-2 bg-primary px-8 text-base text-primary-foreground hover:bg-primary/90 glow-brand"
+              >
+                <Sparkles className="size-4" />
+                Launch BloxForge AI
+                <ArrowRight className="size-4" />
+              </Button>
+              <a
+                href="https://discord.gg/jrerzH5Bm"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-12 items-center gap-2 rounded-xl border border-[#5865F2]/40 bg-[#5865F2]/10 px-6 text-sm font-semibold text-[#5865F2] transition hover:bg-[#5865F2]/20"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09-.01-.02-.04-.03-.07-.03-1.5.26-2.93.71-4.27 1.33-.01 0-.02.01-.03.02-2.72 4.07-3.47 8.03-3.1 11.95 0 .02.01.04.03.05 1.8 1.32 3.53 2.12 5.24 2.65.03.01.06 0 .07-.02.4-.55.76-1.13 1.07-1.74.02-.04 0-.08-.04-.09-.57-.22-1.11-.48-1.64-.78-.04-.02-.04-.08-.01-.11.11-.08.22-.17.33-.25.02-.02.05-.02.07-.01 3.44 1.57 7.15 1.57 10.55 0 .02-.01.05-.01.07.01.11.09.22.17.33.26.04.03.04.09-.01.11-.52.31-1.07.56-1.64.78-.04.01-.05.06-.04.09.32.61.68 1.19 1.07 1.74.03.01.06.02.09.01 1.72-.53 3.45-1.33 5.25-2.65.02-.01.03-.03.03-.05.44-4.53-.73-8.46-3.1-11.95-.01-.01-.02-.02-.04-.02zM8.52 14.91c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12 0 1.17-.84 2.12-1.89 2.12zm6.97 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12 0 1.17-.83 2.12-1.89 2.12z" />
+                </svg>
+                Join Discord
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -609,10 +622,10 @@ function CTA({ onLaunch }: { onLaunch: () => void }) {
 
 function Stats() {
   const stats = [
-    { value: 5, suffix: "", label: "NVIDIA frontier models" },
+    { value: 6, suffix: "", label: "AI personalities" },
+    { value: 8, suffix: "", label: "Response modes" },
     { value: 128, suffix: "K", label: "Context window per model" },
-    { value: 50, suffix: "+", label: "Luau patterns known" },
-    { value: 1, suffix: "", label: "Click to insert code" },
+    { value: 17, suffix: "+", label: "Instance types" },
   ];
   return (
     <section className="border-t border-border/50 py-14">
@@ -621,7 +634,7 @@ function Stats() {
           <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
             {stats.map((s) => (
               <div key={s.label} className="text-center">
-                <div className="font-display text-3xl font-extrabold tracking-tight text-emerald-400 sm:text-4xl">
+                <div className="font-display text-3xl font-extrabold tracking-tight text-violet-400 sm:text-4xl">
                   <Counter to={s.value} />
                   {s.suffix}
                 </div>
@@ -645,9 +658,9 @@ function PricingTeaser({
   onLaunch: () => void;
 }) {
   const tiers = [
-    { name: "Free", price: "$0", blurb: "50 msgs/day, 2 models", highlight: false },
-    { name: "Pro", price: "$9", blurb: "Unlimited, all 5 models", highlight: true },
-    { name: "Studio", price: "$31", blurb: "Teams & custom prompts", highlight: false },
+    { name: "Free", price: "$0", blurb: "5 credits/day, 2 models", highlight: false },
+    { name: "Pro", price: "$9", blurb: "30 credits/day, all 5 models", highlight: true },
+    { name: "Studio", price: "$31", blurb: "Unlimited credits + Beta AI", highlight: false },
   ];
   return (
     <section className="relative border-t border-border/50 py-20">
@@ -665,12 +678,12 @@ function PricingTeaser({
                 className={cn(
                   "relative h-full overflow-hidden p-6 text-center transition",
                   t.highlight
-                    ? "border-emerald-500/40 bg-accent/20 glow-brand"
-                    : "border-border/60 bg-card hover:border-emerald-500/20",
+                    ? "border-violet-500/40 bg-accent/20 glow-brand"
+                    : "border-border/60 bg-card hover:border-violet-500/20",
                 )}
               >
                 {t.highlight && (
-                  <Badge className="absolute right-4 top-4 gap-1 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20">
+                  <Badge className="absolute right-4 top-4 gap-1 bg-violet-500/15 text-violet-300 hover:bg-violet-500/20">
                     <Crown className="size-3" /> Popular
                   </Badge>
                 )}

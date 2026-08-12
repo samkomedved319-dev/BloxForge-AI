@@ -100,9 +100,15 @@ export function deriveInstance(
     if (cm) name = cm[1].trim().split(/\s+/)[0];
   }
 
+  // 5. Instance.new name extraction — if code creates "Instance.new('Part')", use a name from the variable
+  if (!name) {
+    const instMatch = src.match(/local\s+([A-Z][A-Za-z0-9_]*)\s*=\s*Instance\.new/);
+    if (instMatch) name = instMatch[1];
+  }
+
   const instanceName = sanitizeName(name || "BloxForgeScript");
 
-  // Determine type
+  // ── Smart type detection from code content ──
   const lower = src.toLowerCase();
   const returnsAtEnd = /\breturn\s+[A-Za-z_]/.test(src.slice(-400));
   const isClient =
@@ -111,14 +117,45 @@ export function deriveInstance(
     /runservice\.heartbeat/.test(lower) === false &&
       (/uiservice|userinputservice|contextactionservice/.test(lower));
 
-  let instanceType: InstanceType = "Script";
-  if (returnsAtEnd) instanceType = "ModuleScript";
-  else if (isClient) instanceType = "LocalScript";
+  // Check what the code actually creates with Instance.new
+  const createsScreenGui = /instance\.new\s*\(\s*["']ScreenGui["']/.test(lower);
+  const createsPart = /instance\.new\s*\(\s*["']Part["']/.test(lower);
+  const createsModel = /instance\.new\s*\(\s*["']Model["']/.test(lower);
+  const createsFrame = /instance\.new\s*\(\s*["']Frame["']/.test(lower);
+  const createsTextLabel = /instance\.new\s*\(\s*["']TextLabel["']/.test(lower);
+  const createsTextButton = /instance\.new\s*\(\s*["']TextButton["']/.test(lower);
+  const createsAnyUI = createsScreenGui || createsFrame || createsTextLabel || createsTextButton ||
+    /instance\.new\s*\(\s*["']ImageLabel["']/.test(lower) ||
+    /instance\.new\s*\(\s*["']ImageButton["']/.test(lower) ||
+    /instance\.new\s*\(\s*["']TextBox["']/.test(lower) ||
+    /instance\.new\s*\(\s*["']ScrollingFrame["']/.test(lower);
 
-  // Parent: client scripts → StarterPlayerScripts; everything else → ServerScriptService
+  let instanceType: InstanceType = "Script";
+
+  // If the code builds UI programmatically → it's a ModuleScript that returns the UI
+  if (createsAnyUI && returnsAtEnd) {
+    instanceType = "ModuleScript";
+  } else if (createsPart || createsModel) {
+    // If code creates Parts/Models programmatically → ModuleScript that returns them
+    instanceType = "ModuleScript";
+  } else if (returnsAtEnd) {
+    instanceType = "ModuleScript";
+  } else if (isClient) {
+    instanceType = "LocalScript";
+  }
+
+  // Parent: smart selection based on type + content
   let parent = "ServerScriptService";
   if (instanceType === "LocalScript") parent = "StarterPlayerScripts";
   if (instanceType === "ModuleScript" && isClient) parent = "ReplicatedStorage";
+  if (instanceType === "ModuleScript" && createsAnyUI) parent = "StarterGui";
+  if (instanceType === "ModuleScript" && (createsPart || createsModel)) parent = "Workspace";
+  // Server scripts that reference DataStore → ServerScriptService (already default)
+  // Server scripts that reference ReplicatedStorage → still ServerScriptService (they USE it, not live in it)
+  // ModuleScripts that are shared (not client, not UI, not Part) → ReplicatedStorage
+  if (instanceType === "ModuleScript" && !isClient && !createsAnyUI && !createsPart && !createsModel) {
+    parent = "ReplicatedStorage";
+  }
 
   return { instanceType, instanceName, parent };
 }

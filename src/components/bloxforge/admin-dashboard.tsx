@@ -138,7 +138,7 @@ function goHome() {
 function planBadgeClass(plan: string) {
   switch (plan) {
     case "pro":
-      return "border-emerald-500/30 bg-emerald-500/15 text-emerald-300";
+      return "border-violet-500/30 bg-violet-500/15 text-violet-300";
     case "studio":
       return "border-amber-500/30 bg-amber-500/15 text-amber-300";
     default:
@@ -149,7 +149,7 @@ function planBadgeClass(plan: string) {
 function providerBadgeClass(provider: string) {
   switch (provider) {
     case "nvidia":
-      return "border-emerald-500/30 bg-emerald-500/15 text-emerald-300";
+      return "border-violet-500/30 bg-violet-500/15 text-violet-300";
     case "openai":
       return "border-border/60 bg-muted text-muted-foreground";
     case "openrouter":
@@ -211,7 +211,7 @@ export function AdminDashboard() {
     return (
       <main className="flex flex-1 items-center justify-center px-4 py-24">
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="size-6 animate-spin text-emerald-400" />
+          <Loader2 className="size-6 animate-spin text-violet-400" />
           <p className="text-sm">Checking admin access…</p>
         </div>
       </main>
@@ -300,12 +300,12 @@ function AdminHeader() {
       className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center"
     >
       <div>
-        <span className="font-mono text-xs uppercase tracking-[0.2em] text-emerald-400">
+        <span className="font-mono text-xs uppercase tracking-[0.2em] text-violet-400">
           BloxForge AI · Internal
         </span>
         <h1 className="mt-1.5 font-display text-3xl font-bold tracking-tight sm:text-4xl">
           Admin{" "}
-          <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-violet-400 via-teal-300 to-violet-400 bg-clip-text text-transparent">
             Dashboard
           </span>
         </h1>
@@ -469,10 +469,10 @@ function OverviewTab() {
         </Card>
       )}
       {oauthSetup?.configured && (
-        <Card className="border-emerald-500/30 bg-emerald-500/5 p-4">
+        <Card className="border-violet-500/30 bg-violet-500/5 p-4">
           <div className="flex items-center gap-2 text-sm">
-            <span className="size-2 rounded-full bg-emerald-400" />
-            <span className="font-medium text-emerald-300">
+            <span className="size-2 rounded-full bg-violet-400" />
+            <span className="font-medium text-violet-300">
               Roblox OAuth is configured
             </span>
             <span className="text-muted-foreground">
@@ -491,16 +491,16 @@ function OverviewTab() {
             transition={{ duration: 0.35, delay: i * 0.06 }}
           >
             <Card className="relative h-full overflow-hidden border-border/60 bg-card p-5">
-              <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-emerald-500/5 blur-2xl" />
+              <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-violet-500/5 blur-2xl" />
               <div className="flex items-start justify-between">
-                <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+                <div className="flex size-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
                   <c.icon className="size-5" />
                 </div>
                 <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                   live
                 </span>
               </div>
-              <div className="mt-4 font-display text-3xl font-bold text-emerald-400">
+              <div className="mt-4 font-display text-3xl font-bold text-violet-400">
                 {c.value.toLocaleString()}
               </div>
               <div className="mt-1 text-sm font-medium">{c.label}</div>
@@ -525,13 +525,13 @@ function PlanBreakdownCard({ stats }: { stats: Stats }) {
       label: "Free",
       count: free,
       pct: (free / total) * 100,
-      bar: "from-emerald-400/60 to-emerald-400/40",
+      bar: "from-violet-400/60 to-violet-400/40",
     },
     {
       label: "Pro",
       count: pro,
       pct: (pro / total) * 100,
-      bar: "from-emerald-400 to-teal-400",
+      bar: "from-violet-400 to-purple-400",
     },
     {
       label: "Studio",
@@ -552,7 +552,7 @@ function PlanBreakdownCard({ stats }: { stats: Stats }) {
         </div>
         <Badge
           variant="outline"
-          className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+          className="border-violet-500/30 bg-violet-500/10 text-violet-300"
         >
           {free + pro + studio} total
         </Badge>
@@ -801,7 +801,7 @@ function UsersTab() {
                         </span>
                       )}
                       {u.robloxUsername && (
-                        <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400/90">
+                        <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-violet-400/90">
                           <Gamepad2 className="size-3" />
                           {u.robloxUsername}
                         </span>
@@ -820,7 +820,7 @@ function UsersTab() {
                     {u.role === "admin" ? (
                       <Badge
                         variant="outline"
-                        className="h-6 gap-1 border-emerald-500/30 bg-emerald-500/15 px-2.5 text-[11px] text-emerald-300"
+                        className="h-6 gap-1 border-violet-500/30 bg-violet-500/15 px-2.5 text-[11px] text-violet-300"
                       >
                         <Crown className="size-3" />
                         Admin
@@ -828,7 +828,7 @@ function UsersTab() {
                     ) : u.approved ? (
                       <Badge
                         variant="outline"
-                        className="h-6 gap-1 border-emerald-500/30 bg-emerald-500/15 px-2.5 text-[11px] text-emerald-300"
+                        className="h-6 gap-1 border-violet-500/30 bg-violet-500/15 px-2.5 text-[11px] text-violet-300"
                       >
                         <Check className="size-3" />
                         Approved
@@ -845,7 +845,7 @@ function UsersTab() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col text-xs">
-                      <span className="font-mono text-emerald-400">
+                      <span className="font-mono text-violet-400">
                         +{u.extraCredits} bonus
                       </span>
                       <span className="text-muted-foreground">
@@ -876,7 +876,7 @@ function UsersTab() {
                         ) : (
                           <Button
                             size="sm"
-                            className="h-8 gap-1.5 bg-emerald-500 px-2.5 text-white hover:bg-emerald-500/90"
+                            className="h-8 gap-1.5 bg-violet-500 px-2.5 text-white hover:bg-violet-500/90"
                             disabled={busyId === u.id}
                             onClick={() => approveUser(u.id, true)}
                             title="Approve beta access"
@@ -1034,7 +1034,7 @@ function GrantCreditsButton({
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 gap-1.5 px-2 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+          className="h-8 gap-1.5 px-2 text-violet-400 hover:bg-violet-500/10 hover:text-violet-300"
           disabled={disabled}
           title="Grant credits"
         >
@@ -1258,9 +1258,9 @@ function ApiKeysTab() {
       className="space-y-6"
     >
       {/* Add form */}
-      <Card className="border-emerald-500/20 bg-card p-6">
+      <Card className="border-violet-500/20 bg-card p-6">
         <div className="flex items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
             <Plus className="size-4.5" />
           </div>
           <div>
@@ -1292,7 +1292,19 @@ function ApiKeysTab() {
             </Label>
             <Select
               value={form.provider}
-              onValueChange={(v) => updateForm("provider", v)}
+              onValueChange={(v) => {
+                updateForm("provider", v);
+                // Auto-set the base URL based on provider
+                const urls: Record<string, string> = {
+                  nvidia: "https://integrate.api.nvidia.com/v1",
+                  groq: "https://api.groq.com/openai/v1",
+                  openai: "https://api.openai.com/v1",
+                  openrouter: "https://openrouter.ai/api/v1",
+                  together: "https://api.together.xyz/v1",
+                  custom: "",
+                };
+                if (urls[v]) updateForm("baseUrl", urls[v]);
+              }}
             >
               <SelectTrigger id="ak-provider" className="h-9 w-full bg-card/60">
                 <SelectValue />
@@ -1342,7 +1354,7 @@ function ApiKeysTab() {
               <button
                 onClick={fetchModels}
                 disabled={fetchingModels}
-                className="flex items-center gap-1.5 rounded-md border border-emerald-500/30 px-2 py-1 text-[11px] text-emerald-400 transition hover:bg-emerald-500/10 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-md border border-violet-500/30 px-2 py-1 text-[11px] text-violet-400 transition hover:bg-violet-500/10 disabled:opacity-50"
               >
                 {fetchingModels ? (
                   <Loader2 className="size-3 animate-spin" />
@@ -1357,7 +1369,7 @@ function ApiKeysTab() {
                 id="ak-model"
                 value={form.model}
                 onChange={(e) => updateForm("model", e.target.value)}
-                className="h-9 w-full rounded-md border border-border bg-background px-3 font-mono text-xs focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                className="h-9 w-full rounded-md border border-border bg-background px-3 font-mono text-xs focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
               >
                 <option value="">— Select a model —</option>
                 {availableModels.map((m) => (
@@ -1492,7 +1504,7 @@ function ApiKeysTab() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="font-mono text-xs text-emerald-400/80">
+                    <span className="font-mono text-xs text-violet-400/80">
                       {k.key || "—"}
                     </span>
                   </TableCell>
@@ -1566,19 +1578,19 @@ function ApiKeysTab() {
       {/* Note card */}
       <Card className="border-border/60 bg-muted/30 p-5">
         <div className="flex gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
             <Info className="size-4" />
           </div>
           <div className="space-y-1 text-sm text-muted-foreground">
             <p className="font-medium text-foreground">How keys are used</p>
             <p>
-              Keys are used in <span className="text-emerald-400">priority order</span>{" "}
+              Keys are used in <span className="text-violet-400">priority order</span>{" "}
               (highest first). Any OpenAI-compatible endpoint works — NVIDIA
               NIM, OpenAI, OpenRouter, Groq, Together and more.
             </p>
             <p>
               The highest-priority{" "}
-              <span className="text-emerald-400">active</span> key overrides the{" "}
+              <span className="text-violet-400">active</span> key overrides the{" "}
               <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
                 NVIDIA_API_KEY
               </code>{" "}
@@ -1603,7 +1615,7 @@ function TabLoading({ label, bare }: { label: string; bare?: boolean }) {
         bare ? "py-6" : "py-20",
       )}
     >
-      <Loader2 className="size-5 animate-spin text-emerald-400" />
+      <Loader2 className="size-5 animate-spin text-violet-400" />
       <span className="text-sm">{label}</span>
     </div>
   );

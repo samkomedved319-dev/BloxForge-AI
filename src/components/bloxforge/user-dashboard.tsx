@@ -73,7 +73,7 @@ export function UserDashboard({ onBack }: { onBack: () => void }) {
   if (loading) {
     return (
       <main className="flex flex-1 items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-emerald-400" />
+        <Loader2 className="size-8 animate-spin text-violet-400" />
       </main>
     );
   }
@@ -124,7 +124,7 @@ export function UserDashboard({ onBack }: { onBack: () => void }) {
               <Button
                 variant="outline"
                 onClick={() => (window.location.hash = "admin")}
-                className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                className="gap-2 border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
               >
                 <Shield className="size-4" /> Admin
               </Button>
@@ -148,7 +148,7 @@ export function UserDashboard({ onBack }: { onBack: () => void }) {
           />
           <StatCard
             icon={Send}
-            label="Messages sent"
+            label="Credits used"
             value={s.totalMessages}
             delay={0.06}
           />
@@ -174,7 +174,7 @@ export function UserDashboard({ onBack }: { onBack: () => void }) {
             <div className="flex items-center justify-between">
               <h3 className="font-display font-bold">Today's usage</h3>
               {s.limit === -1 ? (
-                <Badge className="gap-1 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20">
+                <Badge className="gap-1 bg-violet-500/15 text-violet-300 hover:bg-violet-500/20">
                   <Sparkles className="size-3" /> Unlimited
                 </Badge>
               ) : (
@@ -190,13 +190,13 @@ export function UserDashboard({ onBack }: { onBack: () => void }) {
                     initial={{ width: 0 }}
                     animate={{ width: `${usagePct}%` }}
                     transition={{ duration: 0.6, ease: "easeOut" }}
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500"
+                    className="h-full rounded-full bg-gradient-to-r from-violet-400 to-purple-500"
                   />
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {Math.max(0, s.limit - s.usageToday)} messages remaining today
+                  {Math.max(0, s.limit - s.usageToday)} credits remaining today
                   {s.extraCredits > 0 && (
-                    <span className="text-emerald-400">
+                    <span className="text-violet-400">
                       {" "}· +{s.extraCredits} bonus credits
                     </span>
                   )}
@@ -205,8 +205,8 @@ export function UserDashboard({ onBack }: { onBack: () => void }) {
             ) : (
               <p className="mt-3 text-sm text-muted-foreground">
                 {data.user?.role === "admin"
-                  ? "Admin accounts have no message limits."
-                  : "Your plan includes unlimited messages."}
+                  ? "Admin accounts have unlimited credits."
+                  : "Your plan includes unlimited credits."}
               </p>
             )}
             {(data.plan?.id === "free" || data.user?.role !== "admin") && (
@@ -214,16 +214,16 @@ export function UserDashboard({ onBack }: { onBack: () => void }) {
                 variant="outline"
                 size="sm"
                 onClick={() => (window.location.hash = "pricing")}
-                className="mt-4 w-full gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                className="mt-4 w-full gap-1.5 border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
               >
-                <Crown className="size-3.5" /> Upgrade for unlimited
+                <Crown className="size-3.5" /> Upgrade for more credits
               </Button>
             )}
           </Card>
 
           <Card className="border-border/60 bg-card p-5 lg:col-span-2">
             <div className="flex items-center gap-2">
-              <TrendingUp className="size-4 text-emerald-400" />
+              <TrendingUp className="size-4 text-violet-400" />
               <h3 className="font-display font-bold">Last 7 days</h3>
             </div>
             <UsageChart data={data.usage7d || []} />
@@ -270,7 +270,7 @@ export function UserDashboard({ onBack }: { onBack: () => void }) {
                     onClick={() => (window.location.hash = "app")}
                     className="group flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-border hover:bg-accent/40"
                   >
-                    <MessageSquare className="size-4 shrink-0 text-muted-foreground group-hover:text-emerald-400" />
+                    <MessageSquare className="size-4 shrink-0 text-muted-foreground group-hover:text-violet-400" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{c.title}</p>
                       <p className="flex items-center gap-2 text-[11px] text-muted-foreground">
@@ -325,7 +325,7 @@ function StatCard({
           <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             {label}
           </span>
-          <Icon className="size-4 text-emerald-400" />
+          <Icon className="size-4 text-violet-400" />
         </div>
         <p className="mt-2 font-display text-2xl font-extrabold tracking-tight">
           {isText ? value : value.toLocaleString()}
@@ -357,8 +357,8 @@ function UsageChart({ data }: { data: { date: string; count: number }[] }) {
                 className={cn(
                   "w-full rounded-t-md",
                   isToday
-                    ? "bg-gradient-to-t from-emerald-500 to-emerald-400"
-                    : "bg-emerald-500/30",
+                    ? "bg-gradient-to-t from-violet-500 to-violet-400"
+                    : "bg-violet-500/30",
                 )}
                 title={`${d.count} messages`}
               />

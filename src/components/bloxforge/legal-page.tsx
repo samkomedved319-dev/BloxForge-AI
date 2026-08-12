@@ -22,7 +22,7 @@ export function LegalPage({ type }: { type: "privacy" | "tos" }) {
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
             {isPrivacy ? <Shield className="size-5" /> : <FileText className="size-5" />}
           </div>
           <div>
@@ -41,7 +41,7 @@ export function LegalPage({ type }: { type: "privacy" | "tos" }) {
           Questions about this {title.toLowerCase()}? Contact{" "}
           <a
             href="mailto:support@bloxforge.ai"
-            className="text-emerald-400 hover:underline"
+            className="text-violet-400 hover:underline"
           >
             support@bloxforge.ai
           </a>
@@ -224,7 +224,7 @@ function TosContent() {
 
       <Section title="13. Contact">
         Questions? Email{" "}
-        <a href="mailto:support@bloxforge.ai" className="text-emerald-400 hover:underline">
+        <a href="mailto:support@bloxforge.ai" className="text-violet-400 hover:underline">
           support@bloxforge.ai
         </a>
         .
