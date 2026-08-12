@@ -4,6 +4,12 @@
 
 BloxForge AI generates, debugs, and refactors Luau code using frontier language models — and ships with a free Roblox Studio connector plugin that drops generated code straight into your game.
 
+[![GitHub](https://img.shields.io/github/license/samkomedved319-dev/BloxForge-AI?style=for-the-badge)](https://github.com/samkomedved319-dev/BloxForge-AI/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/samkomedved319-dev/BloxForge-AI?style=for-the-badge)](https://github.com/samkomedved319-dev/BloxForge-AI/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/samkomedved319-dev/BloxForge-AI?style=for-the-badge)](https://github.com/samkomedved319-dev/BloxForge-AI/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/samkomedved319-dev/BloxForge-AI?style=for-the-badge)](https://github.com/samkomedved319-dev/BloxForge-AI/issues)
+[![GitHub pull requests](https://img.shields.io/github/pull-requests/samkomedved319-dev/BloxForge-AI?style=for-the-badge)](https://github.com/samkomedved319-dev/BloxForge-AI/pulls)
+
 ## Features
 
 - 🤖 **5 NVIDIA NIM models** — Qwen2.5 Coder, DeepSeek R1, Nemotron 70B, Llama 3.3 70B, Llama 3.1 405B
@@ -133,18 +139,18 @@ Full documentation is built into the app at `/#docs`, covering:
 
 ```
 src/
-├── app/                    # Next.js App Router
-│   ├── api/                # API routes (chat, auth, admin, studio, etc.)
-│   ├── page.tsx            # Main page (hash-based routing)
-│   ├── layout.tsx          # Root layout
-│   └── globals.css         # Global styles + theme
-├── components/
+├ app/                    # Next.js App Router
+│   ├── api/              # API routes (chat, auth, admin, studio, etc.)
+│   ├── page.tsx          # Main page (hash-based routing)
+│   ├── layout.tsx        # Root layout
+│   └── globals.css       # Global styles + theme
+├ components/
 │   ├── bloxforge/          # BloxForge components
 │   └── ui/                 # shadcn/ui components
-└── lib/                    # Shared libraries (ai, auth, db, models, etc.)
+└ lib/                    # Shared libraries (ai, auth, db, models, etc.)
 
 public/
-└── plugin/
+└ plugin/
     └── BloxForgeAI.lua     # Roblox Studio plugin
 
 prisma/
