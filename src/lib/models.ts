@@ -124,6 +124,62 @@ export const MODES: Mode[] = [
 export const DEFAULT_PERSONALITY_ID = "swift";
 export const DEFAULT_MODE_ID = "default";
 
+// ── Project types (legacy compat — used by chat API) ──────────────────────
+
+export interface ProjectType {
+  id: string;
+  label: string;
+  icon: string;
+  promptPrefix: string;
+}
+
+export const PROJECT_TYPES: ProjectType[] = [
+  {
+    id: "script",
+    label: "Scripts",
+    icon: "Code2",
+    promptPrefix: "Generate a Roblox Luau script.",
+  },
+  {
+    id: "gui",
+    label: "GUI",
+    icon: "Layout",
+    promptPrefix: "Generate a Roblox GUI using Instance.new. Build the full ScreenGui hierarchy with Frames, TextLabels, TextButtons, UICorner, UIStroke, UIGradient. End with return screenGui.",
+  },
+  {
+    id: "3d",
+    label: "3D Models",
+    icon: "Box",
+    promptPrefix: "Generate Luau code that creates a 3D model using Instance.new('Part') or Instance.new('Model'). Set Size, Position, Color, Material, Anchored, CanCollide. For Models, create a PrimaryPart and weld children. End with return <variable>.",
+  },
+  {
+    id: "animation",
+    label: "Animations",
+    icon: "Play",
+    promptPrefix: "Generate Luau code for a Roblox animation using TweenService:Create or AnimationTrack. Include CFrame interpolation, easing styles (Enum.EasingStyle.Quad, Enum.EasingDirection.Out). Make it smooth and professional.",
+  },
+];
+
+// ── Game templates ────────────────────────────────────────────────────────
+
+export interface GameTemplate {
+  id: string;
+  label: string;
+  emoji: string;
+  prompt: string;
+}
+
+export const GAME_TEMPLATES: GameTemplate[] = [
+  { id: "shooter", label: "Shooter", emoji: "🔫", prompt: "Create a shooter game with shooting mechanics, health system, and score tracking" },
+  { id: "obby", label: "Obby", emoji: "🧩", prompt: "Create an obstacle course (obby) with checkpoints, kill bricks, and a finish line" },
+  { id: "simulator", label: "Simulator", emoji: "⚙️", prompt: "Create a simulator game with clicking mechanics, upgrades, and stats" },
+  { id: "tycoon", label: "Tycoon", emoji: "🏭", prompt: "Create a tycoon game with droppers, upgraders, and money system" },
+  { id: "farm", label: "Farm", emoji: "🌾", prompt: "Create a farming game with planting, growing, and harvesting mechanics" },
+  { id: "pets", label: "Pet Game", emoji: "🐾", prompt: "Create a pet collection game with pet hatching, stats, and inventory" },
+  { id: "bedwars", label: "Bedwars", emoji: "🛏️", prompt: "Create a bedwars game with bed protection, resource gathering, and team combat" },
+  { id: "murder", label: "Murder Mystery", emoji: "🔪", prompt: "Create a murder mystery game with roles (innocent, sheriff, murderer) and round system" },
+];
+
 // ── Slash commands (CLI-style /commands) ──────────────────────────────────
 
 export interface SlashCommand {

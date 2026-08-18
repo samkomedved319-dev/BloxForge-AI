@@ -49,6 +49,7 @@ import {
   deriveInstance,
 } from "@/lib/luau-naming";
 import { PERSONALITIES, SLASH_COMMANDS, UI_LIBRARY, MECHANIC_LIBRARY } from "@/lib/models";
+import { AITextLoading } from "./ai-text-loading";
 
 type Role = "user" | "assistant";
 interface ChatMessage {
@@ -1162,10 +1163,16 @@ function MessageBubble({
             onInsertCode={onInsertCode}
           />
         ) : (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Sparkles className="size-3.5 animate-pulse text-violet-400" />
-            Forging…
-          </div>
+          <AITextLoading
+            messages={[
+              "Thinking...",
+              "Analyzing your request...",
+              "Generating Luau code...",
+              "Building instances...",
+              "Optimizing output...",
+            ]}
+            interval={1800}
+          />
         )}
         {/* Plan approval buttons — shown when the message contains a plan */}
         {!isUser && message.content && message.content.includes("## Plan") && (
