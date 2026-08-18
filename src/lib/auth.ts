@@ -105,14 +105,19 @@ export const authOptions: NextAuthOptions = {
       // Refresh from DB on every JWT render so approval/role/plan changes
       // by an admin take effect without requiring the user to re-sign-in.
       if (token.id) {
-        const dbUser = await db.user.findUnique({
-          where: { id: token.id },
-          select: { plan: true, role: true, approved: true },
-        });
-        if (dbUser) {
-          token.plan = dbUser.plan;
-          token.role = dbUser.role;
-          token.approved = dbUser.approved;
+        try {
+          const dbUser = await db.user.findUnique({
+            where: { id: token.id as string },
+            select: { plan: true, role: true, approved: true },
+          });
+          if (dbUser) {
+            token.plan = dbUser.plan;
+            token.role = dbUser.role;
+            token.approved = dbUser.approved;
+          }
+        } catch {
+          // DB might not be available (e.g. Vercel serverless cold start)
+          // Keep the cached values from the initial sign-in
         }
       }
       return token;

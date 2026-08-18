@@ -7,7 +7,6 @@ export const dynamic = "force-dynamic";
 const ROBLOX_OAUTH_BASE = "https://apis.roblox.com/oauth";
 const STATE_COOKIE = "bloxforge_oauth_state";
 
-/** Admin Roblox usernames/IDs that should be auto-promoted + auto-approved. */
 function getAdminRobloxIds(): Set<string> {
   return new Set(
     (process.env.ADMIN_ROBLOX_IDS || "")
@@ -17,17 +16,11 @@ function getAdminRobloxIds(): Set<string> {
   );
 }
 
-/**
- * Roblox OAuth2 callback. Roblox redirects here with ?code=...&state=...
- * We exchange the code for an access token, fetch userinfo, then create/find
- * the BloxForge user and sign them in via a short-lived token cookie that
- * the client-side NextAuth provider reads.
- */
 export async function GET(req: NextRequest) {
   const clientId = process.env.ROBLOX_CLIENT_ID;
   const clientSecret = process.env.ROBLOX_CLIENT_SECRET;
   const redirectUri = process.env.ROBLOX_REDIRECT_URI;
-  const appOrigin = process.env.NEXTAUTH_URL || req.nextUrl.origin;
+  const appOrigin = process.env.NEXTAUTH_URL || `https://${req.nextUrl.host}`;
 
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
@@ -42,7 +35,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${appOrigin}/#auth-error=no_code`);
   }
 
-  // Verify state
   const cookieState = req.cookies.get(STATE_COOKIE)?.value;
   if (!state || state !== cookieState) {
     return NextResponse.redirect(`${appOrigin}/#auth-error=invalid_state`);
@@ -52,116 +44,127 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${appOrigin}/#auth-error=not_configured`);
   }
 
-  // Exchange the authorization code for an access token
-  let accessToken: string;
+  // Wrap everything in a try/catch so Vercel never returns a raw 500
   try {
-    const tokenRes = await fetch(`${ROBLOX_OAUTH_BASE}/v1/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
+    // 1. Exchange the authorization code for an access token
+    let accessToken: string;
+    try {
+      const tokenRes = await fetch(`${ROBLOX_OAUTH_BASE}/v1/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
 
-    if (!tokenRes.ok) {
-      const t = await tokenRes.text().catch(() => "");
-      console.error("[roblox oauth] token exchange failed:", tokenRes.status, t);
-      return NextResponse.redirect(
-        `${appOrigin}/#auth-error=token_failed`,
-      );
+      if (!tokenRes.ok) {
+        const t = await tokenRes.text().catch(() => "");
+        console.error("[roblox oauth] token exchange failed:", tokenRes.status, t);
+        return NextResponse.redirect(
+          `${appOrigin}/#auth-error=token_failed`,
+        );
+      }
+
+      const tokenData = await tokenRes.json();
+      accessToken = tokenData.access_token;
+      if (!accessToken) {
+        return NextResponse.redirect(`${appOrigin}/#auth-error=no_access_token`);
+      }
+    } catch (err) {
+      console.error("[roblox oauth] token exchange error:", err);
+      return NextResponse.redirect(`${appOrigin}/#auth-error=token_exception`);
     }
 
-    const tokenData = await tokenRes.json();
-    accessToken = tokenData.access_token;
-    if (!accessToken) {
-      return NextResponse.redirect(`${appOrigin}/#auth-error=no_access_token`);
+    // 2. Fetch the user's Roblox identity via OpenID Connect userinfo
+    let robloxUserId: string;
+    let robloxUsername: string;
+    let displayName: string;
+    try {
+      const uiRes = await fetch(`${ROBLOX_OAUTH_BASE}/v1/userinfo`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!uiRes.ok) {
+        return NextResponse.redirect(`${appOrigin}/#auth-error=userinfo_failed`);
+      }
+
+      const ui = await uiRes.json();
+      robloxUserId = String(ui.sub || ui.user_id || ui.id || "");
+      robloxUsername = ui.preferred_username || ui.name || ui.username || "";
+      displayName = ui.name || ui.nickname || robloxUsername;
+
+      if (!robloxUserId) {
+        return NextResponse.redirect(`${appOrigin}/#auth-error=no_user_id`);
+      }
+    } catch (err) {
+      console.error("[roblox oauth] userinfo error:", err);
+      return NextResponse.redirect(`${appOrigin}/#auth-error=userinfo_exception`);
     }
-  } catch (err) {
-    console.error("[roblox oauth] token exchange error:", err);
-    return NextResponse.redirect(`${appOrigin}/#auth-error=token_exception`);
-  }
 
-  // Fetch the user's Roblox identity via OpenID Connect userinfo
-  let robloxUserId: string;
-  let robloxUsername: string;
-  let displayName: string;
-  try {
-    const uiRes = await fetch(`${ROBLOX_OAUTH_BASE}/v1/userinfo`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      signal: AbortSignal.timeout(10000),
-    });
+    // 3. Create or find the BloxForge user in the DB
+    const adminIds = getAdminRobloxIds();
+    const isAdmin = adminIds.has(robloxUserId) || adminIds.has(robloxUsername.toLowerCase());
 
-    if (!uiRes.ok) {
-      return NextResponse.redirect(`${appOrigin}/#auth-error=userinfo_failed`);
+    let userId: string;
+    try {
+      let user = await db.user.findUnique({
+        where: { robloxUserId },
+      });
+
+      if (!user) {
+        const email = `roblox:${robloxUserId}@bloxforge.local`;
+        user = await db.user.create({
+          data: {
+            email,
+            name: robloxUsername || displayName,
+            robloxUserId,
+            robloxUsername: robloxUsername || displayName,
+            passwordHash: "",
+            approved: isAdmin,
+            role: isAdmin ? "admin" : "user",
+            plan: isAdmin ? "studio" : "free",
+          },
+        });
+      } else {
+        const data: any = {
+          robloxUsername: robloxUsername || displayName,
+          name: robloxUsername || displayName,
+        };
+        if (isAdmin && user.role !== "admin") {
+          data.role = "admin";
+          data.plan = "studio";
+          data.approved = true;
+        }
+        user = await db.user.update({ where: { id: user.id }, data });
+      }
+      userId = user.id;
+    } catch (dbErr) {
+      console.error("[roblox oauth] DB error:", dbErr);
+      return NextResponse.redirect(`${appOrigin}/#auth-error=database_error`);
     }
 
-    const ui = await uiRes.json();
-    robloxUserId = String(ui.sub || ui.user_id || ui.id || "");
-    robloxUsername = ui.preferred_username || ui.name || ui.username || "";
-    displayName = ui.name || ui.nickname || robloxUsername;
-
-    if (!robloxUserId) {
-      return NextResponse.redirect(`${appOrigin}/#auth-error=no_user_id`);
-    }
-  } catch (err) {
-    console.error("[roblox oauth] userinfo error:", err);
-    return NextResponse.redirect(`${appOrigin}/#auth-error=userinfo_exception`);
-  }
-
-  // Create or find the BloxForge user
-  const adminIds = getAdminRobloxIds();
-  const isAdmin = adminIds.has(robloxUserId) || adminIds.has(robloxUsername.toLowerCase());
-
-  let user = await db.user.findUnique({
-    where: { robloxUserId },
-  });
-
-  if (!user) {
-    const email = `roblox:${robloxUserId}@bloxforge.local`;
-    user = await db.user.create({
-      data: {
-        email,
-        name: robloxUsername || displayName,
+    // 4. Create a sign-in token + redirect
+    const token = Buffer.from(
+      JSON.stringify({
+        userId,
         robloxUserId,
-        robloxUsername: robloxUsername || displayName,
-        passwordHash: "",
-        approved: isAdmin, // admins auto-approved; others wait for beta approval
-        role: isAdmin ? "admin" : "user",
-        plan: isAdmin ? "studio" : "free",
-      },
-    });
-  } else {
-    // Update cached username + promote to admin if configured
-    const data: any = {
-      robloxUsername: robloxUsername || displayName,
-      name: robloxUsername || displayName,
-    };
-    if (isAdmin && user.role !== "admin") {
-      data.role = "admin";
-      data.plan = "studio";
-      data.approved = true;
-    }
-    user = await db.user.update({ where: { id: user.id }, data });
+        ts: Date.now(),
+      }),
+    ).toString("base64");
+
+    const res = NextResponse.redirect(
+      `${appOrigin}/#roblox-token=${token}`,
+    );
+    res.cookies.delete(STATE_COOKIE);
+    return res;
+  } catch (err) {
+    console.error("[roblox oauth] unexpected error:", err);
+    return NextResponse.redirect(`${appOrigin}/#auth-error=unexpected`);
   }
-
-  // Create a short-lived sign-in token the client NextAuth provider will consume
-  const token = Buffer.from(
-    JSON.stringify({
-      userId: user.id,
-      robloxUserId,
-      ts: Date.now(),
-    }),
-  ).toString("base64");
-
-  // Redirect to the app with the token in the hash (client reads it + calls signIn)
-  const res = NextResponse.redirect(
-    `${appOrigin}/#roblox-token=${token}`,
-  );
-  res.cookies.delete(STATE_COOKIE);
-  return res;
 }

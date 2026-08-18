@@ -61,15 +61,26 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   const isGuest = !session?.user?.id;
 
-  // Always fetch the LIVE user from the DB — the JWT may be stale (e.g. an
-  // admin just approved the user, but their JWT still says approved=false).
+  // Always fetch the LIVE user from the DB — the JWT may be stale.
   let liveUser = null;
   if (!isGuest) {
-    liveUser = await db.user.findUnique({
-      where: { id: session!.user.id },
-      select: { id: true, plan: true, role: true, approved: true, extraCredits: true, usageCount: true, usageDate: true },
-    });
-    // If the user was deleted, treat as guest
+    try {
+      liveUser = await db.user.findUnique({
+        where: { id: session!.user.id },
+        select: { id: true, plan: true, role: true, approved: true, extraCredits: true, usageCount: true, usageDate: true },
+      });
+    } catch {
+      // DB not available (Vercel serverless) — fall back to session data
+      liveUser = {
+        id: session!.user.id,
+        plan: (session.user as any).plan || "free",
+        role: (session.user as any).role || "user",
+        approved: (session.user as any).approved ?? false,
+        extraCredits: 0,
+        usageCount: 0,
+        usageDate: null,
+      } as any;
+    }
     if (!liveUser) {
       return NextResponse.json({ error: "Account not found" }, { status: 401 });
     }
