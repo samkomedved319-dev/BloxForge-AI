@@ -38,82 +38,39 @@ export interface Mode {
 
 export const PERSONALITIES: Personality[] = [
   {
-    id: "bloxforge-luau",
+    id: "swift",
     label: "BloxForge AI",
     model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    vendor: "NVIDIA Nemotron · OpenRouter",
+    vendor: "NVIDIA Nemotron",
     tier: "code",
-    tagline: "Our flagship model — NVIDIA Nemotron reasoning. Best for Roblox Luau, UI, and parts.",
-    badge: "Beta",
-    speed: 2,
-    strength: "Roblox Luau, engine APIs, game systems, UI, 3D parts",
-    beta: true,
-    studioOnly: true,
-  },
-  {
-    id: "groq",
-    label: "Groq",
-    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    vendor: "NVIDIA Nemotron · OpenRouter",
-    tier: "code",
-    tagline: "Ultra-fast inference via Groq. Great for scripts, UI, and parts.",
-    badge: "Studio",
+    tagline: "Best for scripts, GUI, 3D models & animations.",
+    badge: "Recommended",
     speed: 3,
-    strength: "Fast code gen, UI building, Part creation",
-    studioOnly: true,
+    strength: "Everything — scripts, GUI, 3D, animations",
   },
   {
     id: "thoughtful",
-    label: "Thoughtful",
+    label: "Reasoning",
     model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    vendor: "NVIDIA Nemotron · OpenRouter",
+    vendor: "NVIDIA Nemotron",
     tier: "reasoning",
-    tagline: "Deep reasoning for architecture & hard problems.",
-    badge: "Reasoning",
+    tagline: "Deep thinking for complex game architecture.",
+    badge: "Deep",
     speed: 1,
-    strength: "Complex design, data structures, debugging logic",
+    strength: "Architecture, systems design, debugging",
   },
   {
-    id: "swift",
-    label: "Swift",
+    id: "bloxforge-luau",
+    label: "BloxForge Pro",
     model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    vendor: "NVIDIA Nemotron · OpenRouter",
+    vendor: "NVIDIA Nemotron",
     tier: "code",
-    tagline: "Fast, accurate Luau code generation.",
-    badge: "Recommended",
-    speed: 3,
-    strength: "Scripts, refactors, boilerplate",
-  },
-  {
-    id: "balanced",
-    label: "Balanced",
-    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    vendor: "NVIDIA Nemotron · OpenRouter",
-    tier: "general",
-    tagline: "All-rounder for docs, ideas & code.",
+    tagline: "Advanced mode with web search & deep thinking.",
+    badge: "Pro",
     speed: 2,
-    strength: "Everyday tasks, explanations",
-  },
-  {
-    id: "flagship",
-    label: "Flagship",
-    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    vendor: "NVIDIA Nemotron · OpenRouter",
-    tier: "flagship",
-    tagline: "Frontier-scale model. Maximum capability.",
-    badge: "Flagship",
-    speed: 1,
-    strength: "Hardest generation tasks",
-  },
-  {
-    id: "nemotron",
-    label: "Nemotron",
-    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    vendor: "NVIDIA Nemotron · OpenRouter",
-    tier: "general",
-    tagline: "NVIDIA-tuned for natural game design.",
-    speed: 2,
-    strength: "Natural language, design docs",
+    strength: "Web search, deep thinking, Dev mode",
+    beta: true,
+    studioOnly: true,
   },
 ];
 
@@ -183,6 +140,64 @@ export const MODES: Mode[] = [
 
 export const DEFAULT_PERSONALITY_ID = "swift";
 export const DEFAULT_MODE_ID = "normal";
+
+// ── Project types (like lemonade.gg tabs) ──────────────────────────────────
+
+export interface ProjectType {
+  id: string;
+  label: string;
+  icon: string;
+  promptPrefix: string;
+}
+
+export const PROJECT_TYPES: ProjectType[] = [
+  {
+    id: "script",
+    label: "Scripts",
+    icon: "Code2",
+    promptPrefix: "Generate a Roblox Luau script.",
+  },
+  {
+    id: "gui",
+    label: "GUI",
+    icon: "Layout",
+    promptPrefix: "Generate a Roblox GUI using Instance.new. Build the full ScreenGui hierarchy with Frames, TextLabels, TextButtons, UICorner, UIStroke, UIGradient. End with return screenGui.",
+  },
+  {
+    id: "3d",
+    label: "3D Models",
+    icon: "Box",
+    promptPrefix: "Generate Luau code that creates a 3D model using Instance.new('Part') or Instance.new('Model'). Set Size, Position, Color, Material, Anchored, CanCollide. For Models, create a PrimaryPart and weld children. End with return <variable>.",
+  },
+  {
+    id: "animation",
+    label: "Animations",
+    icon: "Play",
+    promptPrefix: "Generate Luau code for a Roblox animation using TweenService:Create or AnimationTrack. Include CFrame interpolation, easing styles (Enum.EasingStyle.Quad, Enum.EasingDirection.Out). Make it smooth and professional.",
+  },
+];
+
+// ── Game templates (like lemonade.gg game picker) ──────────────────────────
+
+export interface GameTemplate {
+  id: string;
+  label: string;
+  emoji: string;
+  prompt: string;
+}
+
+export const GAME_TEMPLATES: GameTemplate[] = [
+  { id: "shooter", label: "Shooter", emoji: "🔫", prompt: "Create a shooter game with shooting mechanics, health system, and score tracking" },
+  { id: "obby", label: "Obby", emoji: "🧩", prompt: "Create an obstacle course (obby) with checkpoints, kill bricks, and a finish line" },
+  { id: "simulator", label: "Simulator", emoji: "⚙️", prompt: "Create a simulator game with clicking mechanics, upgrades, and stats" },
+  { id: "tycoon", label: "Tycoon", emoji: "🏭", prompt: "Create a tycoon game with droppers, upgraders, and money system" },
+  { id: "farm", label: "Farm", emoji: "🌾", prompt: "Create a farming game with planting, growing, and harvesting mechanics" },
+  { id: "pets", label: "Pet Game", emoji: "🐾", prompt: "Create a pet collection game with pet hatching, stats, and inventory" },
+  { id: "bedwars", label: "Bedwars", emoji: "🛏️", prompt: "Create a bedwars game with bed protection, resource gathering, and team combat" },
+  { id: "murder", label: "Murder Mystery", emoji: "🔪", prompt: "Create a murder mystery game with roles (innocent, sheriff, murderer) and round system" },
+  { id: "aura", label: "Aura Game", emoji: "✨", prompt: "Create an aura collection game where players roll for rare auras" },
+  { id: "dodge", label: "Dodge", emoji: "💨", prompt: "Create a dodge ball game with throwing mechanics and team elimination" },
+];
 
 export function getPersonality(id: string | undefined | null): Personality {
   if (!id) return PERSONALITIES[1]; // swift

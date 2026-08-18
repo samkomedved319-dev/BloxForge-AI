@@ -9,6 +9,7 @@ import {
   getPlan,
   estimateCredits,
   shouldShowPlan,
+  PROJECT_TYPES,
   PERSONALITIES,
   MODES,
   DEFAULT_PERSONALITY_ID,
@@ -24,11 +25,12 @@ interface ChatRequestBody {
   message: string;
   personality?: string;
   mode?: string;
+  projectType?: string;
   history?: ChatMessage[];
   conversationId?: string;
   title?: string;
   context?: string;
-  image?: string; // base64 data URL of a reference image
+  image?: string;
 }
 
 function todayKey(): string {
@@ -52,7 +54,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const userMessage = (body.message ?? "").trim();
+  // Prepend project type instructions if specified
+  const projectType = PROJECT_TYPES.find((t) => t.id === body.projectType);
+  const rawMessage = (body.message ?? "").trim();
+  const userMessage = projectType
+    ? `${projectType.promptPrefix}\n\nUser request: ${rawMessage}`
+    : rawMessage;
   if (!userMessage) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }

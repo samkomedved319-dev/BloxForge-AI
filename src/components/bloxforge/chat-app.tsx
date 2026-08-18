@@ -23,6 +23,9 @@ import {
   FileCode2,
   Clock,
   ImageIcon,
+  Layout,
+  Box,
+  Play,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { Markdown } from "./markdown";
@@ -1035,52 +1038,174 @@ function MessageBubble({
 }
 
 function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
+  const [activeTab, setActiveTab] = useState("script");
+
+  const projectTypes = [
+    { id: "script", label: "Scripts", icon: Code2 },
+    { id: "gui", label: "GUI", icon: Layout },
+    { id: "3d", label: "3D Models", icon: Box },
+    { id: "animation", label: "Animations", icon: Play },
+  ];
+
+  const gameTemplates = [
+    { emoji: "🔫", label: "Shooter", prompt: "Create a shooter game with shooting mechanics, health system, and score tracking" },
+    { emoji: "🧩", label: "Obby", prompt: "Create an obstacle course (obby) with checkpoints, kill bricks, and a finish line" },
+    { emoji: "⚙️", label: "Simulator", prompt: "Create a simulator game with clicking mechanics, upgrades, and stats" },
+    { emoji: "🏭", label: "Tycoon", prompt: "Create a tycoon game with droppers, upgraders, and money system" },
+    { emoji: "🌾", label: "Farm", prompt: "Create a farming game with planting, growing, and harvesting mechanics" },
+    { emoji: "🐾", label: "Pets", prompt: "Create a pet collection game with pet hatching, stats, and inventory" },
+    { emoji: "🛏️", label: "Bedwars", prompt: "Create a bedwars game with bed protection, resource gathering, and team combat" },
+    { emoji: "🔪", label: "Murder Mystery", prompt: "Create a murder mystery game with roles (innocent, sheriff, murderer) and round system" },
+  ];
+
   return (
-    <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-16 text-center">
+    <div className="mx-auto flex max-w-3xl flex-col items-center px-4 py-12">
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", damping: 18 }}
-        className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-400 to-purple-700 shadow-xl shadow-violet-500/30"
+        className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 shadow-xl shadow-violet-500/30"
       >
-        <Sparkles className="size-8 text-slate-950" />
+        <Sparkles className="size-7 text-white" />
       </motion.div>
       <motion.h2
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
         className="font-display text-2xl font-bold tracking-tight"
       >
-        What are we forging today?
+        Build the game only you can imagine
       </motion.h2>
       <motion.p
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="mt-2 max-w-md text-sm text-muted-foreground"
+        transition={{ delay: 0.1 }}
+        className="mt-1.5 text-sm text-muted-foreground"
       >
-        Ask anything about Roblox & Luau. Generate scripts, debug remote
-        events, refactor to OOP — powered by NVIDIA frontier models.
+        Scripts, GUI, 3D models, animations — powered by NVIDIA Nemotron AI.
       </motion.p>
-      <div className="mt-8 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
-        {EXAMPLES.map((ex, i) => (
+
+      {/* Project type tabs */}
+      <div className="mt-6 flex gap-1.5 rounded-xl border border-border bg-card p-1">
+        {projectTypes.map((pt) => (
+          <button
+            key={pt.id}
+            onClick={() => setActiveTab(pt.id)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition",
+              activeTab === pt.id
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <pt.icon className="size-3.5" />
+            {pt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Quick examples for current tab */}
+      <div className="mt-4 grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2">
+        {activeTab === "script" && EXAMPLES.map((ex, i) => (
           <motion.button
             key={ex.title}
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 + i * 0.06 }}
+            transition={{ delay: 0.15 + i * 0.05 }}
             onClick={() => onPick(ex.prompt)}
-            className="group flex flex-col gap-1.5 rounded-xl border border-border bg-card p-4 text-left transition hover:border-violet-500/40 hover:bg-accent/40"
+            className="group flex items-start gap-2.5 rounded-xl border border-border bg-card p-3.5 text-left transition hover:border-violet-500/40 hover:bg-accent/40"
           >
-            <div className="flex items-center gap-2">
-              <ex.icon className="size-4 text-violet-400" />
-              <span className="text-sm font-medium">{ex.title}</span>
+            <ex.icon className="mt-0.5 size-4 shrink-0 text-violet-400" />
+            <div>
+              <p className="text-sm font-medium">{ex.title}</p>
+              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{ex.prompt}</p>
             </div>
-            <span className="line-clamp-2 text-xs text-muted-foreground">
-              {ex.prompt}
-            </span>
           </motion.button>
         ))}
+        {activeTab === "gui" && [
+          { title: "Shop UI", prompt: "Create a modern shop GUI with item cards, buy buttons, and a currency display" },
+          { title: "Health Bar", prompt: "Create a health bar UI with smooth gradient fill and rounded corners" },
+          { title: "Main Menu", prompt: "Create a main menu GUI with Play, Settings, and Quit buttons" },
+          { title: "Inventory", prompt: "Create an inventory GUI with a grid layout of item slots" },
+        ].map((ex, i) => (
+          <motion.button
+            key={ex.title}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 + i * 0.05 }}
+            onClick={() => onPick(ex.prompt)}
+            className="group flex items-start gap-2.5 rounded-xl border border-border bg-card p-3.5 text-left transition hover:border-violet-500/40 hover:bg-accent/40"
+          >
+            <Layout className="mt-0.5 size-4 shrink-0 text-violet-400" />
+            <div>
+              <p className="text-sm font-medium">{ex.title}</p>
+              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{ex.prompt}</p>
+            </div>
+          </motion.button>
+        ))}
+        {activeTab === "3d" && [
+          { title: "Brick Wall", prompt: "Create a red brick wall part with proper material and surface types" },
+          { title: "Tree Model", prompt: "Create a tree model with a brown trunk part and green leaves part, welded together" },
+          { title: "Platform", prompt: "Create a circular platform part with neon material and blue color" },
+          { title: "House Model", prompt: "Create a simple house model with 4 walls, a floor, and a roof part" },
+        ].map((ex, i) => (
+          <motion.button
+            key={ex.title}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 + i * 0.05 }}
+            onClick={() => onPick(ex.prompt)}
+            className="group flex items-start gap-2.5 rounded-xl border border-border bg-card p-3.5 text-left transition hover:border-violet-500/40 hover:bg-accent/40"
+          >
+            <Box className="mt-0.5 size-4 shrink-0 text-violet-400" />
+            <div>
+              <p className="text-sm font-medium">{ex.title}</p>
+              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{ex.prompt}</p>
+            </div>
+          </motion.button>
+        ))}
+        {activeTab === "animation" && [
+          { title: "Door Animation", prompt: "Create a smooth door opening animation using TweenService with CFrame rotation" },
+          { title: "Fade In", prompt: "Create a GUI fade-in animation using TweenService on BackgroundTransparency" },
+          { title: "Bounce Effect", prompt: "Create a bounce effect on a part using TweenService with Elastic easing" },
+          { title: "Walk Cycle", prompt: "Create a procedural walk cycle animation using TweenService on Motor6D joints" },
+        ].map((ex, i) => (
+          <motion.button
+            key={ex.title}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 + i * 0.05 }}
+            onClick={() => onPick(ex.prompt)}
+            className="group flex items-start gap-2.5 rounded-xl border border-border bg-card p-3.5 text-left transition hover:border-violet-500/40 hover:bg-accent/40"
+          >
+            <Play className="mt-0.5 size-4 shrink-0 text-violet-400" />
+            <div>
+              <p className="text-sm font-medium">{ex.title}</p>
+              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{ex.prompt}</p>
+            </div>
+          </motion.button>
+        ))}
+      </div>
+
+      {/* Game templates */}
+      <div className="mt-6 w-full">
+        <p className="mb-2.5 text-center font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          Or start with a game template
+        </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          {gameTemplates.map((g, i) => (
+            <motion.button
+              key={g.label}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 + i * 0.03 }}
+              onClick={() => onPick(g.prompt)}
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium transition hover:border-violet-500/40 hover:bg-accent/40"
+            >
+              <span>{g.emoji}</span>
+              {g.label}
+            </motion.button>
+          ))}
+        </div>
       </div>
     </div>
   );
