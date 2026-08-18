@@ -707,3 +707,25 @@ Stage Summary:
 - API key stored in DB, selectable via admin dashboard API Keys tab.
 - Placement fixed: scripts→right service, UI→StarterGui, Parts→Workspace, shared modules→ReplicatedStorage.
 - Admins see model IDs in the personality picker.
+
+---
+Task ID: 1-redesign
+Agent: Landing Redesign Agent
+Task: Redesign landing.tsx to be modern, premium, lemonade.gg-quality
+
+Work Log:
+- Rewrote `/home/z/my-project/src/components/bloxforge/landing.tsx` end-to-end on the existing violet-on-dark theme (`--primary: oklch(0.62 0.22 295)`).
+- Hero: large bold "Build the game only you can imagine" with violet→fuchsia gradient text, NVIDIA Nemotron subheading, "Start Building" + "Get Plugin" CTAs, 3 animated gradient orbs, and a floating code preview card (bobs via framer-motion, 6s loop) showing real Luau with a Nemotron 70B badge and a streaming footer.
+- Stats bar: 3 stats with animated `Counter` — "10K+ Games Built", "500K+ Creators", "100% NVIDIA AI" — on a backdrop-blur strip.
+- Features: 6 cards (AI Script Gen, GUI Builder, 3D Models, Animations, Auto-Sync to Studio, Game Templates) in a 3-col glassmorphism grid with hover glow + icon scale.
+- Game Templates: NEW horizontal-scroll row with `snap-x snap-mandatory`, 8 cards (Shooter, Obby, Simulator, Tycoon, Farm, Pets, Bedwars, Murder Mystery) each with emoji + gradient overlay + hover affordance.
+- How it works: 3 clean numbered cards — Describe → AI Builds → Syncs to Studio.
+- Plugin section: kept + polished — install steps, Download .lua / Roblox Store / Try web app buttons, floating DockWidget mock.
+- CTA: gradient finale with "Stop writing boilerplate. Start forging experiences." + Start Building button + Discord link (https://discord.gg/jrerzH5Bm).
+- Props preserved unchanged: `onLaunch`, `onGetPlugin`, `onNavigatePricing`.
+- `bun run lint` passes clean; dev server compiled the page successfully.
+
+Notes for next agents:
+- Work record: `/agent-ctx/1-redesign-landing.md`.
+- `font-display` (Bricolage Grotesque) is already wired up — used on all headings.
+- Violet helpers already in `globals.css`: `bg-grid`, `bg-radial-brand`, `glass`, `glow-brand`, `animate-blob`.

@@ -270,6 +270,10 @@ export function AdminDashboard() {
               <KeyRound className="size-3.5" />
               API Keys
             </TabsTrigger>
+            <TabsTrigger value="models" className="gap-1.5 px-4">
+              <Cpu className="size-3.5" />
+              Models
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
@@ -280,6 +284,9 @@ export function AdminDashboard() {
           </TabsContent>
           <TabsContent value="apikeys" className="mt-6">
             <ApiKeysTab />
+          </TabsContent>
+          <TabsContent value="models" className="mt-6">
+            <ModelsTab />
           </TabsContent>
         </Tabs>
       </div>
@@ -1646,5 +1653,159 @@ function EmptyState({
         Try again
       </Button>
     </Card>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Tab 4 — Models                                                      */
+/* ------------------------------------------------------------------ */
+
+function ModelsTab() {
+  const [models, setModels] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/models", { cache: "no-store" });
+      const data = await jsonOrThrow(res);
+      setModels((data as any).models ?? []);
+    } catch (e) {
+      toast.error((e as Error).message || "Failed to load models");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading) return <TabLoading label="Loading models…" />;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-6"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display text-lg font-bold">AI Models</h3>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            All available models. Configure API keys in the API Keys tab to change which provider is used.
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={load}
+          disabled={loading}
+          className="gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
+          Refresh
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {models.map((m, i) => (
+          <motion.div
+            key={m.id}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.06 }}
+          >
+            <Card className={cn(
+              "h-full border-border/60 bg-card p-5",
+              m.studioOnly && "border-amber-500/30 bg-amber-500/5",
+            )}>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "flex size-9 items-center justify-center rounded-lg",
+                    m.beta ? "bg-amber-500/15 text-amber-400" : "bg-violet-500/15 text-violet-400",
+                  )}>
+                    <Cpu className="size-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-display font-bold">{m.label}</h4>
+                    <p className="font-mono text-[10px] text-muted-foreground">{m.model}</p>
+                  </div>
+                </div>
+                {m.badge && (
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "h-5 text-[10px]",
+                      m.beta ? "text-amber-400" : "text-violet-400",
+                    )}
+                  >
+                    {m.badge}
+                  </Badge>
+                )}
+              </div>
+
+              <p className="mt-2 text-xs text-muted-foreground">{m.tagline}</p>
+
+              <div className="mt-3 space-y-1.5 text-[11px] text-muted-foreground">
+                <div className="flex items-center justify-between">
+                  <span>Vendor</span>
+                  <span className="font-medium text-foreground">{m.vendor}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Tier</span>
+                  <span className="font-medium capitalize text-foreground">{m.tier}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Strength</span>
+                  <span className="font-medium text-foreground">{m.strength}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Speed</span>
+                  <span className="flex gap-0.5">
+                    {[1,2,3].map((s) => (
+                      <span key={s} className={cn(
+                        "size-1.5 rounded-full",
+                        s <= m.speed ? "bg-violet-400" : "bg-muted-foreground/20",
+                      )} />
+                    ))}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Access</span>
+                  <span className={cn("font-medium", m.studioOnly ? "text-amber-400" : "text-emerald-400")}>
+                    {m.studioOnly ? "Studio plan only" : "All plans"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-3">
+                <span className="text-xs text-muted-foreground">Status</span>
+                <Badge className="gap-1 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/20">
+                  <span className="size-1.5 rounded-full bg-emerald-400" />
+                  Active
+                </Badge>
+              </div>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      <Card className="border-border/60 bg-card p-5">
+        <div className="flex items-start gap-3">
+          <Info className="mt-0.5 size-4 shrink-0 text-violet-400" />
+          <div className="text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">How to change the AI model</p>
+            <p className="mt-1">
+              All models currently use <code className="rounded bg-white/10 px-1 font-mono text-xs text-violet-300">nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free</code> via OpenRouter.
+              To use a different model, go to the <b>API Keys</b> tab and add a new key with the desired provider + model.
+              The model ID set on the API key overrides the default model for all personalities.
+            </p>
+          </div>
+        </div>
+      </Card>
+    </motion.div>
   );
 }

@@ -48,6 +48,7 @@ import {
   isInsertable,
   deriveInstance,
 } from "@/lib/luau-naming";
+import { PERSONALITIES } from "@/lib/models";
 
 type Role = "user" | "assistant";
 interface ChatMessage {
@@ -690,6 +691,15 @@ export function ChatApp({
               Live
             </Badge>
           </div>
+          {/* AI model name — shown to all users */}
+          {(() => {
+            const p = PERSONALITIES.find((x) => x.id === personality);
+            return p ? (
+              <span className="hidden font-mono text-[10px] text-muted-foreground/60 lg:inline">
+                {p.model.split("/").pop()}
+              </span>
+            ) : null;
+          })()}
         </header>
 
         {/* Beta pending-approval banner */}
