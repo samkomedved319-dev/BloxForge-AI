@@ -50,17 +50,24 @@ export function PersonalityPicker({
     PERSONALITIES.find((p) => p.id === personalityId) ?? PERSONALITIES[1];
   const currentMode = MODES.find((m) => m.id === modeId) ?? MODES[0];
 
+  // Short model name for display (e.g. "nemotron-3-nano-omni" from full ID)
+  const shortModelName = (model: string) => {
+    const parts = model.split("/");
+    const last = parts[parts.length - 1] || model;
+    return last.replace(":free", "").replace(/-/g, " ");
+  };
+
   return (
     <div className="flex items-center gap-2">
       <Dropdown
         label="MODEL"
-        value={isAdmin && activeModelLabel ? `${currentPersonality.label} · ${activeModelLabel}` : currentPersonality.label}
+        value={shortModelName(currentPersonality.model)}
         icon={<Sparkles className="size-3.5 text-violet-400" />}
       >
         {(close) => (
-          <div className="min-w-[280px] p-1.5">
+          <div className="min-w-[300px] p-1.5">
             <p className="px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-              Choose a personality
+              AI Models
             </p>
             {PERSONALITIES.map((p) => {
               const isAllowed = allowed.includes(p.id);
@@ -98,7 +105,7 @@ export function PersonalityPicker({
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{p.label}</span>
+                      <span className="text-sm font-medium">{shortModelName(p.model)}</span>
                       {p.badge && (
                         <Badge
                           variant="secondary"

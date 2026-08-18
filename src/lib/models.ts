@@ -76,127 +76,162 @@ export const PERSONALITIES: Personality[] = [
 
 export const MODES: Mode[] = [
   {
-    id: "normal",
-    label: "Normal",
-    description: "Balanced answers with code and explanation.",
+    id: "low",
+    label: "Low",
+    description: "Fast & minimal. Quick answers, minimal code.",
+    promptModifier: "Be fast and minimal. Give short answers with just the essential code. No explanations unless asked.",
+  },
+  {
+    id: "default",
+    label: "Default",
+    description: "Balanced code + explanation. Good for everyday tasks.",
     promptModifier: "",
   },
   {
-    id: "concise",
-    label: "Concise",
-    description: "Short, code-first answers. Minimal prose.",
-    promptModifier:
-      "Be concise. Lead with the code. Keep prose to one or two sentences. Skip preamble.",
+    id: "medium",
+    label: "Medium",
+    description: "More detailed code with comments and types.",
+    promptModifier: "Write detailed code with inline comments, full type annotations, and brief explanations of key decisions.",
   },
   {
-    id: "explain",
-    label: "Explain",
-    description: "Teaching mode. Walk through the why step by step.",
-    promptModifier:
-      "Act as a patient teacher. Explain your reasoning step by step. Add inline comments to code. Summarize key takeaways at the end.",
-  },
-  {
-    id: "refactor",
-    label: "Refactor",
-    description: "Focus on improving existing code structure.",
-    promptModifier:
-      "Focus on refactoring. Preserve behavior. Improve naming, structure, types, and performance. Briefly note what you changed and why.",
-  },
-  {
-    id: "debug",
-    label: "Debug",
-    description: "Diagnose issues and ship the fix.",
-    promptModifier:
-      "Focus on debugging. First give a short root-cause diagnosis, then the minimal fix as code. Call out any related risks.",
-  },
-  {
-    id: "dev",
-    label: "Dev",
-    description: "Developer mode — web search + deep analysis. Best for researching Roblox APIs and current best practices.",
-    promptModifier:
-      "Developer mode. You have access to web search results. Use them to provide the most current and accurate information about Roblox APIs, Luau features, and best practices. Always cite sources. Write production-quality code with error handling.",
+    id: "high",
+    label: "High",
+    description: "Production quality. Error handling, edge cases, full types.",
+    promptModifier: "Write production-quality code. Include full error handling, edge case handling, complete type annotations, input validation, and performance optimizations. Add detailed comments explaining complex logic.",
     bloxforgeOnly: true,
     useWebSearch: true,
   },
   {
-    id: "search",
-    label: "Web Search",
-    description: "Search the web for the latest Roblox docs, API changes, and community solutions.",
-    promptModifier:
-      "Web search mode. Use the provided search results to answer the user's question with the most current information. Cite sources with URLs. Focus on Roblox documentation, DevForum posts, and official Roblox Creator Hub content.",
+    id: "max",
+    label: "Max",
+    description: "Maximum detail. Full architecture, documentation, tests.",
+    promptModifier: "Write maximum quality code. Include full architecture documentation, complete type system, error recovery, performance profiling comments, edge case tests, and usage examples. Think through every possible scenario.",
     bloxforgeOnly: true,
     useWebSearch: true,
+    useDeepThinking: true,
   },
   {
-    id: "deep",
-    label: "Deep Thinking",
-    description: "Chain-of-thought reasoning. Thinks step by step before answering. Best for architecture and complex problems.",
-    promptModifier:
-      "Deep thinking mode. Think through the problem step by step before writing any code. Consider multiple approaches, trade-offs, edge cases, and performance implications. Then write the best solution with full explanations. This is for complex architecture decisions, not simple tasks.",
+    id: "ultracode",
+    label: "UltraCode",
+    description: "Ultra mode. Deep thinking + web search + maximum output.",
+    promptModifier: "ULTRA MODE. Use deep chain-of-thought reasoning, web search for current best practices, and produce the most complete, production-ready code possible. Include: full type system, error handling, edge cases, performance optimization, security considerations, documentation, usage examples, and alternative approaches. This is the highest quality mode.",
     bloxforgeOnly: true,
+    useWebSearch: true,
     useDeepThinking: true,
   },
 ];
 
 export const DEFAULT_PERSONALITY_ID = "swift";
-export const DEFAULT_MODE_ID = "normal";
+export const DEFAULT_MODE_ID = "default";
 
-// ── Project types (like lemonade.gg tabs) ──────────────────────────────────
+// ── Slash commands (CLI-style /commands) ──────────────────────────────────
 
-export interface ProjectType {
+export interface SlashCommand {
   id: string;
+  command: string;
   label: string;
-  icon: string;
+  description: string;
   promptPrefix: string;
+  icon: string;
 }
 
-export const PROJECT_TYPES: ProjectType[] = [
+export const SLASH_COMMANDS: SlashCommand[] = [
   {
     id: "script",
-    label: "Scripts",
-    icon: "Code2",
+    command: "/script",
+    label: "Script",
+    description: "Generate a Luau script or module",
     promptPrefix: "Generate a Roblox Luau script.",
+    icon: "Code2",
   },
   {
     id: "gui",
+    command: "/gui",
     label: "GUI",
-    icon: "Layout",
+    description: "Build a complete UI with ScreenGui, Frames, Buttons",
     promptPrefix: "Generate a Roblox GUI using Instance.new. Build the full ScreenGui hierarchy with Frames, TextLabels, TextButtons, UICorner, UIStroke, UIGradient. End with return screenGui.",
+    icon: "Layout",
   },
   {
     id: "3d",
-    label: "3D Models",
-    icon: "Box",
+    command: "/3d",
+    label: "3D Model",
+    description: "Create Parts, Models, welded assemblies",
     promptPrefix: "Generate Luau code that creates a 3D model using Instance.new('Part') or Instance.new('Model'). Set Size, Position, Color, Material, Anchored, CanCollide. For Models, create a PrimaryPart and weld children. End with return <variable>.",
+    icon: "Box",
   },
   {
     id: "animation",
-    label: "Animations",
-    icon: "Play",
+    command: "/anim",
+    label: "Animation",
+    description: "TweenService animations, CFrame interpolation",
     promptPrefix: "Generate Luau code for a Roblox animation using TweenService:Create or AnimationTrack. Include CFrame interpolation, easing styles (Enum.EasingStyle.Quad, Enum.EasingDirection.Out). Make it smooth and professional.",
+    icon: "Play",
+  },
+  {
+    id: "uilibrary",
+    command: "/ui-library",
+    label: "UI Library",
+    description: "Browse pre-built UI templates",
+    promptPrefix: "",
+    icon: "Library",
+  },
+  {
+    id: "mechanics",
+    command: "/mechanics",
+    label: "Mechanic Library",
+    description: "Browse pre-built game mechanics",
+    promptPrefix: "",
+    icon: "Wrench",
   },
 ];
 
-// ── Game templates (like lemonade.gg game picker) ──────────────────────────
+// ── UI Library templates ────────────────────────────────────────────────────
 
-export interface GameTemplate {
+export interface UITemplate {
   id: string;
   label: string;
   emoji: string;
+  description: string;
   prompt: string;
 }
 
-export const GAME_TEMPLATES: GameTemplate[] = [
-  { id: "shooter", label: "Shooter", emoji: "🔫", prompt: "Create a shooter game with shooting mechanics, health system, and score tracking" },
-  { id: "obby", label: "Obby", emoji: "🧩", prompt: "Create an obstacle course (obby) with checkpoints, kill bricks, and a finish line" },
-  { id: "simulator", label: "Simulator", emoji: "⚙️", prompt: "Create a simulator game with clicking mechanics, upgrades, and stats" },
-  { id: "tycoon", label: "Tycoon", emoji: "🏭", prompt: "Create a tycoon game with droppers, upgraders, and money system" },
-  { id: "farm", label: "Farm", emoji: "🌾", prompt: "Create a farming game with planting, growing, and harvesting mechanics" },
-  { id: "pets", label: "Pet Game", emoji: "🐾", prompt: "Create a pet collection game with pet hatching, stats, and inventory" },
-  { id: "bedwars", label: "Bedwars", emoji: "🛏️", prompt: "Create a bedwars game with bed protection, resource gathering, and team combat" },
-  { id: "murder", label: "Murder Mystery", emoji: "🔪", prompt: "Create a murder mystery game with roles (innocent, sheriff, murderer) and round system" },
-  { id: "aura", label: "Aura Game", emoji: "✨", prompt: "Create an aura collection game where players roll for rare auras" },
-  { id: "dodge", label: "Dodge", emoji: "💨", prompt: "Create a dodge ball game with throwing mechanics and team elimination" },
+export const UI_LIBRARY: UITemplate[] = [
+  { id: "shop", label: "Shop UI", emoji: "🛒", description: "Item grid + buy buttons + currency", prompt: "Create a modern shop GUI with a grid of item cards, buy buttons, and a currency display at the top. Use UICorner for rounded corners and UIGradient for a premium look. End with return screenGui." },
+  { id: "healthbar", label: "Health Bar", emoji: "❤️", description: "Smooth gradient health bar", prompt: "Create a health bar UI with a smooth gradient fill (green to red), rounded corners, and health text. Position it at the top center of the screen. End with return screenGui." },
+  { id: "mainmenu", label: "Main Menu", emoji: "🎮", description: "Play / Settings / Quit buttons", prompt: "Create a main menu GUI with a title, Play button, Settings button, and Quit button. Use a dark background with violet accents and rounded corners. End with return screenGui." },
+  { id: "inventory", label: "Inventory", emoji: "🎒", description: "Grid layout item slots", prompt: "Create an inventory GUI with a UIGridLayout of item slots, a sidebar with player stats, and a close button. Each slot should have a UICorner and UIStroke. End with return screenGui." },
+  { id: "chat", label: "Chat Box", emoji: "💬", description: "Custom chat UI", prompt: "Create a custom chat GUI with a scrolling message list, text input at the bottom, and a send button. Use UICorner and semi-transparent background. End with return screenGui." },
+  { id: "settings", label: "Settings Panel", emoji: "⚙️", description: "Sliders + toggles + tabs", prompt: "Create a settings panel GUI with tabs (Audio, Graphics, Gameplay), sliders for volume, toggles for options, and a save button. Use UICorner for a modern look. End with return screenGui." },
+  { id: "notification", label: "Notification", emoji: "🔔", description: "Toast notification popup", prompt: "Create a notification toast GUI that slides in from the right, shows a title and message, then fades out after 3 seconds using TweenService. End with return screenGui." },
+  { id: "loading", label: "Loading Screen", emoji: "⏳", description: "Animated loading screen", prompt: "Create a loading screen GUI with a logo, animated progress bar (using TweenService), and loading text. Full screen with a dark background and violet accents. End with return screenGui." },
+  { id: "leaderboard", label: "Leaderboard", emoji: "🏆", description: "Top players list", prompt: "Create a leaderboard GUI with a sorted list of top players, their ranks, names, and scores. Use UIListLayout for the list and UICorner for each row. End with return screenGui." },
+  { id: "minimap", label: "Minimap", emoji: "🗺️", description: "Corner minimap", prompt: "Create a minimap GUI in the top-right corner with a circular border, player dot, and a semi-transparent background. End with return screenGui." },
+];
+
+// ── Mechanic Library templates ──────────────────────────────────────────────
+
+export interface MechanicTemplate {
+  id: string;
+  label: string;
+  emoji: string;
+  description: string;
+  prompt: string;
+}
+
+export const MECHANIC_LIBRARY: MechanicTemplate[] = [
+  { id: "cooldown", label: "Cooldown System", emoji: "⏱️", description: "Reusable cooldown with promises", prompt: "Create a cooldown system ModuleScript with :Start(duration), :Reset(), :IsOnCooldown(), and a promise-like :Then() callback. Use os.clock() for timing. End with return Cooldown." },
+  { id: "inventory", label: "Inventory System", emoji: "🎒", description: "Add/remove/stack items", prompt: "Create an inventory system ModuleScript with :AddItem(id, amount), :RemoveItem(id, amount), :GetItem(id), :GetAll(). Use a dictionary for storage. Include type annotations. End with return Inventory." },
+  { id: "combat", label: "Combat System", emoji: "⚔️", description: "Damage, health, death signals", prompt: "Create a combat system ModuleScript with :TakeDamage(amount), :Heal(amount), :SetHealth(value), :GetHealth(), :IsDead(), and HealthChanged/Died BindableEvents. End with return CombatSystem." },
+  { id: "datastore", label: "DataStore Save", emoji: "💾", description: "Save/load player data", prompt: "Create a DataStore ModuleScript that saves and loads player data. Include :Save(player, data), :Load(player), retry logic, session locking, and auto-save on PlayerRemoving. End with return DataStoreManager." },
+  { id: "remote", label: "Remote Event System", emoji: "📡", description: "Type-safe remote events", prompt: "Create a type-safe RemoteEvent system ModuleScript that creates and manages RemoteEvents in ReplicatedStorage. Include :FireClient(player, ...), :FireAllClients(...), :OnClientEvent(callback), :OnServerEvent(callback). End with return RemoteManager." },
+  { id: "pathfinding", label: "Pathfinding", emoji: "🤖", description: "NPC navigation system", prompt: "Create an NPC pathfinding ModuleScript using PathfindingService. Include :MoveTo(targetPosition), :Stop(), :OnReached(callback), with obstacle avoidance. End with return Pathfinder." },
+  { id: "daynight", label: "Day/Night Cycle", emoji: "🌅", description: "Smooth lighting cycle", prompt: "Create a day/night cycle Script that smoothly transitions Lighting.ClockTime using TweenService. Include configurable speed, sunrise/sunset colors, and FogEnd changes. " },
+  { id: "economy", label: "Economy System", emoji: "💰", description: "Currency + transactions", prompt: "Create an economy system ModuleScript with :AddCash(player, amount), :RemoveCash(player, amount), :GetCash(player), :Transfer(fromPlayer, toPlayer, amount), and transaction logging. End with return Economy." },
+  { id: "round", label: "Round System", emoji: "🔄", description: "Game round timer + states", prompt: "Create a round system ModuleScript with :StartRound(duration), :EndRound(), :GetTimeRemaining(), :GetCurrentState() (Waiting/Playing/Ended), and RoundStarted/RoundEnded BindableEvents. End with return RoundSystem." },
+  { id: "leaderboard-sys", label: "Leaderboard System", emoji: "📊", description: "Sorted player rankings", prompt: "Create a leaderboard system ModuleScript that tracks player scores, sorts them, and provides :UpdateScore(player, score), :GetTopPlayers(count), :GetRank(player). End with return LeaderboardSystem." },
+  { id: "dialogue", label: "Dialogue System", emoji: "💬", description: "NPC dialogue tree", prompt: "Create a dialogue system ModuleScript with :StartDialogue(npcId), :NextLine(), :ChooseOption(optionId), :EndDialogue(), and a dialogue tree data structure. End with return DialogueSystem." },
+  { id: "quest", label: "Quest System", emoji: "📜", description: "Track + complete quests", prompt: "Create a quest system ModuleScript with :StartQuest(questId), :UpdateObjective(questId, objectiveId, progress), :CompleteQuest(questId), :GetActiveQuests(), and quest reward distribution. End with return QuestSystem." },
 ];
 
 export function getPersonality(id: string | undefined | null): Personality {

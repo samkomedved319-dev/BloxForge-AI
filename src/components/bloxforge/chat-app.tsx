@@ -48,7 +48,7 @@ import {
   isInsertable,
   deriveInstance,
 } from "@/lib/luau-naming";
-import { PERSONALITIES } from "@/lib/models";
+import { PERSONALITIES, SLASH_COMMANDS, UI_LIBRARY, MECHANIC_LIBRARY } from "@/lib/models";
 
 type Role = "user" | "assistant";
 interface ChatMessage {
@@ -119,6 +119,11 @@ export function ChatApp({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [slashOpen, setSlashOpen] = useState(false);
+  const [slashQuery, setSlashQuery] = useState("");
+  const [activeProjectType, setActiveProjectType] = useState<string | null>(null);
+  const [showUILibrary, setShowUILibrary] = useState(false);
+  const [showMechanicLibrary, setShowMechanicLibrary] = useState(false);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [streaming, setStreaming] = useState(false);
   const [personality, setPersonality] = useState(() => {
@@ -126,8 +131,8 @@ export function ChatApp({
     return localStorage.getItem("bloxforge:defaultPersonality") || "swift";
   });
   const [mode, setMode] = useState(() => {
-    if (typeof window === "undefined") return "normal";
-    return localStorage.getItem("bloxforge:defaultMode") || "normal";
+    if (typeof window === "undefined") return "default";
+    return localStorage.getItem("bloxforge:defaultMode") || "default";
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loadingConv, setLoadingConv] = useState(false);
@@ -337,6 +342,7 @@ export function ChatApp({
                 ? studio.context.source
                 : undefined,
             image: attachedImage || undefined,
+            projectType: activeProjectType || undefined,
           }),
           signal: controller.signal,
         });
@@ -509,6 +515,33 @@ export function ChatApp({
       attachedImage,
     ],
   );
+
+  // Handle slash command selection
+  const selectSlashCommand = useCallback((cmd: typeof SLASH_COMMANDS[0]) => {
+    setSlashOpen(false);
+    setInput("");
+    if (cmd.id === "uilibrary") {
+      setShowUILibrary(true);
+    } else if (cmd.id === "mechanics") {
+      setShowMechanicLibrary(true);
+    } else {
+      setActiveProjectType(cmd.id);
+    }
+  }, []);
+
+  // Pick a UI Library template
+  const pickUITemplate = useCallback((template: typeof UI_LIBRARY[0]) => {
+    setShowUILibrary(false);
+    setActiveProjectType("gui");
+    setInput(template.prompt);
+  }, []);
+
+  // Pick a Mechanic Library template
+  const pickMechanicTemplate = useCallback((template: typeof MECHANIC_LIBRARY[0]) => {
+    setShowMechanicLibrary(false);
+    setActiveProjectType("script");
+    setInput(template.prompt);
+  }, []);
 
   const stop = () => {
     abortRef.current?.abort();
@@ -773,6 +806,21 @@ export function ChatApp({
         {/* Composer */}
         <div className="border-t border-border bg-background/80 backdrop-blur">
           <div className="mx-auto max-w-3xl px-4 py-3">
+            {/* Active project type chip */}
+            {activeProjectType && (
+              <div className="mb-2 flex items-center gap-2">
+                <span className="flex items-center gap-1.5 rounded-lg border border-violet-500/40 bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300">
+                  <span className="size-1.5 rounded-full bg-violet-400" />
+                  {activeProjectType}
+                </span>
+                <button
+                  onClick={() => setActiveProjectType(null)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  ✕ clear
+                </button>
+              </div>
+            )}
             {/* Studio context chip */}
             {studio.isConnected && studio.context && (
               <div className="mb-2 flex items-center gap-2">
@@ -845,22 +893,65 @@ export function ChatApp({
               )}
               <Textarea
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setInput(val);
+                  // Slash command detection
+                  if (val.startsWith("/") && !val.includes(" ")) {
+                    setSlashOpen(true);
+                    setSlashQuery(val);
+                  } else {
+                    setSlashOpen(false);
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    send();
+                    if (slashOpen) {
+                      e.preventDefault();
+                      // Select first matching command
+                      const match = SLASH_COMMANDS.find(c => c.command.startsWith(slashQuery));
+                      if (match) selectSlashCommand(match);
+                    } else {
+                      e.preventDefault();
+                      send();
+                    }
+                  }
+                  if (e.key === "Escape") {
+                    setSlashOpen(false);
                   }
                 }}
                 placeholder={
                   attachedImage
                     ? "Describe what to build from the image…"
-                    : "Ask BloxForge to build, fix, or explain Luau…"
+                    : activeProjectType
+                      ? `Building ${activeProjectType}… describe what you want`
+                      : "Type / for commands, or ask BloxForge anything…"
                 }
                 className="min-h-[56px] max-h-[200px] resize-none border-0 bg-transparent px-4 py-3.5 pr-20 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
                 rows={2}
                 disabled={streaming}
               />
+              {/* Slash command dropdown */}
+              {slashOpen && (
+                <div className="absolute bottom-full left-0 z-50 mb-2 w-80 overflow-hidden rounded-xl border border-border bg-popover shadow-2xl">
+                  <div className="border-b border-border p-2">
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Commands</p>
+                  </div>
+                  {SLASH_COMMANDS.filter(c => c.command.startsWith(slashQuery)).map(cmd => (
+                    <button
+                      key={cmd.id}
+                      onClick={() => selectSlashCommand(cmd)}
+                      className="flex w-full items-start gap-3 px-3 py-2.5 text-left transition hover:bg-accent"
+                    >
+                      <code className="mt-0.5 font-mono text-xs text-violet-400">{cmd.command}</code>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{cmd.label}</p>
+                        <p className="text-[11px] text-muted-foreground">{cmd.description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
               {/* Image upload button */}
               <label className="absolute bottom-3 right-14 cursor-pointer">
                 <input
@@ -917,6 +1008,68 @@ export function ChatApp({
         onDisconnect={studio.disconnect}
         onSimulate={studio.simulate}
       />
+
+      {/* UI Library modal */}
+      {showUILibrary && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" onClick={() => setShowUILibrary(false)}>
+          <div className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-border p-4">
+              <h3 className="font-display font-bold">UI Library</h3>
+              <button onClick={() => setShowUILibrary(false)} className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground">
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto p-4">
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {UI_LIBRARY.map(tpl => (
+                  <button
+                    key={tpl.id}
+                    onClick={() => pickUITemplate(tpl)}
+                    className="flex items-start gap-3 rounded-xl border border-border bg-background p-3.5 text-left transition hover:border-violet-500/40 hover:bg-accent/40"
+                  >
+                    <span className="text-2xl">{tpl.emoji}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{tpl.label}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">{tpl.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mechanic Library modal */}
+      {showMechanicLibrary && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" onClick={() => setShowMechanicLibrary(false)}>
+          <div className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-border p-4">
+              <h3 className="font-display font-bold">Mechanic Library</h3>
+              <button onClick={() => setShowMechanicLibrary(false)} className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground">
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto p-4">
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {MECHANIC_LIBRARY.map(tpl => (
+                  <button
+                    key={tpl.id}
+                    onClick={() => pickMechanicTemplate(tpl)}
+                    className="flex items-start gap-3 rounded-xl border border-border bg-background p-3.5 text-left transition hover:border-violet-500/40 hover:bg-accent/40"
+                  >
+                    <span className="text-2xl">{tpl.emoji}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{tpl.label}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">{tpl.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
