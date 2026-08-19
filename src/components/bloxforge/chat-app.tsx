@@ -50,6 +50,7 @@ import {
 } from "@/lib/luau-naming";
 import { PERSONALITIES, SLASH_COMMANDS, UI_LIBRARY, MECHANIC_LIBRARY } from "@/lib/models";
 import { AITextLoading } from "./ai-text-loading";
+import AI_Prompt from "@/components/kokonutui/ai-prompt";
 
 type Role = "user" | "assistant";
 interface ChatMessage {
@@ -685,6 +686,7 @@ export function ChatApp({
               onModeChange={setMode}
               allowedPersonalities={allowedPersonalities}
               isAdmin={isAdmin}
+              showModel={false}
             />
           </div>
           <div className="flex items-center gap-2">
@@ -858,7 +860,7 @@ export function ChatApp({
               </div>
             )}
             <div
-              className="relative rounded-2xl border border-border bg-card focus-within:border-violet-500/50 focus-within:ring-2 focus-within:ring-violet-500/20"
+              className="relative"
               onPaste={handleImagePaste}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -870,9 +872,8 @@ export function ChatApp({
                 if (file) handleImageSelect(file);
               }}
             >
-              {/* Image preview */}
               {attachedImage && (
-                <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+                <div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
                   <img
                     src={attachedImage}
                     alt="Reference"
@@ -892,47 +893,6 @@ export function ChatApp({
                   </button>
                 </div>
               )}
-              <Textarea
-                value={input}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setInput(val);
-                  // Slash command detection
-                  if (val.startsWith("/") && !val.includes(" ")) {
-                    setSlashOpen(true);
-                    setSlashQuery(val);
-                  } else {
-                    setSlashOpen(false);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    if (slashOpen) {
-                      e.preventDefault();
-                      // Select first matching command
-                      const match = SLASH_COMMANDS.find(c => c.command.startsWith(slashQuery));
-                      if (match) selectSlashCommand(match);
-                    } else {
-                      e.preventDefault();
-                      send();
-                    }
-                  }
-                  if (e.key === "Escape") {
-                    setSlashOpen(false);
-                  }
-                }}
-                placeholder={
-                  attachedImage
-                    ? "Describe what to build from the image…"
-                    : activeProjectType
-                      ? `Building ${activeProjectType}… describe what you want`
-                      : "Type / for commands, or ask BloxForge anything…"
-                }
-                className="min-h-[56px] max-h-[200px] resize-none border-0 bg-transparent px-4 py-3.5 pr-20 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
-                rows={2}
-                disabled={streaming}
-              />
-              {/* Slash command dropdown */}
               {slashOpen && (
                 <div className="absolute bottom-full left-0 z-50 mb-2 w-80 overflow-hidden rounded-xl border border-border bg-popover shadow-2xl">
                   <div className="border-b border-border p-2">
@@ -953,42 +913,53 @@ export function ChatApp({
                   ))}
                 </div>
               )}
-              {/* Image upload button */}
-              <label className="absolute bottom-3 right-14 cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageSelect(file);
-                    e.target.value = "";
-                  }}
-                />
-                <div className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-white/10 hover:text-foreground">
-                  <ImageIcon className="size-4" />
-                </div>
-              </label>
-              <div className="absolute bottom-2.5 right-2.5">
-                {streaming ? (
-                  <Button
-                    size="icon"
-                    onClick={stop}
-                    className="size-9 rounded-xl bg-destructive text-white hover:bg-destructive/90"
-                  >
-                    <Loader2 className="size-4 animate-spin" />
-                  </Button>
-                ) : (
-                  <Button
-                    size="icon"
-                    onClick={() => send()}
-                    disabled={!input.trim()}
-                    className="size-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-                  >
-                    <Send className="size-4" />
-                  </Button>
-                )}
-              </div>
+              <AI_Prompt
+                variant="chat"
+                showHeader={false}
+                value={input}
+                onChange={(val) => {
+                  setInput(val);
+                  if (val.startsWith("/") && !val.includes(" ")) {
+                    setSlashOpen(true);
+                    setSlashQuery(val);
+                  } else {
+                    setSlashOpen(false);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && slashOpen) {
+                    e.preventDefault();
+                    const match = SLASH_COMMANDS.find((c) => c.command.startsWith(slashQuery));
+                    if (match) selectSlashCommand(match);
+                  }
+                  if (e.key === "Escape") setSlashOpen(false);
+                }}
+                models={PERSONALITIES.filter(
+                  (p) => allowedPersonalities.includes(p.id) || isAdmin,
+                ).map((p) => p.label)}
+                selectedModel={
+                  PERSONALITIES.find((p) => p.id === personality)?.label ?? "BloxForge AI"
+                }
+                onModelChange={(label) => {
+                  const next = PERSONALITIES.find((p) => p.label === label);
+                  if (next) setPersonality(next.id);
+                }}
+                onSubmit={(text) => {
+                  send(text);
+                }}
+                onFileSelect={handleImageSelect}
+                fileAccept="image/*,.lua,.luau,.txt"
+                streaming={streaming}
+                onStop={stop}
+                disabled={streaming}
+                placeholder={
+                  attachedImage
+                    ? "Describe what to build from the image…"
+                    : activeProjectType
+                      ? `Building ${activeProjectType}… describe what you want`
+                      : "Type / for commands, or ask BloxForge anything…"
+                }
+              />
             </div>
             <p className="mt-2 text-center text-[11px] text-muted-foreground">
               BloxForge AI can make mistakes. Verify generated Luau before
@@ -1164,14 +1135,15 @@ function MessageBubble({
           />
         ) : (
           <AITextLoading
-            messages={[
-              "Thinking...",
-              "Analyzing your request...",
-              "Generating Luau code...",
-              "Building instances...",
-              "Optimizing output...",
+            texts={[
+              "Thinking…",
+              "Generating Luau…",
+              "Wiring remotes…",
+              "Building GUI hierarchy…",
+              "Authoring ModuleScripts…",
             ]}
-            interval={1800}
+            className="text-sm"
+            interval={1600}
           />
         )}
         {/* Plan approval buttons — shown when the message contains a plan */}

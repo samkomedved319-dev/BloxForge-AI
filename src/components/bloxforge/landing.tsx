@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import {
   Sparkles,
   ArrowRight,
@@ -12,18 +12,49 @@ import {
   Gamepad2,
   Download,
   Box,
-  Cpu,
   MessageSquare,
   Wand2,
   Zap,
   CheckCircle2,
 } from "lucide-react";
+import { useRef, useState } from "react";
 import { Logo } from "./logo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Counter, Reveal } from "./motion";
 import { cn } from "@/lib/utils";
+import AI_Prompt from "@/components/kokonutui/ai-prompt";
+import AITextLoading from "@/components/kokonutui/ai-text-loading";
+import { CodePreview } from "./code-preview";
+
+const SAMPLE_LUAU = `--!strict
+local RoundManager = {}
+RoundManager.__index = RoundManager
+
+export type RoundState = {
+  active: boolean,
+  score: number,
+  players: { Player },
+}
+
+function RoundManager.new(players: { Player }): typeof(RoundManager)
+  local self = setmetatable({
+    active = false,
+    score = 0,
+    players = players,
+  }, RoundManager)
+  return self
+end
+
+function RoundManager:start()
+  self.active = true
+  local remote = game.ReplicatedStorage:WaitForChild("RoundRemote") :: RemoteEvent
+  remote:FireAllClients("RoundStart")
+end
+
+return RoundManager
+`;
 
 /* ------------------------------------------------------------------ */
 /* Static content                                                     */
@@ -78,16 +109,19 @@ const STEPS = [
     icon: MessageSquare,
     title: "Describe",
     desc: "Tell BloxForge what you want in plain English. “A round-based team shooter with a buy menu” — anything.",
+    texts: ["Parsing intent…", "Mapping Roblox services…"],
   },
   {
     icon: Wand2,
     title: "AI Builds",
-    desc: "NVIDIA Nemotron 70B writes the systems, the remotes, the GUI and the data layer. Review, regenerate, refine.",
+    desc: "NVIDIA Nemotron writes the systems, the remotes, the GUI and the data layer. Review, regenerate, refine.",
+    texts: ["Generating Luau…", "Wiring remotes…", "Building GUI hierarchy…"],
   },
   {
     icon: RefreshCw,
     title: "Syncs to Studio",
     desc: "Hit insert. The plugin drops the code into a fresh Script. Run, playtest, ship — all inside Studio.",
+    texts: ["Syncing to Studio…", "Creating Script instance…"],
   },
 ];
 
@@ -133,7 +167,7 @@ export function Landing({
       <Hero onLaunch={onLaunch} onGetPlugin={onGetPlugin} />
       <Stats />
       <Features />
-      <Templates />
+      <Templates onLaunch={onLaunch} />
       <HowItWorks onLaunch={onLaunch} />
       <PluginSection onGetPlugin={onGetPlugin} onLaunch={onLaunch} />
       <PricingTeaser onNavigatePricing={onNavigatePricing} onLaunch={onLaunch} />
@@ -153,40 +187,43 @@ function Hero({
   onLaunch: () => void;
   onGetPlugin: () => void;
 }) {
+  const [thinking, setThinking] = useState(false);
+  const [code, setCode] = useState(SAMPLE_LUAU);
+
+  const onSubmit = async (prompt: string, _model: string) => {
+    setThinking(true);
+    await new Promise((r) => setTimeout(r, 2200));
+    const stamped = `--!strict
+-- BloxForge · ${prompt.slice(0, 64)}
+${SAMPLE_LUAU.replace("--!strict\n", "")}`;
+    setCode(stamped);
+    setThinking(false);
+  };
+
   return (
     <section className="relative overflow-hidden">
-      {/* Background layers */}
       <div className="bg-radial-brand pointer-events-none absolute inset-0" />
       <div className="bg-grid pointer-events-none absolute inset-0 opacity-50 [mask-image:radial-gradient(60%_55%_at_50%_0%,black,transparent)]" />
       <div className="pointer-events-none absolute -top-32 left-1/4 size-[28rem] rounded-full bg-violet-600/25 blur-[120px] animate-blob" />
       <div className="pointer-events-none absolute -top-24 right-1/4 size-[26rem] rounded-full bg-fuchsia-600/20 blur-[120px] animate-blob [animation-delay:4s]" />
-      <div className="pointer-events-none absolute top-32 left-1/2 size-[22rem] -translate-x-1/2 rounded-full bg-purple-500/10 blur-[120px] animate-blob [animation-delay:8s]" />
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-24 pt-20 sm:pt-28 lg:pt-32">
-        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
-          {/* Left: copy */}
+      <div className="relative mx-auto max-w-7xl px-4 pb-24 pt-16 sm:pt-24 lg:pt-28">
+        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="text-center lg:text-left"
           >
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="flex justify-center lg:justify-start"
+            <Badge
+              variant="outline"
+              className="mb-6 gap-2 border-violet-500/40 bg-violet-500/10 px-3 py-1 text-violet-300"
             >
-              <Badge
-                variant="outline"
-                className="mb-6 gap-2 border-violet-500/40 bg-violet-500/10 px-3 py-1 text-violet-300"
-              >
-                <span className="size-1.5 animate-pulse rounded-full bg-violet-400" />
-                Powered by NVIDIA Nemotron 70B
-              </Badge>
-            </motion.div>
+              <span className="size-1.5 animate-pulse rounded-full bg-violet-400" />
+              Powered by NVIDIA Nemotron
+            </Badge>
 
-            <h1 className="font-display text-[2.5rem] font-extrabold leading-[1.02] tracking-tight text-balance sm:text-6xl lg:text-[4.25rem]">
+            <h1 className="font-display text-[2.5rem] font-extrabold leading-[1.02] tracking-tight text-balance sm:text-6xl lg:text-[4.1rem]">
               Build the game{" "}
               <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-violet-300 bg-clip-text text-transparent">
                 only you can imagine
@@ -194,121 +231,59 @@ function Hero({
             </h1>
 
             <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground text-balance sm:text-lg lg:mx-0">
-              BloxForge AI turns plain-English prompts into clean Luau,
-              full GUIs, and wired-up game systems — powered by NVIDIA
-              Nemotron. Then syncs everything straight into Roblox Studio.
+              BloxForge AI turns plain-English prompts into clean Luau, full GUIs,
+              and wired-up game systems — then syncs everything straight into Roblox Studio.
             </p>
 
-            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
-              <Button
-                size="lg"
-                onClick={onLaunch}
-                className="h-13 gap-2 bg-primary px-8 text-base text-primary-foreground hover:bg-primary/90 glow-brand"
-              >
-                <Sparkles className="size-4" />
-                Start Building
-                <ArrowRight className="size-4" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={onGetPlugin}
-                className="h-13 gap-2 border-border bg-card/40 px-7 text-base backdrop-blur hover:bg-accent"
-              >
-                <Download className="size-4" />
-                Get Plugin
-              </Button>
+            <div className="mt-8 text-left">
+              <AI_Prompt
+                onSubmit={onSubmit}
+                disabled={thinking}
+                placeholder="A round-based team shooter with a buy menu…"
+                headerText="NVIDIA Nemotron is live"
+                headerAction="Forge now"
+              />
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground lg:justify-start">
-              {[
-                "NVIDIA Nemotron AI",
-                "No sign-up to try",
-                "Streaming responses",
-                "Studio auto-sync",
-              ].map((t) => (
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground lg:justify-start">
+              {["NVIDIA Nemotron AI", "Streaming responses", "Studio auto-sync"].map((t) => (
                 <span key={t} className="flex items-center gap-1.5">
                   <CheckCircle2 className="size-3.5 text-violet-400" />
                   {t}
                 </span>
               ))}
             </div>
+
+            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
+              <Button
+                size="lg"
+                onClick={onLaunch}
+                className="h-12 gap-2 bg-primary px-7 text-base text-primary-foreground hover:bg-primary/90 glow-brand"
+              >
+                <Sparkles className="size-4" />
+                Open the app
+                <ArrowRight className="size-4" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={onGetPlugin}
+                className="h-12 gap-2 border-border bg-card/40 px-7 text-base backdrop-blur hover:bg-accent"
+              >
+                <Download className="size-4" />
+                Get Plugin
+              </Button>
+            </div>
           </motion.div>
 
-          {/* Right: floating code card */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="relative"
+            transition={{ duration: 0.7, delay: 0.15 }}
+            className="relative min-w-0"
           >
             <div className="absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-br from-violet-500/30 via-fuchsia-500/15 to-transparent blur-2xl" />
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <Card className="relative overflow-hidden border-border/60 bg-[oklch(0.13_0.018_280)] shadow-2xl shadow-violet-950/40">
-                <div className="flex items-center gap-2 border-b border-border/60 bg-[oklch(0.16_0.02_280)] px-4 py-2.5">
-                  <div className="flex gap-1.5">
-                    <span className="size-3 rounded-full bg-red-500/70" />
-                    <span className="size-3 rounded-full bg-amber-500/70" />
-                    <span className="size-3 rounded-full bg-violet-500/70" />
-                  </div>
-                  <span className="ml-2 font-mono text-[11px] text-muted-foreground">
-                    BloxForge AI · round_manager.lua
-                  </span>
-                  <Badge className="ml-auto h-5 gap-1 bg-violet-500/15 px-2 text-[10px] text-violet-300 hover:bg-violet-500/20">
-                    <Cpu className="size-2.5" /> Nemotron 70B
-                  </Badge>
-                </div>
-                <pre className="overflow-x-auto p-5 text-[12.5px] leading-relaxed">
-                  <code className="font-mono">
-                    <span className="text-violet-400">--!strict</span>
-                    {"\n"}
-                    <span className="text-violet-400">local</span>{" "}
-                    <span className="text-sky-300">RoundManager</span> = {}
-                    {"\n"}
-                    <span className="text-sky-300">RoundManager</span>.__index ={" "}
-                    <span className="text-sky-300">RoundManager</span>
-                    {"\n\n"}
-                    <span className="text-violet-400">function</span>{" "}
-                    <span className="text-sky-300">RoundManager</span>.
-                    <span className="text-amber-300">start</span>(players:{" "}
-                    <span className="text-teal-300">{`{Player}`}</span>)
-                    {"\n"}
-                    {"  "}
-                    <span className="text-violet-400">local</span> state ={" "}
-                    <span className="text-violet-400">{`{`}</span> active ={" "}
-                    <span className="text-amber-300">true</span>, score ={" "}
-                    <span className="text-amber-300">0</span>{" "}
-                    <span className="text-violet-400">{`}`}</span>
-                    {"\n"}
-                    {"  "}
-                    <span className="text-slate-500">
-                      -- BloxForge generated ✓ shipped to Studio
-                    </span>
-                    {"\n"}
-                    {"  "}
-                    <span className="text-violet-400">return</span> setmetatable(
-                    <span className="text-violet-400">{`{`}</span> state{" "}
-                    <span className="text-violet-400">{`}`}</span>,{" "}
-                    <span className="text-sky-300">RoundManager</span>)
-                    {"\n"}
-                    <span className="text-violet-400">end</span>
-                  </code>
-                </pre>
-                <div className="border-t border-border/60 bg-[oklch(0.16_0.02_280)] px-4 py-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[10px] text-muted-foreground">
-                      streaming · 0.42s · 248 tokens
-                    </span>
-                    <span className="flex items-center gap-1.5 rounded-md bg-violet-500/15 px-2 py-1 text-[10px] font-bold text-violet-300">
-                      <Zap className="size-2.5" /> Insert as Script
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
+            <CodePreview code={code} thinking={thinking} />
           </motion.div>
         </div>
       </div>
@@ -421,7 +396,7 @@ function Features() {
 /* Game templates — horizontal scroll                                 */
 /* ------------------------------------------------------------------ */
 
-function Templates() {
+function Templates({ onLaunch }: { onLaunch: () => void }) {
   return (
     <section className="relative border-t border-border/50 py-24">
       <div className="mx-auto max-w-7xl px-4">
@@ -453,7 +428,10 @@ function Templates() {
               transition={{ duration: 0.4, delay: i * 0.05 }}
               className="snap-start"
             >
-              <Card className="group relative h-56 w-64 shrink-0 cursor-pointer overflow-hidden border-border/60 bg-card/60 p-5 backdrop-blur transition hover:border-violet-500/40 hover:bg-accent/20">
+              <Card
+                onClick={onLaunch}
+                className="group relative h-56 w-64 shrink-0 cursor-pointer overflow-hidden border-border/60 bg-card/60 p-5 backdrop-blur transition hover:border-violet-500/40 hover:bg-accent/20"
+              >
                 <div
                   className={cn(
                     "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-60 transition-opacity group-hover:opacity-100",
@@ -488,6 +466,36 @@ function Templates() {
 /* How it works                                                       */
 /* ------------------------------------------------------------------ */
 
+function StepCard({
+  step,
+  index,
+}: {
+  step: (typeof STEPS)[number];
+  index: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: false, margin: "-20%" });
+  return (
+    <div ref={ref} className="relative flex flex-col items-center text-center">
+      <div className="relative z-10 mb-5 flex size-18 items-center justify-center rounded-2xl border border-violet-500/30 bg-background shadow-lg shadow-violet-500/10">
+        <step.icon className="size-6 text-violet-400" />
+        <span className="absolute -right-2 -top-2 flex size-7 items-center justify-center rounded-full bg-primary font-display text-xs font-bold text-primary-foreground shadow-lg shadow-violet-500/30">
+          {index + 1}
+        </span>
+      </div>
+      <h3 className="font-display text-xl font-bold">{step.title}</h3>
+      <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
+        {step.desc}
+      </p>
+      <div className="mt-4 min-h-10">
+        {inView ? (
+          <AITextLoading texts={step.texts} className="text-sm sm:text-base" interval={1800} />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function HowItWorks({ onLaunch }: { onLaunch: () => void }) {
   return (
     <section className="relative border-t border-border/50 py-24">
@@ -506,18 +514,8 @@ function HowItWorks({ onLaunch }: { onLaunch: () => void }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5, delay: i * 0.12 }}
-              className="relative flex flex-col items-center text-center"
             >
-              <div className="relative z-10 mb-5 flex size-18 items-center justify-center rounded-2xl border border-violet-500/30 bg-background shadow-lg shadow-violet-500/10">
-                <s.icon className="size-6 text-violet-400" />
-                <span className="absolute -right-2 -top-2 flex size-7 items-center justify-center rounded-full bg-primary font-display text-xs font-bold text-primary-foreground shadow-lg shadow-violet-500/30">
-                  {i + 1}
-                </span>
-              </div>
-              <h3 className="font-display text-xl font-bold">{s.title}</h3>
-              <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
-                {s.desc}
-              </p>
+              <StepCard step={s} index={i} />
             </motion.div>
           ))}
         </div>
@@ -625,7 +623,6 @@ function PluginSection({
             </div>
           </Reveal>
 
-          {/* Plugin preview mock */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             whileInView={{ opacity: 1, scale: 1 }}
