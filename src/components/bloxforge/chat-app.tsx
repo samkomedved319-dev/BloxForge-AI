@@ -1327,28 +1327,6 @@ function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
           </motion.button>
         ))}
       </div>
-
-      {/* Game templates */}
-      <div className="mt-6 w-full">
-        <p className="mb-2.5 text-center font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-          Or start with a game template
-        </p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {gameTemplates.map((g, i) => (
-            <motion.button
-              key={g.label}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 + i * 0.03 }}
-              onClick={() => onPick(g.prompt)}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium transition hover:border-violet-500/40 hover:bg-accent/40"
-            >
-              <span>{g.emoji}</span>
-              {g.label}
-            </motion.button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
