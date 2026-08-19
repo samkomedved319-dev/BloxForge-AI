@@ -36,6 +36,7 @@ export function PersonalityPicker({
   allowedPersonalities,
   isAdmin,
   activeModelLabel,
+  showModel = true,
 }: {
   personalityId: string;
   modeId: string;
@@ -44,6 +45,7 @@ export function PersonalityPicker({
   allowedPersonalities?: string[];
   isAdmin?: boolean;
   activeModelLabel?: string;
+  showModel?: boolean;
 }) {
   const allowed = allowedPersonalities || PERSONALITIES.map((p) => p.id);
   const currentPersonality =
@@ -59,6 +61,7 @@ export function PersonalityPicker({
 
   return (
     <div className="flex items-center gap-2">
+      {showModel ? (
       <Dropdown
         label="MODEL"
         value={shortModelName(currentPersonality.model)}
@@ -150,6 +153,7 @@ export function PersonalityPicker({
           </div>
         )}
       </Dropdown>
+      ) : null}
 
       <Dropdown
         label="MODE"
