@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
 /** Comma-separated list of admin emails (env-configurable). */
-export const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
+export const ADMIN_EMAILS = (process.env.ADMIN_EMAIL || "")
   .split(",")
   .map((e) => e.toLowerCase().trim())
   .filter(Boolean);

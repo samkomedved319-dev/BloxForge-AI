@@ -1,0 +1,307 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/api/admin/api-keys/[id]",
+      "regex": "^/api/admin/api\\-keys/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/api\\-keys/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/users/[id]",
+      "regex": "^/api/admin/users/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/users/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/users/[id]/approve",
+      "regex": "^/api/admin/users/([^/]+?)/approve(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/users/(?<nxtPid>[^/]+?)/approve(?:/)?$"
+    },
+    {
+      "page": "/api/auth/[...nextauth]",
+      "regex": "^/api/auth/(.+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPnextauth": "nxtPnextauth"
+      },
+      "namedRegex": "^/api/auth/(?<nxtPnextauth>.+?)(?:/)?$"
+    },
+    {
+      "page": "/api/conversations/[id]",
+      "regex": "^/api/conversations/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/conversations/(?<nxtPid>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/api/account/delete",
+      "regex": "^/api/account/delete(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/account/delete(?:/)?$"
+    },
+    {
+      "page": "/api/account/profile",
+      "regex": "^/api/account/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/account/profile(?:/)?$"
+    },
+    {
+      "page": "/api/account/reset-sessions",
+      "regex": "^/api/account/reset\\-sessions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/account/reset\\-sessions(?:/)?$"
+    },
+    {
+      "page": "/api/admin/api-keys",
+      "regex": "^/api/admin/api\\-keys(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/api\\-keys(?:/)?$"
+    },
+    {
+      "page": "/api/admin/api-keys/test-models",
+      "regex": "^/api/admin/api\\-keys/test\\-models(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/api\\-keys/test\\-models(?:/)?$"
+    },
+    {
+      "page": "/api/admin/models",
+      "regex": "^/api/admin/models(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/models(?:/)?$"
+    },
+    {
+      "page": "/api/admin/stats",
+      "regex": "^/api/admin/stats(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/stats(?:/)?$"
+    },
+    {
+      "page": "/api/admin/users",
+      "regex": "^/api/admin/users(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/users(?:/)?$"
+    },
+    {
+      "page": "/api/auth/roblox/oauth/callback",
+      "regex": "^/api/auth/roblox/oauth/callback(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/roblox/oauth/callback(?:/)?$"
+    },
+    {
+      "page": "/api/auth/roblox/oauth/start",
+      "regex": "^/api/auth/roblox/oauth/start(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/roblox/oauth/start(?:/)?$"
+    },
+    {
+      "page": "/api/auth/roblox/oauth/status",
+      "regex": "^/api/auth/roblox/oauth/status(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/roblox/oauth/status(?:/)?$"
+    },
+    {
+      "page": "/api/auth/roblox/setup",
+      "regex": "^/api/auth/roblox/setup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/roblox/setup(?:/)?$"
+    },
+    {
+      "page": "/api/auth/roblox/start",
+      "regex": "^/api/auth/roblox/start(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/roblox/start(?:/)?$"
+    },
+    {
+      "page": "/api/auth/roblox/verify",
+      "regex": "^/api/auth/roblox/verify(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/roblox/verify(?:/)?$"
+    },
+    {
+      "page": "/api/auth/signup",
+      "regex": "^/api/auth/signup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/signup(?:/)?$"
+    },
+    {
+      "page": "/api/chat",
+      "regex": "^/api/chat(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/chat(?:/)?$"
+    },
+    {
+      "page": "/api/conversations",
+      "regex": "^/api/conversations(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/conversations(?:/)?$"
+    },
+    {
+      "page": "/api/dashboard",
+      "regex": "^/api/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/dashboard(?:/)?$"
+    },
+    {
+      "page": "/api/models",
+      "regex": "^/api/models(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/models(?:/)?$"
+    },
+    {
+      "page": "/api/plugin",
+      "regex": "^/api/plugin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/plugin(?:/)?$"
+    },
+    {
+      "page": "/api/plugin/ask",
+      "regex": "^/api/plugin/ask(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/plugin/ask(?:/)?$"
+    },
+    {
+      "page": "/api/plugin/download",
+      "regex": "^/api/plugin/download(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/plugin/download(?:/)?$"
+    },
+    {
+      "page": "/api/stripe/billing",
+      "regex": "^/api/stripe/billing(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/stripe/billing(?:/)?$"
+    },
+    {
+      "page": "/api/stripe/checkout",
+      "regex": "^/api/stripe/checkout(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/stripe/checkout(?:/)?$"
+    },
+    {
+      "page": "/api/stripe/portal",
+      "regex": "^/api/stripe/portal(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/stripe/portal(?:/)?$"
+    },
+    {
+      "page": "/api/stripe/status",
+      "regex": "^/api/stripe/status(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/stripe/status(?:/)?$"
+    },
+    {
+      "page": "/api/stripe/webhook",
+      "regex": "^/api/stripe/webhook(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/stripe/webhook(?:/)?$"
+    },
+    {
+      "page": "/api/studio/ack",
+      "regex": "^/api/studio/ack(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/studio/ack(?:/)?$"
+    },
+    {
+      "page": "/api/studio/disconnect",
+      "regex": "^/api/studio/disconnect(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/studio/disconnect(?:/)?$"
+    },
+    {
+      "page": "/api/studio/heartbeat",
+      "regex": "^/api/studio/heartbeat(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/studio/heartbeat(?:/)?$"
+    },
+    {
+      "page": "/api/studio/insert",
+      "regex": "^/api/studio/insert(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/studio/insert(?:/)?$"
+    },
+    {
+      "page": "/api/studio/pair",
+      "regex": "^/api/studio/pair(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/studio/pair(?:/)?$"
+    },
+    {
+      "page": "/api/studio/state",
+      "regex": "^/api/studio/state(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/studio/state(?:/)?$"
+    },
+    {
+      "page": "/api/usage",
+      "regex": "^/api/usage(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/usage(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

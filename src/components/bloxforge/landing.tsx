@@ -9,7 +9,6 @@ import {
   Boxes,
   Clapperboard,
   RefreshCw,
-  Gamepad2,
   Download,
   Box,
   MessageSquare,
@@ -86,24 +85,9 @@ const FEATURES = [
     title: "Auto-Sync to Studio",
     desc: "The BloxForge plugin streams code straight into a new Script instance. No copy-paste. No context switch.",
   },
-  {
-    icon: Gamepad2,
-    title: "Game Templates",
-    desc: "Start from a fully-wired genre base — shooter, obby, simulator — then ask the AI to make it yours.",
-  },
 ];
 
-const TEMPLATES = [
-  { emoji: "🔫", name: "Shooter", tag: "FPS / TPS", accent: "from-rose-500/30 to-red-500/10" },
-  { emoji: "🌈", name: "Obby", tag: "Platformer", accent: "from-violet-500/30 to-fuchsia-500/10" },
-  { emoji: "📈", name: "Simulator", tag: "Incremental", accent: "from-amber-500/30 to-orange-500/10" },
-  { emoji: "💰", name: "Tycoon", tag: "Builder", accent: "from-emerald-500/30 to-teal-500/10" },
-  { emoji: "🚜", name: "Farm", tag: "Cozy", accent: "from-lime-500/30 to-green-500/10" },
-  { emoji: "🐾", name: "Pets", tag: "Collection", accent: "from-cyan-500/30 to-sky-500/10" },
-  { emoji: "🛏️", name: "Bedwars", tag: "PvP", accent: "from-indigo-500/30 to-violet-500/10" },
-  { emoji: "🔪", name: "Murder Mystery", tag: "Social Deduction", accent: "from-purple-500/30 to-pink-500/10" },
-];
-
+const TEMPLATES = [];
 const STEPS = [
   {
     icon: MessageSquare,
@@ -167,7 +151,6 @@ export function Landing({
       <Hero onLaunch={onLaunch} onGetPlugin={onGetPlugin} />
       <Stats />
       <Features />
-      <Templates onLaunch={onLaunch} />
       <HowItWorks onLaunch={onLaunch} />
       <PluginSection onGetPlugin={onGetPlugin} onLaunch={onLaunch} />
       <PricingTeaser onNavigatePricing={onNavigatePricing} onLaunch={onLaunch} />
@@ -233,6 +216,7 @@ ${SAMPLE_LUAU.replace("--!strict\n", "")}`;
             <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground text-balance sm:text-lg lg:mx-0">
               BloxForge AI turns plain-English prompts into clean Luau, full GUIs,
               and wired-up game systems — then syncs everything straight into Roblox Studio.
+              Start building your dream game today with the power of NVIDIA Nemotron AI.
             </p>
 
             <div className="mt-8 text-left">
@@ -383,76 +367,6 @@ function Features() {
                 <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
                   {f.desc}
                 </p>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Game templates — horizontal scroll                                 */
-/* ------------------------------------------------------------------ */
-
-function Templates({ onLaunch }: { onLaunch: () => void }) {
-  return (
-    <section className="relative border-t border-border/50 py-24">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
-          <SectionHeading
-            eyebrow="Game Templates"
-            title="Start from a genre, not a blank canvas"
-            desc="Pre-wired genre bases. Pick one, prompt the AI to make it yours, ship in minutes."
-            className="mx-0 text-left"
-          />
-          <Badge
-            variant="outline"
-            className="hidden gap-1.5 border-violet-500/30 bg-violet-500/10 text-violet-300 sm:inline-flex"
-          >
-            <Gamepad2 className="size-3" /> 8 templates · more coming
-          </Badge>
-        </div>
-
-        <div
-          className="mt-12 flex gap-4 overflow-x-auto pb-4 [scrollbar-width:thin] snap-x snap-mandatory"
-          style={{ scrollbarWidth: "thin" }}
-        >
-          {TEMPLATES.map((t, i) => (
-            <motion.div
-              key={t.name}
-              initial={{ opacity: 0, x: 24 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.4, delay: i * 0.05 }}
-              className="snap-start"
-            >
-              <Card
-                onClick={onLaunch}
-                className="group relative h-56 w-64 shrink-0 cursor-pointer overflow-hidden border-border/60 bg-card/60 p-5 backdrop-blur transition hover:border-violet-500/40 hover:bg-accent/20"
-              >
-                <div
-                  className={cn(
-                    "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-60 transition-opacity group-hover:opacity-100",
-                    t.accent,
-                  )}
-                />
-                <div className="relative flex h-full flex-col justify-between">
-                  <div className="text-5xl drop-shadow-lg transition-transform duration-500 group-hover:scale-110">
-                    {t.emoji}
-                  </div>
-                  <div>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-violet-300">
-                      {t.tag}
-                    </span>
-                    <h3 className="font-display text-xl font-bold">{t.name}</h3>
-                    <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground transition group-hover:text-violet-300">
-                      Use template
-                      <ArrowRight className="size-3 transition-transform group-hover:translate-x-1" />
-                    </div>
-                  </div>
-                </div>
               </Card>
             </motion.div>
           ))}

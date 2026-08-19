@@ -1,0 +1,10 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/stripe/portal/route.js")
+R.c("server/chunks/[root-of-the-server]__8f349860._.js")
+R.c("server/chunks/node_modules_next_f2da0d3e._.js")
+R.c("server/chunks/_1d2412bf._.js")
+R.c("server/chunks/src_lib_stripe_ts_4f56c4bf._.js")
+R.c("server/chunks/[root-of-the-server]__24f8fcd9._.js")
+R.c("server/chunks/[root-of-the-server]__1fd273de._.js")
+R.c("server/chunks/_next-internal_server_app_api_stripe_portal_route_actions_bc2f49f2.js")
+R.m(10484)
+module.exports=R.m(10484).exports
