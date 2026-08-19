@@ -1,0 +1,64 @@
+/**
+ * Seed an admin account.
+ * Run with: bun run scripts/seed-admin.ts
+ *
+ * Requires env vars (set in .env):
+ *   ADMIN_EMAIL     — the admin's email
+ *   ADMIN_PASSWORD  — the admin's password (min 6 chars)
+ *   ADMIN_NAME      — (optional) display name
+ *
+ * Idempotent: if the account exists, its role is promoted to admin and the
+ * password is updated to match.
+ */
+import bcrypt from "bcryptjs";
+import { db } from "../src/lib/db";
+
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").toLowerCase().trim();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+const ADMIN_NAME = process.env.ADMIN_NAME || "BloxForge Admin";
+
+async function main() {
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    console.error(
+      "[seed] ADMIN_EMAIL and ADMIN_PASSWORD env vars are required.\n" +
+        "Set them in your .env file, then re-run this script.",
+    );
+    process.exit(1);
+  }
+  if (ADMIN_PASSWORD.length < 6) {
+    console.error("[seed] ADMIN_PASSWORD must be at least 6 characters.");
+    process.exit(1);
+  }
+
+  const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
+
+  const existing = await db.user.findUnique({ where: { email: ADMIN_EMAIL } });
+  if (existing) {
+    await db.user.update({
+      where: { id: existing.id },
+      data: { role: "admin", plan: "studio", passwordHash, name: ADMIN_NAME, approved: true },
+    });
+    console.log(`[seed] Promoted existing account to admin: ${ADMIN_EMAIL}`);
+  } else {
+    await db.user.create({
+      data: {
+        email: ADMIN_EMAIL,
+        name: ADMIN_NAME,
+        passwordHash,
+        role: "admin",
+        plan: "studio",
+        approved: true,
+      },
+    });
+    console.log(`[seed] Created admin account: ${ADMIN_EMAIL}`);
+  }
+}
+
+main()
+  .catch((e) => {
+    console.error("[seed] failed:", e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await db.$disconnect();
+  });

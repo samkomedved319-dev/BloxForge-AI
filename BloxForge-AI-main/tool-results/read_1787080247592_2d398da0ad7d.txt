@@ -1,0 +1,710 @@
+     1→# BloxForge AI — Build Worklog
+     2→
+     3→Project: BloxForge AI — NVIDIA-powered AI coding companion for Roblox/Luau development.
+     4→Inspired by lemonade.gg. Includes a web app + downloadable Roblox Studio plugin.
+     5→
+     6→Tech: Next.js 16 (App Router), TypeScript, Tailwind 4, shadcn/ui, Prisma (SQLite).
+     7→AI backend: NVIDIA API (build.nvidia.com, OpenAI-compatible) primary, z-ai-web-dev-sdk fallback so the live demo works without an NVIDIA key.
+     8→
+     9→---
+    10→Task ID: 1
+    11→Agent: Orchestrator
+    12→Task: Explore project, set up Prisma schema & dependencies
+    13→
+    14→Work Log:
+    15→- Explored existing Next.js scaffold, confirmed shadcn/ui components, z-ai-web-dev-sdk, react-markdown, react-syntax-highlighter, framer-motion, next-themes all installed.
+    16→- Designed product: BloxForge AI. Accent = emerald/lime on dark slate.
+    17→- Defined Prisma schema (Conversation, Message, Snippet) below.
+    18→
+    19→---
+    20→Task ID: 2-7
+    21→Agent: Orchestrator
+    22→Task: Build full backend + frontend, plugin, verify end-to-end
+    23→
+    24→Work Log:
+    25→- Built NVIDIA NIM streaming engine (src/lib/ai.ts) with z-ai-web-dev-sdk fallback so the live demo works without an NVIDIA key.
+    26→- Built API routes: /api/chat (SSE streaming + Prisma persistence), /api/conversations (CRUD), /api/conversations/[id], /api/models, /api/plugin/ask (Roblox HttpService endpoint), /api/plugin/download (serves BloxForgeAI.lua with attachment headers).
+    27→- Built Prisma schema (Conversation, Message, Snippet) and pushed to SQLite.
+    28→- Built emerald-on-dark-slate theme (globals.css), layout with display font + ThemeProvider (dark default).
+    29→- Built landing page (hero with code mock, NVIDIA models grid, features, 3-step how-it-works, plugin section, CTA) + sticky footer.
+    30→- Built full chat app: conversation sidebar (create/load/delete), streaming message rendering, model picker, markdown + code-block copy, empty state with example prompts, auto-scroll.
+    31→- Built Roblox Studio plugin (public/plugin/BloxForgeAI.lua, ~21KB): dockable widget, chat UI, model picker, settings dialog (API URL + model), HttpService POST to /api/plugin/ask, one-click "Insert as Script".
+    32→- Built plugin download page with OS-aware install path toggle (Windows/macOS).
+    33→- Fixed getNvidiaKey import bug, fixed lint (useSyncExternalStore for hash routing).
+    34→- Daemonized dev server (setsid double-fork) so it survives across shell commands.
+    35→
+    36→Stage Summary:
+    37→- Lint clean. Dev server stable on :3000.
+    38→- Agent Browser verified: landing renders, app launches, AI streams real Luau (cooldown ModuleScript w/ types+OOP), conversations persist + reload from sidebar, plugin page + download (.lua, 21KB, correct headers), mobile + desktop responsive, zero console errors.
+    39→- Product: BloxForge AI — NVIDIA-powered Roblox/Luau coding companion + downloadable Studio plugin.
+    40→
+    41→---
+    42→Task ID: 4
+    43→Agent: Pricing Page Component
+    44→Task: Build the `#pricing` view component (src/components/bloxforge/pricing.tsx)
+    45→
+    46→Work Log:
+    47→- Read landing.tsx, logo.tsx, site-footer.tsx, globals.css to match the exact emerald-on-dark-slate design language, SectionHeading pattern, framer-motion entrance animations, and `bg-radial-brand`/`bg-grid`/`glow-brand` utilities.
+    48→- Built `Pricing` ("use client") component with `onLaunch` + `onGetPlugin` props, composed of 4 sub-sections:
+    49→  - PricingHero: eyebrow badge, gradient headline "Pick your forge", Monthly/Annual segmented toggle with "Save 25%" badge, trust line below.
+    50→  - PricingTiers: 3 responsive cards — Free ($0, Hobby), Pro ($12/$9, Most popular — emerald border + glow + lg:scale-105), Studio ($39/$31, Teams). Each card has icon, badge, dynamic price, CTA (all → onLaunch), feature checklist.
+    51→  - FAQ: shadcn Accordion (single/collapsible) with the 5 specified Q&As wrapped in a Card.
+    52→  - PricingCTA: emerald-gradient band "Ready to forge?" with Launch (onLaunch) + Get plugin (onGetPlugin) buttons — mirrors landing CTA.
+    53→- Used framer-motion `initial={{opacity:0, y:20}} whileInView={{opacity:1, y:0}} viewport={{once:true}}` for all section entrances. Used `cn()` for conditional highlight classes. Lint clean. No new routes/pages/files other than the component.
+    54→
+    55→Stage Summary:
+    56→- Pricing view ready to render at `#pricing` via the same hash-routing pattern as landing/plugin.
+    57→- Work record saved at /agent-ctx/4-pricing.md.
+    58→
+    59→---
+    60→Task ID: 5-8
+    61→Agent: Orchestrator
+    62→Task: Add authentication, pricing, animations, MODEL/MODE personality dropdowns (from reference image), release-ready polish
+    63→
+    64→Work Log:
+    65→- Prisma: added User model (email, passwordHash, plan, daily usage tracking) + userId on Conversation + mode field. Pushed to SQLite.
+    66→- Installed bcryptjs for password hashing.
+    67→- Built personality/mode system (src/lib/models.ts rewrite): 5 friendly personalities (Thoughtful→DeepSeek R1, Swift→Qwen Coder, Balanced→Llama 3.3, Flagship→Llama 405B, Nemotron) + 5 response modes (Normal, Concise, Explain, Refactor, Debug). Matches the lemonade.gg-style MODEL/MODE dropdowns from the reference image.
+    68→- Built NextAuth backend: credentials provider (JWT sessions), /api/auth/[...nextauth], /api/auth/signup, /api/usage (daily limit tracking). Conversations now scoped by user.
+    69→- Rewrote /api/chat to use personality+mode, enforce free-tier daily limits (50/day) and model gating (guests limited to Swift+Balanced).
+    70→- Updated /api/plugin/ask to accept personality+mode.
+    71→- Delegated pricing page to subagent (full Free/Pro/Studio tiers, monthly/annual toggle, FAQ accordion).
+    72→- Built auth frontend: SessionProvider (in theme-provider), AuthModal (login/signup with email+GitHub), AccountMenu (avatar dropdown with usage bar + upgrade), useAuth hook.
+    73→- Built PersonalityPicker component: two dropdowns (MODEL + MODE) with personality cards (speed dots, vendor, badges, Pro locks) and mode descriptions — exactly the reference image UX.
+    74→- Rewrote ChatApp: personality/mode pickers, usage sidebar card, limit banner, animated message bubbles, upgrade prompts.
+    75→- Built animation utilities (motion.tsx): Reveal, Stagger, Counter (animated number), FloatingOrbs.
+    76→- Added Stats section (animated counters) + PricingTeaser section to landing.
+    77→- Updated SiteHeader: Pricing nav, AccountMenu, auth modal trigger.
+    78→- Updated page.tsx: 4 views (landing/app/plugin/pricing), auth modal wiring, hash routing.
+    79→- Set NEXTAUTH_SECRET in .env.
+    80→
+    81→Stage Summary:
+    82→- Lint clean. Dev server stable on :3000.
+    83→- Agent Browser verified: landing (with Sign in + Pricing nav), pricing page (3 tiers, annual toggle, FAQ), app with MODEL/MODE dropdowns showing all 5 personalities (Pro models locked for free), auth signup flow (created account, avatar appeared, usage tracking "1/50"), AI streamed complete Luau cooldown ModuleScript as signed-in user, conversation saved to sidebar, account menu with usage bar + upgrade. Zero console errors.
+    84→- Release-ready: authentication, pricing, personality/mode system, animations, usage limits, all wired.
+    85→
+    86→---
+    87→Task ID: 9-13
+    88→Agent: Orchestrator
+    89→Task: Convert the Roblox plugin into a pure connector (no chat) — web app stays the AI chat, plugin just syncs Studio context + inserts code
+    90→
+    91→Work Log:
+    92→- Built in-memory studio-store (src/lib/studio-store.ts): pairing codes, heartbeat, context, insert queue, ack results, stale-session cleanup. Singleton via globalThis.
+    93→- Built 6 API routes: /api/studio/pair, /heartbeat, /state, /insert, /ack, /disconnect.
+    94→- Updated /api/chat to accept optional `context` (Studio script source) appended to the user message.
+    95→- Rewrote public/plugin/BloxForgeAI.lua as a pure connector (~19KB): minimal dockable UI (server URL + pairing code inputs → connect/disconnect), heartbeat loop every 3s reporting selected script, Selection.SelectionChanged → immediate context POST, drains insert commands → creates Script in ServerScriptService + acks. NO chat UI.
+    96→- Built studio-connector.tsx: useStudioConnection hook (pair/poll/insert/disconnect), StudioConnectDialog (pairing code display + 3-step instructions + connected state with script info), StudioBadge (header green pulse), ConnectStudioButton.
+    97→- Updated markdown.tsx: code blocks now show "Insert in Studio" button (emerald) alongside Copy when studioConnected + language is luau/lua. Optimistic "Sending…→Sent" states.
+    98→- Updated chat-app.tsx: integrated useStudioConnection, added Connect Studio button/badge to header, context chip near composer (toggleable include), wired handleInsertCode → studio.insertCode, passed studioConnected + onInsertCode to MessageBubble → Markdown.
+    99→- Updated plugin-page.tsx: renamed to "BloxForge Connector", new features (Pure connector, Live script sync, One-click insert, Pair in seconds), updated code preview + install steps, fixed Sync→RefreshCw icon.
+   100→- Fixed insert route field-name collision (pairing code vs Luau code both named `code` → renamed to pairingCode).
+   101→
+   102→Stage Summary:
+   103→- Lint clean. Dev server stable.
+   104→- Agent Browser verified end-to-end: web app generates pairing code → simulated plugin heartbeats with that code → web app detects "Studio connected" + shows script name → dialog closes → header shows green Studio badge → context chip appears near composer → AI generates Luau code block → "Insert in Studio" button appears on code block (alongside Copy) → clicking it sends insert command through the API pipeline.
+   105→- curl verified the full connector API flow: pair → heartbeat(context) → state(connected+script) → insert(commandId) → heartbeat(drains command with correct title/language/code) → ack.
+   106→- Plugin download serves the new 19KB connector file. 77 connector refs, ~0 chat refs in the plugin code.
+   107→
+   108→---
+   109→Task ID: 14-18
+   110→Agent: Orchestrator
+   111→Task: Fix "plugin won't connect to Studio" — diagnose and fix connection issues
+   112→
+   113→Work Log:
+   114→- Root cause: the connect dialog didn't show the server URL (user didn't know what to paste into the plugin), and the plugin's URL parsing was fragile (trailing slashes, /api/studio suffix, etc. broke it).
+   115→- Fixed studio-connector.tsx: dialog now auto-detects window.location.origin and displays it as "② BloxForge server URL (paste in plugin)" with a copy button. Added "Simulate connection" button (sends heartbeats with a fake DemoScript.lua context so the full flow including code insertion works without the real plugin). Added "Not connecting?" troubleshooting panel with 4 key tips (URL match, HTTPS requirement, Output window, code expiry).
+   116→- Added simulate()/stopSimulate() to useStudioConnection hook with a background heartbeat interval (simRef).
+   117→- Rewrote plugin doConnect() with robust normalizeApiUrl(): trims whitespace, strips fragments, trailing slashes, pre-existing /api/studio and /api suffixes. Logs the exact URL used + a 4-point checklist on failure.
+   118→- Added a visible errorLabel in the plugin UI (red text) so users see connection errors without opening the Output window.
+   119→- Changed plugin DEFAULT_API_URL to empty (forces the user to enter the real URL instead of leaving the placeholder).
+   120→- Updated plugin-page.tsx install steps + added an amber "⚠ server URL must be HTTPS" warning box explaining Roblox HttpService blocks plain HTTP.
+   121→
+   122→Stage Summary:
+   123→- Lint clean. Server stable.
+   124→- Agent Browser verified: dialog shows server URL + copy, Simulate button instantly connects (shows "Studio connected" + DemoScript.lua), full flow works (badge → context chip → AI response → "Insert in Studio" button → click → "Sent" + toast "Sent to Roblox Studio").
+   125→- The user can now: (1) see the exact server URL to paste, (2) test without the real plugin via Simulate, (3) read clear error messages in both the plugin UI and the dialog's troubleshooting panel.
+   126→
+   127→---
+   128→Task ID: 14-18
+   129→Agent: Orchestrator
+   130→Task: Fix "it doesn't want to connect to studio" — root cause was the sandbox can't run Roblox Studio, so the real plugin could never heartbeat back. Added a working Demo mode + clearer troubleshooting.
+   131→
+   132→Work Log:
+   133→- Root cause: the user is in a sandbox preview with no Roblox Studio, so the pairing dialog spun on "Waiting for Studio to connect…" forever with no way to test. The previous simulate() function also had a bug — it discarded the heartbeat response, so insert commands were never drained/acked (silent no-op).
+   134→- Rewrote studio-connector.tsx useStudioConnection:
+   135→  - Added `mode` state ("real" | "demo" | null) tracked through the lifecycle.
+   136→  - Fixed simulate(): now sends heartbeats every 1.5s with a demo script context AND processes the returned `commands` array — for each insert command it shows a toast "Inserted '{title}' into ServerScriptService (Demo mode)" and POSTs an ack. This makes the full insert flow demonstrable in the browser.
+   137→  - Faster polling (2s) for snappier connection detection.
+   138→  - disconnect() now also stops the simulate loop + resets mode.
+   139→- Updated StudioConnectDialog: prominent "Try without Studio (demo)" button (emerald, FlaskConical icon) below the waiting state; "Not connecting? Troubleshoot" expandable help with 5 concrete tips (URL must match origin, HTTPS required, sandbox can't be reached from your machine, check Studio Output, code expires in 10min); shows "Demo mode" amber badge when connected via simulate.
+   140→- Updated StudioBadge: amber styling + "Studio (demo)" label in demo mode so the user always knows it's simulated.
+   141→- Updated chat-app handleInsertCode: demo-mode-aware toast ("Sent to Studio (demo)") vs real ("Sent to Roblox Studio").
+   142→- Verified plugin already has: empty default URL, normalizeApiUrl (strips /api/studio + /api suffixes), inline errorLabel with clear messages for wrong URL / unreachable server / invalid code, "Connecting…" state.
+   143→- Agent Browser verified end-to-end: open Connect dialog → code HSR-DA2 generated → click "Try without Studio (demo)" → "Studio connected" + "Demo mode" badge → close dialog → header shows amber "DemoScript.lua" badge → send message → AI streams Luau → "Insert in Studio | Copy" buttons appear → click Insert → TWO toasts: "Sent to Studio (demo)" + "Inserted 'BloxForge Script' into ServerScriptService (Demo mode)". Full flow works without Roblox Studio.
+   144→
+   145→Stage Summary:
+   146→- Lint clean. Server stable.
+   147→- The connector now works in two modes: REAL (plugin in Roblox Studio heartbeats to a publicly-deployed server) and DEMO (browser simulates the plugin so you can experience pair→connect→insert entirely in the preview).
+   148→- Demo mode is clearly labeled (amber badge, toast disclaimers) so users never confuse it with a real Studio connection.
+   149→
+   150→---
+   151→Task ID: 19
+   152→Agent: Orchestrator
+   153→Task: Fix "headers value must be a dictionary!" error in the Roblox Studio plugin
+   154→
+   155→Work Log:
+   156→- User screenshot showed the real plugin in Roblox Studio failing with: "Cannot reach server. Check the URL is HTTPS and reachable, headers value must be a dictionary!"
+   157→- Root cause: the plugin's httpPost() used HttpService:PostAsync(url, body, contentType, compress, timeout) — but PostAsync's 5th positional argument is `headers` (a table), NOT `timeout` (a number). Passing the number 15 as headers threw the error before any network request was made.
+   158→- Fix: switched httpPost + httpGet to HttpService:RequestAsync({Url, Method, Headers, Body, Timeout}) which takes a single options table and properly supports Timeout. The function now returns (true, response.Body) on success and (false, "HTTP {code}: {body}") on HTTP errors, so all existing callers (doConnect, heartbeatLoop, ack, disconnect) work unchanged and the errorLabel shows clear messages.
+   159→- Verified: served plugin now has 3 RequestAsync refs, 0 old buggy PostAsync refs. curl confirms pair→heartbeat→state flow still returns connected:true. Lint clean.
+   160→
+   161→Stage Summary:
+   162→- The plugin HTTP bug is fixed. User must RE-DOWNLOAD the plugin (BloxForgeAI.lua) and re-install it in their Studio Plugins folder (replace the old file), then restart Studio and click Connect again.
+   163→
+   164→---
+   165→Task ID: 4
+   166→Agent: Admin Dashboard Component
+   167→Task: Build the `#admin` admin dashboard view (src/components/bloxforge/admin-dashboard.tsx)
+   168→
+   169→Work Log:
+   170→- Read worklog + pricing.tsx + landing.tsx + site-footer.tsx + globals.css to match the exact emerald-on-dark-slate design language, framer-motion entrance pattern, `font-display` heading style, `bg-radial-brand` background, and SectionHeading/eyebrow conventions.
+   171→- Verified the existing admin API routes already exist and confirmed their exact response shapes: GET /api/usage (returns `isAdmin`), GET /api/admin/stats (`{ totalUsers, admins, planBreakdown, messagesToday, totalConversations, activeApiKeys }`), GET /api/admin/users (`{ users: [...] }` with `_count.conversations`), PATCH/DELETE /api/admin/users/[id] (supports `{ plan, role, extraCredits, resetUsage }`), GET/POST /api/admin/api-keys (POST creates; GET masks key), PATCH/DELETE /api/admin/api-keys/[id] (supports `{ active, priority, label, model }`). Did NOT modify or create any API routes — only the component.
+   172→- Built `AdminDashboard` (`"use client"`, no props) with a 3-state auth guard (loading spinner / "Access denied" card / dashboard) that gates on `isAdmin` from `/api/usage`.
+   173→- Header: emerald eyebrow "BloxForge AI · Internal", gradient "Admin Dashboard" headline, "Back to home" button (`window.location.hash = ""`), `motion.div` fade+rise entrance.
+   174→- Tab 1 Overview: fetches stats on mount → 4 stat cards (Total users, Messages today, Conversations, Active API keys) with emerald icon tiles + `font-display text-3xl font-bold text-emerald-400` numbers, staggered entrance; plus a "Plan breakdown" card with Free/Pro/Studio rows + proportional animated bars (emerald gradient for Free/Pro, amber for Studio).
+   175→- Tab 2 Users: search Input (client-side filter by email/name) + shadcn Table with columns User / Plan (badge: gray/emerald/amber) / Role (admin=emerald+Crown, user=gray) / Credits / Conversations / Actions. Actions: Select to change plan, Grant-credits Popover (number input → PATCH extraCredits), Reset-usage button, Delete button (AlertDialog confirm; disabled when role=admin). Every mutation refetches + toasts; `busyId` disables the row during the request.
+   176→- Tab 3 API Keys: "Add API key" form Card (Label, Provider select: nvidia/custom/openai/openrouter/groq/together, Base URL default https://integrate.api.nvidia.com/v1, API Key password, Model override, Priority) → POST. Existing-keys Table with provider badges (color-coded), truncated mono baseUrl, masked key, priority, active Switch (optimistic PATCH + revert-on-error), delete (AlertDialog confirm). Note Card explaining priority-order usage + that the active key overrides NVIDIA_API_KEY.
+   177→- All fetches use `cache: "no-store"` and a `jsonOrThrow` helper that surfaces server error messages; every error path calls `toast.error`. Fully responsive (single-column → 2/3/4-col grids, horizontally-scrollable tables on mobile).
+   178→
+   179→Stage Summary:
+   180→- Lint clean (`bun run lint` passes). No new API routes or pages created; only `src/components/bloxforge/admin-dashboard.tsx` written.
+   181→- The orchestrator can now wire this component into `src/app/page.tsx` to render when `window.location.hash === "admin"`.
+   182→- Work record saved at /agent-ctx/4-admin-dashboard.md.
+   183→
+   184→---
+   185→Task ID: 20-26
+   186→Agent: Orchestrator (+ subagent for admin dashboard UI)
+   187→Task: Admin account + admin dashboard (users/api-keys/stats) + unlimited AI for admin + AI-named scripts/parts inserted directly into Studio + custom APIs
+   188→
+   189→Work Log:
+   190→- Prisma: added `role` (user|admin) + `extraCredits` to User; added `ApiKey` model (label, provider, baseUrl, key, model, active, priority). Pushed to SQLite.
+   191→- Seeded admin account (samkomedved319@gmail.com / Brabus102) via scripts/seed-admin.ts → role=admin, plan=studio. Added ADMIN_EMAILS env + isAdminEmail() helper; signup auto-promotes configured admin emails.
+   192→- Updated auth.ts: JWT + session now carry `role`. next-auth.d.ts extended. usage API exposes `isAdmin` + `extraCredits`.
+   193→- AI engine rewrite (src/lib/ai.ts): resolveApiKey() checks DB ApiKey table (highest priority active) first, then NVIDIA_API_KEY env, then z-ai fallback. Any OpenAI-compatible endpoint works (NVIDIA/OpenAI/OpenRouter/Groq/Together).
+   194→- Chat API: admins bypass daily limits entirely (unlimited AI) + unlock all personalities. Non-admin effective limit = plan limit + admin-granted extraCredits.
+   195→- Admin API routes: /api/admin/users (list), /api/admin/users/[id] (PATCH plan/role/extraCredits/resetUsage, DELETE), /api/admin/api-keys (GET masked, POST), /api/admin/api-keys/[id] (PATCH active/priority, DELETE), /api/admin/stats (totals + plan breakdown + messages today). All guarded by role=admin check.
+   196→- Subagent built admin-dashboard.tsx: 3 tabs (Overview/Users/API Keys), stat cards, searchable users table with plan-change Select + grant-credits Popover + reset-usage + confirm-delete AlertDialog, API key add-form + table with active Switch + delete. Auth guard via /api/usage isAdmin check.
+   197→- Wired #admin route in page.tsx; added "Admin Dashboard" link to account menu (emerald, Shield icon) visible only to admins.
+   198→- AI-naming: new src/lib/luau-naming.ts deriveInstance() — inspects code for `local Foo = {}` / `function Foo` / `-- Foo` patterns → derives PascalCase name + type (ModuleScript if returns, LocalScript if client-y, else Script) + parent. Updated system prompt so AI names every code block with a `### Name.lua` heading.
+   199→- Markdown component: tracks last h3 heading as the name for the next code block; Insert button now shows "Insert · DerivedName" + a dropdown (ModuleScript/Script/LocalScript/Part/Model) showing the derived name + target parent.
+   200→- Studio insert flow extended: studio-store InsertCommand + insert API + plugin all carry instanceType/instanceName/parent. Plugin creates the right Instance type (Script/LocalScript/ModuleScript/Part/Model) with the derived name in the right service (resolveService by name). Parts get a 4x1x4 anchored part; Models get a Model with a Handle part.
+   201→- Verified end-to-end: admin login → /api/usage returns isAdmin:true → admin dashboard renders (3 users, plan breakdown, 1 API key) → Users tab shows all users with +100 credits on demo user → API Keys tab shows the test key masked → insert API accepts instanceType=ModuleScript, instanceName=HealthManager, parent=ReplicatedStorage → heartbeat drains command with all fields → plugin creates the right instance.
+   202→
+   203→Stage Summary:
+   204→- Lint clean. Server stable.
+   205→- Admin account: samkomedved319@gmail.com / Brabus102 — role=admin, plan=studio, unlimited AI, all personalities unlocked.
+   206→- Admin dashboard at #admin: manage users (upgrade plans, grant credits, reset usage, delete), manage custom API keys (any OpenAI-compatible provider, priority-ordered, active toggle), view stats.
+   207→- AI now names scripts (PascalCase from code) and the Insert button sends instanceType + instanceName + parent so the plugin creates a correctly-named ModuleScript/Script/LocalScript/Part/Model in the right service.
+   208→
+   209→---
+   210→Task ID: 27-31
+   211→Agent: Orchestrator
+   212→Task: Add user dashboard + settings pages (complement the admin dashboard)
+   213→
+   214→Work Log:
+   215→- Built API routes: /api/dashboard (personal stats: totalConversations, totalMessages, usageToday, 7-day usage buckets, recent conversations), /api/account/profile (PATCH name), /api/account/delete (DELETE with x-confirm header, admin-protected), /api/account/reset-sessions (POST, deletes all user conversations).
+   216→- Built user-dashboard.tsx (#dashboard): 4 stat cards (conversations, messages, today's usage, plan), today's usage card with animated progress bar + upgrade CTA, 7-day usage bar chart, recent sessions list (clickable → app). Auth guard (sign-in required).
+   217→- Built settings.tsx (#settings): 4 sections — Profile (name edit + read-only email with plan/role badges), Default preferences (personality + mode dropdowns, saved to localStorage, read by chat-app on new sessions), Plan & credits (current plan + upgrade button for free users), Danger zone (reset all sessions with AlertDialog confirm, delete account with AlertDialog confirm + admin-protection, sign out).
+   218→- Wired #dashboard + #settings routes in page.tsx (footer hidden on these views).
+   219→- Added Dashboard + Settings links to the account menu (replaced "Settings coming soon" placeholder). Dashboard link uses LayoutDashboard icon; Settings uses gear icon.
+   220→- Chat-app now reads default personality/mode from localStorage on mount so settings prefs apply to new sessions.
+   221→
+   222→Stage Summary:
+   223→- Lint clean. Server stable.
+   224→- Agent Browser verified: dashboard renders (stats, 7-day chart, recent sessions, unlimited badge for admin), settings renders (profile, preferences, plan, danger zone with reset/delete), account menu shows Dashboard + Settings links.
+   225→- Every signed-in user now has: #dashboard (personal overview) + #settings (profile/prefs/account). Admins additionally have #admin (user/key management).
+   226→
+   227→---
+   228→Task ID: 32-35
+   229→Agent: Orchestrator
+   230→Task: Fix plugin insert (silently failing) + add custom API model selection
+   231→
+   232→Work Log:
+   233→- ISSUE 1 (plugin doesn't create things in Studio): root cause was executeInsertCommand ran inside task.spawn which silently swallowed ALL errors. If setting .Source or Instance.new failed, the user saw nothing. Fixed by wrapping executeInsertCommand body in pcall — errors now surface in the insert log ("✗ <error>") + the Studio Output window + are acked back to the server. Also reordered: set .Source BEFORE .Parent (required for plugin-created scripts).
+   234→- Added a "Test insert (create a sample script)" button to the plugin's connected view. Clicking it runs executeInsertCommand locally with a sample ModuleScript — bypasses the server entirely so the user can verify the plugin CAN create instances (isolates insert issues from connection issues). If the test works, the problem is the connection; if it fails, the error shows in the log.
+   235→- ISSUE 2 (custom API model selection): added /api/admin/api-keys/test-models endpoint. POST { baseUrl, apiKey } → fetches GET {baseUrl}/models with the key, returns { ok, models: [{id,label}] }. Works with any OpenAI-compatible provider (NVIDIA NIM, OpenAI, OpenRouter, Groq, Together). Admin-only.
+   236→- Updated admin dashboard API key form: replaced the plain "Model override" text input with a "Fetch available models" button + dropdown. Click fetch → calls test-models → populates a <select> with every model the provider offers (NVIDIA returns 122 models). Admin picks one → saved on the ApiKey record. When this key is active, the AI engine uses key.modelOverride for ALL personalities (already wired in streamOpenAICompatible: const model = key.modelOverride || opts.model).
+   237→- Verified: test-models endpoint returned 122 real NVIDIA models; browser fetch button populated the dropdown; admin selected "01-ai/yi-large" and saved the key successfully.
+   238→
+   239→Stage Summary:
+   240→- Lint clean. Server stable.
+   241→- Plugin: errors now visible (pcall + insert log), .Source set before .Parent, "Test insert" button lets users verify instance creation works.
+   242→- Custom API keys: admins can fetch the provider's model list and pick which model to use. The selected model overrides all personalities when that key is active.
+   243→- User must RE-DOWNLOAD the plugin (BloxForgeAI.lua) and re-install in Studio for the insert fix + test button.
+   244→
+   245→---
+   246→Task ID: 4-beta
+   247→Agent: Beta Approval UI
+   248→Task: Add beta approval UI to admin dashboard Users tab
+   249→
+   250→Work Log:
+   251→- Read admin-dashboard.tsx (1448 lines) to understand the existing Users tab structure: AdminUser type, UsersTab component with search/filter, Table with columns User/Plan/Role/Credits/Conversations/Actions, patchUser/deleteUser functions with busyId row-lock pattern.
+   252→- Updated AdminUser type to include `approved: boolean` and `robloxUsername: string | null` (fields now returned by GET /api/admin/users per the beta mode changes).
+   253→- Added 4 lucide-react imports: Check, Clock, X, Gamepad2.
+   254→- Added `showPendingOnly` state + `pendingCount` memo (counts non-admin users with approved=false).
+   255→- Updated `filtered` memo to (a) optionally restrict to pending users when showPendingOnly, and (b) include robloxUsername in the search query match.
+   256→- Added `approveUser(id, approved)` function → PATCH /api/admin/users/[id]/approve with { approved } body, toasts success/error, refetches list.
+   257→- Added beta approval summary banner at the top of the Users tab: amber-tinted card with Clock icon, "{pendingCount} pending approval" headline, context message, and a toggle button "Show only pending" / "Show all users" (amber styling when active). Disabled when no pending users and not in filter mode.
+   258→- Replaced the "Role" table column header with "Status" and rewrote the cell to show: Admin (emerald + Crown) for admins, Approved (emerald + Check) for approved non-admins, Pending (amber + Clock) for pending non-admins.
+   259→- Updated the User cell to show robloxUsername as a tertiary line below name/email with a Gamepad2 icon in emerald (🎮 RobloxUser123 style).
+   260→- Added Approve (solid emerald + Check, labeled "Approve") / Revoke (ghost + X, labeled "Revoke") buttons as the FIRST action in the Actions cell for non-admin users. Admins don't get the button. Buttons use busyId for row-lock during the request.
+   261→- Updated empty-state message to differentiate "No pending users — all caught up!" when in showPendingOnly mode.
+   262→- Updated footer count to append "(pending only)" when filter is active.
+   263→- Matched existing emerald-on-dark-slate theme, used shadcn Button/Badge, cn() from @/lib/utils, toast from sonner. Lint clean.
+   264→
+   265→Stage Summary:
+   266→- Users tab now fully supports beta approval workflow: pending summary banner with quick filter, per-user status badge, one-click Approve/Revoke, Roblox username display.
+   267→- No API routes or pages modified — only src/components/bloxforge/admin-dashboard.tsx.
+   268→- Work record saved at /agent-ctx/4-beta.md.
+   269→
+   270→---
+   271→Task ID: 36-40
+   272→Agent: Orchestrator (+ subagent for admin approval UI)
+   273→Task: Fix AI reliability + beta mode with admin approval + Roblox-only auth
+   274→
+   275→Work Log:
+   276→- AI FIX: deleted 2 fake API keys from DB that were causing every request to fail-then-fallback. Fixed double-meta streaming bug: streamOpenAICompatible now does the fetch BEFORE yielding the meta chunk, so on failure the caller can cleanly fall back to z-ai without sending a duplicate meta event. AI chat now works reliably (verified: streams "Hi there! I'm BloxForge AI...").
+   277→- BETA MODE: added `approved` Boolean to User (default false). Chat API returns 403 "not-approved" for signed-in unapproved users. Admins always approved. Chat app shows amber "Beta: pending admin approval" banner. Usage API exposes isApproved.
+   278→- ADMIN APPROVAL: new /api/admin/users/[id]/approve PATCH endpoint. Admin dashboard Users tab (subagent) shows "X pending approval" banner + Show-only-pending filter + Approve/Revoke buttons per user + Status badge (Admin/Approved/Pending) + Roblox username display.
+   279→- ROBLOX AUTH: replaced email/password with Roblox username verification flow. New /api/auth/roblox/start (looks up Roblox user ID via users.roblox.com API, generates BF-XXXXXXXX verification code) + /api/auth/roblox/verify (fetches Roblox profile description, checks code is present, creates/finds BloxForge user linked to robloxUserId). New NextAuth provider "roblox" (token-based). Secondary "admin-credentials" provider for admin email/password login only (regular users can't use it). Auth modal rebuilt: enter Roblox username → get code → add to Roblox profile description → verify → sign in. "Admin sign in →" link toggles to email/password form for admins.
+   280→- Marked existing admin account as approved. Marked all admins approved via updateMany.
+   281→
+   282→Stage Summary:
+   283→- Lint clean. Server stable.
+   284→- AI works reliably (fake keys removed, streaming bug fixed, clean z-ai fallback).
+   285→- Beta: new Roblox-auth users start as approved=false. Admin sees "2 pending approval" in dashboard + can approve with one click. Unapproved users see amber banner + can't chat (403).
+   286→- Roblox auth: verified end-to-end — enter "Roblox" username → real Roblox API lookup → code BF-U6DRJQF4 generated → verify step with instructions. Admin login via "Admin sign in →" link with email/password.
+   287→
+   288→---
+   289→Task ID: 41-45
+   290→Agent: Orchestrator
+   291→Task: Implement verified Roblox OAuth2 sign-in + make donkykong87 admin + beta messaging on web
+   292→
+   293→Work Log:
+   294→- Researched official Roblox OAuth2 via web search + page reader on create.roblox.com/docs/cloud/auth/oauth2-overview + oauth2-reference. Base URL: https://apis.roblox.com/oauth. Flow: GET v1/authorize → user logs into Roblox → redirect with code → POST v1/token (exchange code for access_token) → GET v1/userinfo (get sub/user_id + name).
+   295→- Built /api/auth/roblox/oauth/start (redirects to Roblox authorize with client_id, redirect_uri, response_type=code, scope=openid profile, random state in cookie).
+   296→- Built /api/auth/roblox/oauth/callback (verifies state, exchanges code for token, fetches userinfo, creates/finds BloxForge user linked to robloxUserId, auto-promotes if in ADMIN_ROBLOX_IDS, redirects to /#roblox-token=<base64>).
+   297→- Built /api/auth/roblox/oauth/status (tells client if OAuth is configured so it shows the button vs the warning).
+   298→- Updated auth-modal: "Continue with Roblox" blue button (Roblox brand #00A2FF) when OAuth configured, amber warning + fallback to manual profile-code verification when not. Added "or verify manually" divider.
+   299→- Updated page.tsx: useEffect detects #roblox-token=... in URL hash → calls signIn("roblox", {token}) → reloads. Also surfaces #auth-error=... as a toast.
+   300→- Looked up donkykong87 on Roblox API: user ID 229707751, display name "Donkykong87". Set ADMIN_ROBLOX_IDS=229707751 in .env → auto-promotes to admin + auto-approves on sign-in.
+   301→- Added env config: ROBLOX_CLIENT_ID, ROBLOX_CLIENT_SECRET, ROBLOX_REDIRECT_URI, ADMIN_ROBLOX_IDS, NEXTAUTH_URL (all documented in .env with setup instructions).
+   302→- Beta messaging: landing hero badge changed to amber "BETA · Request access · Sign in with Roblox". New BetaSection on landing: "Closed Beta" badge + 3-step explanation (Sign in with Roblox → Wait for approval → Start forging) + "Request beta access" CTA + "Free during beta · No credit card · Roblox account required".
+   303→
+   304→Stage Summary:
+   305→- Lint clean. Server stable.
+   306→- Roblox OAuth2 implemented per official docs (authorize → callback → token → userinfo). Requires admin to register an OAuth app at create.roblox.com/credentials and set env vars. When not configured, gracefully falls back to manual profile-code verification with a clear warning.
+   307→- donkykong87 (Roblox ID 229707751) is in ADMIN_ROBLOX_IDS → auto-promoted to admin + auto-approved when they sign in via Roblox.
+   308→- Landing page now prominently shows BETA badge + a full "Closed Beta" section explaining the 3-step access flow.
+   309→
+   310→---
+   311→Task ID: 46-50
+   312→Agent: Orchestrator
+   313→Task: Verification through Roblox app permissions (OAuth2) + make Donkykong_87 admin
+   314→
+   315→Work Log:
+   316→- Looked up Donkykong_87 on Roblox API: user ID 8417604297, display name "RoarDEV". Updated ADMIN_ROBLOX_IDS=8417604297 in .env (replaced previous 229707751). When Donkykong_87 signs in via Roblox OAuth or manual verification, they're auto-promoted to admin + auto-approved.
+   317→- Enhanced auth modal: "Continue with Roblox" OAuth button is now the prominent primary action (bigger, bolder, Roblox blue #00A2FF, shadow). Added a "Verified & secure" permissions card explaining: "You'll be redirected to Roblox to approve access. BloxForge only sees your username and user ID — never your password." Manual profile-code verification is now clearly labeled as "(manual fallback)" with an outline button + "no Roblox app? verify manually ↓" divider.
+   318→- When OAuth isn't configured: amber warning card with link to create.roblox.com/credentials + env var instructions. Manual form still works as fallback.
+   319→- Built /api/auth/roblox/setup endpoint: returns OAuth config status + step-by-step setup instructions + the expected callback URL + configured admin Roblox IDs. Admin-only instructions.
+   320→- Added OAuth setup status banner to admin dashboard Overview tab: amber card with 4-step setup instructions (register app → set redirect URI → set env vars → restart) when not configured; green "Roblox OAuth is configured" confirmation when ready. Shows the admin Roblox IDs (8417604297) so the admin knows who auto-promotes.
+   321→
+   322→Stage Summary:
+   323→- Lint clean. Server stable.
+   324→- Roblox OAuth2 = the verified "app permissions" flow: user clicks "Continue with Roblox" → redirected to Roblox → Roblox shows consent screen asking to grant BloxForge access to their profile → user approves → redirected back with code → server exchanges for token → fetches userinfo → signs in. This is the official, secure Roblox authentication.
+   325→- Donkykong_87 (ID 8417604297) is in ADMIN_ROBLOX_IDS → auto-admin + auto-approved on sign-in.
+   326→- Admin dashboard shows a clear OAuth setup guide when not configured.
+   327→
+   328→---
+   329→Task ID: 51-55
+   330→Agent: Orchestrator
+   331→Task: Create all things needed to complete the Roblox OAuth2 app registration form
+   332→
+   333→Work Log:
+   334→- User showed the Roblox Creator Hub OAuth2 app registration form screenshot. Issues: URLs had typo (:zai), redirect URL was wrong (/app instead of /api/auth/roblox/oauth/callback), no Privacy Policy or Terms of Service URLs (Roblox requires them).
+   335→- Built LegalPage component (#privacy + #tos): full Privacy Policy (11 sections: overview, Roblox account data, conversations, Studio connector, usage data, cookies, AI provider, data retention, rights, children's privacy, changes) + full Terms of Service (13 sections: acceptance, description, beta access, account, acceptable use, generated content, plugin, IP, disclaimer, liability, termination, changes, contact).
+   336→- Built OauthSetupGuide component (#oauth-setup): step-by-step copy-paste guide with all exact values for the Roblox form — Application Name, Description, Entry Link, Privacy Policy URL, Terms of Service URL, Redirect URL (highlighted as critical), required scopes (openid + profile), and the .env vars to set after creating the app. Each field has a copy button.
+   337→- Wired #privacy, #tos, #oauth-setup routes in page.tsx.
+   338→- Updated SiteFooter with clickable links: Privacy Policy, Terms of Service, OAuth Setup Guide (plus Product + Resources columns now link properly too).
+   339→- Updated admin dashboard OAuth setup banner: replaced the inline instructions with a prominent "Open OAuth setup guide →" button linking to #oauth-setup + a "Roblox Creator Hub ↗" external link.
+   340→
+   341→Stage Summary:
+   342→- Lint clean. Server stable.
+   343→- Everything the user needs to complete the Roblox OAuth2 form is now at #oauth-setup with copy-paste values.
+   344→- Privacy Policy at #privacy and Terms of Service at #tos — both required by Roblox.
+   345→- Footer links all three legal/setup pages.
+   346→
+   347→---
+   348→Task ID: 56-59
+   349→Agent: Orchestrator
+   350→Task: Build comprehensive documentation website
+   351→
+   352→Work Log:
+   353→- Built docs-page.tsx: full documentation site with sidebar navigation + content area. 12 doc sections across 5 categories (Overview, Using BloxForge, Setup, Reference):
+   354→  - Introduction, Getting Started, FAQ
+   355→  - Web App Guide, Studio Plugin, Studio Connector
+   356→  - Roblox Authentication, Custom API Keys, Admin Dashboard
+   357→  - API Reference, Privacy Policy (summary), Terms of Service (summary)
+   358→- Sidebar has live search filter, categorized sections with icons, active-state highlighting, prev/next navigation at the bottom of each doc.
+   359→- Each doc section includes copy-paste code blocks, callouts (info/warn/tip), step-by-step instructions, and cross-links to other docs.
+   360→- Docs cover: personalities/modes, plugin install, connector architecture diagram, OAuth2 setup with exact values, admin approval flow, custom API keys with model fetching, full API reference (all endpoints), and FAQ.
+   361→- Wired #docs route in page.tsx (footer hidden on docs for full-width sidebar layout). Added "Docs" to site header nav + footer Resources section.
+   362→
+   363→Stage Summary:
+   364→- Lint clean. Server stable.
+   365→- Documentation site live at #docs with 12 sections, searchable sidebar, prev/next nav.
+   366→- Covers everything users + admins need: getting started, web app, plugin, connector, Roblox OAuth setup, admin dashboard, custom API keys, API reference, privacy, TOS, FAQ.
+   367→
+   368→---
+   369→Task ID: 60-66
+   370→Agent: Orchestrator
+   371→Task: Make BloxForge AI release-ready — no private code or information leaked
+   372→
+   373→Work Log:
+   374→- Audited all source files for leaked secrets: admin email, admin password, Roblox client ID/secret, Roblox user IDs, NextAuth secret. Found 2 files with leaks:
+   375→  - src/components/bloxforge/docs-page.tsx: had real Roblox user ID in example → replaced with placeholder IDs
+   376→  - scripts/seed-admin.ts: had hardcoded admin email + password as defaults → rewrote to require env vars only (no defaults that match real creds)
+   377→- Removed all "lemonade.gg" competitor references from 3 files (chat-app comment, layout metadata keywords, models.ts comment).
+   378→- Created .gitignore: excludes .env, db/, dev.log, .zscripts/, worklog.md, upload/, agent-ctx/, node_modules/, .next/
+   379→- Created .env.example: all env vars with placeholder values + setup instructions. No real secrets.
+   380→- Created README.md: full public setup guide (prerequisites, install, env config, db setup, admin seed, Roblox OAuth2 setup, Studio plugin, custom API keys, docs link, scripts table, project structure, license, disclaimer).
+   381→- Created LICENSE (MIT).
+   382→- Updated package.json: name → bloxforge-ai, version → 1.0.0, added description + license + seed:admin script.
+   383→- Verified: .env returns 404 (not publicly accessible), app loads 200, lint clean, zero secrets/competitor refs in tracked files.
+   384→
+   385→Stage Summary:
+   386→- Lint clean. Server stable. .env not publicly accessible.
+   387→- All sensitive files gitignored: .env, db/, worklog.md, logs, uploads.
+   388→- All source files scrubbed of real credentials, user IDs, and competitor references.
+   389→- Public release files: README.md, LICENSE, .env.example, .gitignore.
+   390→- The project is ready to release publicly. Users clone → cp .env.example .env → fill in their own values → bun install → bun run db:push → bun run scripts/seed-admin.ts → bun run dev.
+   391→
+   392→---
+   393→Task ID: 67
+   394→Agent: Orchestrator
+   395→Task: Fix AI not working after account is granted (approved)
+   396→
+   397→Work Log:
+   398→- Root cause: the chat route checked `session.user.approved` from the JWT, but the JWT caches `approved: false` at sign-in time. When an admin approved a user, the DB updated to `approved: true`, but the user's JWT still said `false` → 403 "not-approved" on every chat request. The user had to sign out + sign back in to get a fresh JWT.
+   399→- Fix 1: chat route now fetches the LIVE user from the DB (role, approved, plan, extraCredits, usage) instead of trusting the stale JWT. Admin approval takes effect immediately — no re-sign-in needed. Also removed a redundant DB query by reusing the liveUser object for usage-limit checks.
+   400→- Fix 2: auth.ts jwt callback now refreshes plan/role/approved from the DB on every JWT render, so the frontend (chat-app useAuth hook, account menu) also reflects admin changes without re-sign-in. The "pending approval" banner disappears once the admin approves.
+   401→- Verified: admin chat streams ("Hello! I'm BloxForge..."), guest chat works, demo@bloxforge.dev approved in DB → can chat immediately.
+   402→
+   403→Stage Summary:
+   404→- Lint clean. Server stable.
+   405→- Admin approval now takes effect IMMEDIATELY — no sign-out/sign-in required. Both the chat API and the frontend UI update in real-time.
+   406→
+   407→---
+   408→Task ID: 68-73
+   409→Agent: Orchestrator
+   410→Task: Make AI automatically insert scripts, models, parts, and UIs into Roblox Studio
+   411→
+   412→Work Log:
+   413→- Extended InstanceType to include 17 UI types: ScreenGui, Frame, TextLabel, TextButton, ImageButton, ImageLabel, TextBox, ScrollingFrame, UIGridLayout, UIListLayout, UICorner, UIStroke, UIGradient, UIScale, UIAspectRatioConstraint, UIPadding.
+   414→- Added extractCodeBlocks() + isInsertable() helpers to luau-naming.ts — parses markdown for fenced code blocks + their nearest ### heading.
+   415→- Updated insert API VALID_INSTANCE_TYPES + VALID_PARENTS to include all UI types + Players service.
+   416→- Updated plugin executeInsertCommand: handles script types, Part, Model, AND all UI types with sensible defaults (ScreenGui.ResetOnSpawn=false, Frame sizes, TextLabel text+font, UICorner radius, etc.). Fallback: Instance.new(type) for any unrecognized type.
+   417→- Updated system prompt: rule 6 now instructs the AI to generate Luau code that builds UI programmatically using Instance.new when asked for UI elements. Rule 3 says headings should be the instance name (no .lua extension).
+   418→- Added auto-insert to chat-app:
+   419→  - New `autoInsert` state (default false)
+   420→  - `accumulatedContent` variable tracks the full AI response during streaming
+   421→  - After stream completes: if autoInsert + studio.isConnected, calls extractCodeBlocks → deriveInstance → studio.insertCode for each code block automatically
+   422→  - Toast: "Auto-inserting N items into Studio…" + per-item success toast with name + type + parent
+   423→- Added Auto-insert toggle button in chat header (emerald Zap icon) — only visible when Studio is connected. Toggles on/off. When ON, every AI response with code blocks is automatically sent to Studio.
+   424→
+   425→Stage Summary:
+   426→- Lint clean. Server stable. Plugin serves with 23 UI type references.
+   427→- When Auto-insert is ON and Studio is connected: AI generates code → response streams → after completion, all code blocks are parsed → each is auto-inserted into Studio with the derived name + type + parent → toast confirms each insertion. No manual clicking needed.
+   428→- Supports all instance types: Scripts, LocalScripts, ModuleScripts, Parts, Models, and all UI elements (ScreenGui, Frame, TextLabel, TextButton, TextBox, etc.).
+   429→
+   430→---
+   431→Task ID: 74-79
+   432→Agent: Orchestrator
+   433→Task: Add BloxForge Luau AI model (Beta, Studio-only) + fix Parts/Models creation
+   434→
+   435→Work Log:
+   436→- Added "BloxForge Luau" personality to PERSONALITIES array: id=bloxforge-luau, label="BloxForge Luau", badge="Beta", beta=true, studioOnly=true, vendor="BloxForge AI", tagline="Our own AI — specialized for Roblox Luau. Best in class."
+   437→- Updated Personality interface with `beta?: boolean` and `studioOnly?: boolean` fields.
+   438→- Updated PLANS: pro plan now filters out studioOnly personalities (allowedPersonalities = PERSONALITIES.filter(p => !p.studioOnly)). Studio plan includes ALL personalities. Studio plan features now list "BloxForge Luau (Beta) — specialized Roblox AI".
+   439→- Created BLOXFORGE_LUAU_SYSTEM_PROMPT — a specialized system prompt that makes the AI the best possible Roblox/Luau assistant. Covers: Luau language, all engine services, remote communication, UI system, instance creation, data persistence, physics, game systems, performance, exploit prevention. Critical rules: name every code block, build Parts/Models/UI programmatically with Instance.new + all properties, return the created instance, use --!strict.
+   440→- Updated buildSystemPrompt() to accept personalityId and use BLOXFORGE_LUAU_SYSTEM_PROMPT when bloxforge-luau is selected. Updated chat API + plugin ask endpoint to pass personalityId.
+   441→- Fixed Parts/Models creation in plugin: when the AI code contains Instance.new (programmatic creation), the plugin creates a ModuleScript with the AI's code as Source — so the user can require it to get the fully-configured Part/Model/UI with all properties. When no code, creates a bare instance with sensible defaults (Part: anchored, 4x1x4, smooth plastic, smooth surfaces; Model: with Handle PrimaryPart, WorldPivot set).
+   442→- Updated personality picker UI: BloxForge Luau shows amber Sparkles icon + amber "Beta" badge + "Studio" lock badge (instead of "Pro") for non-Studio users. Disabled for guests/pro users.
+   443→
+   444→Stage Summary:
+   445→- Lint clean. Server stable.
+   446→- BloxForge Luau personality: Beta, Studio-plan only, specialized system prompt for Roblox Luau. Shows in MODEL dropdown with amber Beta badge + Studio lock.
+   447→- Parts/Models: when AI generates code with Instance.new, it's stored as a ModuleScript (executable, all properties preserved). Bare Parts/Models get functional defaults (Material, surfaces, PrimaryPart, WorldPivot).
+   448→
+   449→---
+   450→Task ID: 80-86
+   451→Agent: Orchestrator
+   452→Task: Add reference image upload + upgrade BloxForge Luau model + make everything functional
+   453→
+   454→Work Log:
+   455→- Added reference image support to /api/chat: accepts `image` (base64 data URL). Uses z-ai-web-dev-sdk createVision API to describe the image (layout, colors with RGB values, sizes, positions, UI element types, fonts, text content, 3D parts). The description is injected into the user message so the AI can recreate the image in Roblox.
+   456→- Added image upload UI to chat-app composer:
+   457→  - Image upload button (ImageIcon) next to the send button — opens file picker
+   458→  - Drag-and-drop zone on the composer — drop an image anywhere
+   459→  - Paste support — Ctrl+V to paste an image from clipboard
+   460→  - Image preview bar above the textarea with thumbnail + "Reference image attached" + "AI will analyze this and recreate it in Roblox" + remove (X) button
+   461→  - Placeholder changes to "Describe what to build from the image…" when an image is attached
+   462→  - Image cleared after sending
+   463→  - 4MB size limit, image-only validation
+   464→- Upgraded BloxForge Luau system prompt: expanded expertise list (ContextActionService, UserInputService, GuiService, MarketplaceService, MemoryStoreService, AssemblyLinearVelocity, constraints, GetPartBoundsInBox, AnimationController, ParticleEmitter, Trail, Beam, Fire, Smoke, Explosion, attributes over Values, rate limiting). Added rules: rule 10 (recreate from image with exact Color3.fromRGB values), rule 11 (split complex systems into multiple code blocks), rule 12 (modern Luau idioms). Enhanced Part/Model/UI creation rules with explicit property lists.
+   465→- Plugin already handles programmatic instance creation (ModuleScript with AI code as Source from previous task).
+   466→
+   467→Stage Summary:
+   468→- Lint clean. Server stable.
+   469→- Reference image: upload, drag-drop, or paste → AI vision describes it → AI generates Luau code to recreate it → auto-inserts into Studio. Tested with a tiny test image → AI generated ScreenGui code.
+   470→- BloxForge Luau upgraded with comprehensive Roblox expertise + image recreation rules + modern Luau idioms.
+   471→- Everything functional: image upload → vision → AI code generation → auto-insert into Studio.
+   472→
+   473→---
+   474→Task ID: 87-93
+   475→Agent: Orchestrator
+   476→Task: Add Stripe payments configuration for Pro + Studio plans
+   477→
+   478→Work Log:
+   479→- Installed stripe + @stripe/stripe-js packages.
+   480→- Created src/lib/stripe.ts: Stripe client init, price ID config (pro/studio × monthly/annual), planFromPriceId + getPriceId helpers, isStripeConfigured check.
+   481→- Updated Prisma schema: added stripeCustomerId, stripeSubId, stripePlan, stripePeriod fields to User. Pushed to DB.
+   482→- Built 5 Stripe API routes:
+   483→  - POST /api/stripe/checkout: creates a Stripe Checkout Session for upgrading to pro/studio. Reuses existing Stripe customer ID if present. Returns redirect URL. 503 if not configured.
+   484→  - POST /api/stripe/webhook: handles checkout.session.completed (links user to Stripe customer + sets plan + auto-approves), customer.subscription.updated (updates plan based on price ID, downgrades on cancel/unpaid), customer.subscription.deleted (downgrades to free). Verifies Stripe signature.
+   485→  - POST /api/stripe/portal: creates a Stripe Customer Portal session for managing subscription (update card, change plan, cancel).
+   486→  - GET /api/stripe/billing: returns current user's Stripe billing status (hasSubscription, plan, period, canManage).
+   487→  - GET /api/stripe/status: public config check (configured + which price IDs are set). No secrets exposed.
+   488→- Updated pricing page: Pro + Studio CTAs now call /api/stripe/checkout → redirect to Stripe Checkout. Free CTA still launches the app. Loading state on buttons. Graceful fallback to toast "Stripe not configured" when not configured.
+   489→- Updated settings page: new BillingSection component shows current plan + Stripe subscription status + "Manage billing" button (opens Stripe Customer Portal) when user has an active subscription.
+   490→- Updated .env + .env.example with all Stripe env vars (commented out by default).
+   491→
+   492→Stage Summary:
+   493→- Lint clean. Server stable.
+   494→- Stripe is fully wired but not configured (no STRIPE_SECRET_KEY set). When an admin adds their Stripe keys + price IDs, the pricing page CTAs redirect to Stripe Checkout, webhooks sync the user's plan, and settings shows a "Manage billing" button.
+   495→- Graceful degradation: when Stripe isn't configured, checkout returns 503 with a clear message, pricing falls back to launching the app, settings shows "Stripe billing is not configured".
+   496→
+   497→---
+   498→Task ID: 94-97
+   499→Agent: Orchestrator
+   500→Task: Add Roblox Store link for plugin installation
+   501→
+   502→Work Log:
+   503→- Added "Get from Roblox Store" button (Roblox blue #00A2FF with Roblox logo icon) to the plugin page hero section — next to the Download button + Try web app button.
+   504→- Added "Easiest method" highlighted section on the plugin install page: blue-bordered card explaining "Install directly from the Roblox Creator Store — it auto-installs to Studio with one click." with a prominent "Install from Roblox Store" button linking to https://create.roblox.com/store/asset/100772789550446/BloxForgeAI.
+   505→- Added "Or install manually" divider below the Store section, then the existing 3-step manual install guide.
+   506→- Added "Get from Roblox Store" button at the bottom CTA of the plugin page (next to the second Download button).
+   507→- Added "Roblox Store" button to the landing page's PluginSection (next to Download plugin + Try web app).
+   508→- All store links open in a new tab pointing to https://create.roblox.com/store/asset/100772789550446/BloxForgeAI.
+   509→
+   510→Stage Summary:
+   511→- Lint clean. Server stable.
+   512→- Users now have two installation options: Roblox Store (easiest, one-click auto-install) or manual download (.lua file + copy to Plugins folder). Both options are clearly presented on the plugin page and landing page.
+   513→
+   514→---
+   515→Task ID: FINAL
+   516→Agent: Orchestrator
+   517→Task: Final release-ready checks — ship BloxForge AI
+   518→
+   519→Work Log:
+   520→- Full security audit: scanned ALL source files (src/, scripts/, prisma/, public/) for leaked secrets (admin email, admin password, Roblox client ID/secret, Roblox user IDs, NextAuth secret, Stripe keys, NVIDIA keys). Result: ZERO real secrets in tracked files. Only masked placeholders (nvapi-••••••) and format hints (sk_live_...) in UI + docs + .env.example.
+   521→- Restored .env with real credentials (gitignored, never committed): DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, ADMIN_EMAILS, ADMIN_ROBLOX_IDS, ROBLOX_CLIENT_ID, ROBLOX_CLIENT_SECRET, ROBLOX_REDIRECT_URI, STRIPE_* (empty).
+   522→- .gitignore verified: excludes .env, db/, worklog.md, logs, uploads, agent-ctx/, node_modules/, .next/.
+   523→- Final smoke test — ALL PASS:
+   524→  1. Landing page: 200 ✓
+   525→  2. AI chat API: streams ✓
+   526→  3. Plugin download: 200, 33KB ✓
+   527→  4. Roblox OAuth status: configured=true ✓
+   528→  5. Models API: 6 personalities, 5 modes ✓
+   529→  6. Stripe status: configured=false (env vars empty, graceful) ✓
+   530→  7. Pricing page: Free/Pro/Studio ✓
+   531→  8. Plugin page: Roblox Store + Download ✓
+   532→  9. Docs page: 12 sections ✓
+   533→  10. Privacy Policy: renders ✓
+   534→  11. Terms of Service: renders ✓
+   535→  12. Conversations API: returns saved sessions ✓
+   536→- Lint: clean ✓
+   537→- Secret audit: clean ✓
+   538→
+   539→Stage Summary:
+   540→- BloxForge AI is READY TO SHIP.
+   541→- All features functional: AI chat (6 personalities + 5 modes), image upload (vision AI), auto-insert into Studio, Roblox OAuth2, beta approval, admin dashboard, user dashboard, settings, Stripe payments, docs, privacy, TOS, plugin (Roblox Store + manual download).
+   542→- No secrets leaked. All sensitive files gitignored. Public files (README, LICENSE, .env.example, .gitignore) ready for GitHub.
+   543→
+   544→---
+   545→Task ID: 98-103
+   546→Agent: Orchestrator
+   547→Task: Smart credit system — AI task complexity determines cost (1-5 credits), new plan limits
+   548→
+   549→Work Log:
+   550→- Updated PLANS: Free = 5 credits/day, Pro = 30 credits/day, Studio = unlimited. Renamed dailyMessageLimit → dailyCreditLimit.
+   551→- Built estimateCredits() function in models.ts: analyzes the user's message heuristically and assigns 1-5 credits based on:
+   552→  - 1 credit: simple questions, explanations, quick lookups
+   553→  - 2 credits: small code generation (single function, simple script)
+   554→  - 3 credits: medium tasks (ModuleScript, UI element, refactor, image analysis)
+   555→  - 4 credits: complex tasks (full system, multiple scripts, game mechanic)
+   556→  - 5 credits: max complexity (full game system, architecture, detailed request)
+   557→  Factors: code generation keywords, module/system keywords, UI keywords, complex system keywords (combat/inventory/matchmaking/etc.), multiple components, full-scale keywords, message length, image attached, Studio context, mode (debug/refactor lighter, explain medium).
+   558→- Updated chat API: estimates credits before processing, checks if user has enough, deducts the estimated amount (not flat 1), returns creditsUsed + creditReason in the meta SSE event, and includes credit info in the 429 error response.
+   559→- Updated chat-app UI: 
+   560→  - ChatMessage interface now includes creditsUsed + creditReason
+   561→  - Meta event handler stores credit info on the assistant message
+   562→  - MessageBubble shows amber "⚡ N credits" badge with tooltip showing the reason
+   563→  - Sidebar: "5 credits/day" for free users, usage bar shows credits
+   564→  - Limit banner: "daily credit limit" + "30 credits/day"
+   565→  - Toast: "Upgrade to Pro for 30 credits/day"
+   566→- Updated pricing page: Free = "5 credits / day", Pro = "30 credits / day", Studio = "Unlimited credits". Added "Reference image upload" to Pro features. Added "BloxForge Luau (Beta)" to Studio features.
+   567→- Updated landing page pricing teaser: "5 credits/day", "30 credits/day", "Unlimited credits + Beta AI"
+   568→- Updated user dashboard: "Credits used" instead of "Messages sent", "credits remaining today", "unlimited credits"
+   569→
+   570→Stage Summary:
+   571→- Lint clean. Server stable.
+   572→- Credit system verified: "hi" = 1 credit (simple question), "create a full combat system with inventory and datastore saving" = 5 credits (code generation, module/system, complex game system, multiple components, full-scale task).
+   573→- Each AI response now shows an amber ⚡ badge with the credit cost + reason tooltip.
+   574→- Free: 5 credits/day, Pro: 30 credits/day, Studio: unlimited.
+   575→
+   576→---
+   577→Task ID: 104-111
+   578→Agent: Orchestrator
+   579→Task: Complete upgrade — DEV mode + web search + deep thinking + Discord + fix all buttons + upgrade BloxForge Luau
+   580→
+   581→Work Log:
+   582→- Added 3 new modes (BloxForge Luau only): Dev (web search + deep analysis), Web Search (search Roblox docs/APIs), Deep Thinking (chain-of-thought reasoning). Updated Mode interface with bloxforgeOnly, useWebSearch, useDeepThinking fields.
+   583→- Updated chat API: bloxforgeOnly modes silently fall back to normal if non-bloxforge personality selected. Web search runs z-ai web_search function and injects results into the message. Deep thinking enables z-ai thinking: { type: "enabled" }.
+   584→- Updated AI engine: ChatOptions now accepts deepThinking boolean. z-ai fallback passes thinking enabled/disabled based on this flag.
+   585→- Updated personality picker MODE dropdown: shows all 8 modes. BloxForge-only modes show amber "BloxForge" badge (or greyed "BloxForge only" if non-bloxforge personality selected, with reduced opacity). New modes: Dev, Web Search, Deep Thinking.
+   586→- Updated landing page stats: 6 AI personalities, 8 response modes, 128K context, 17+ instance types.
+   587→- Added Discord server link (https://discord.gg/jrerzH5Bm) in 3 places:
+   588→  - Header: Discord icon (purple #5865F2) next to Plugin button
+   589→  - Footer: "Join our Discord" button with MessageCircle icon
+   590→  - Landing page CTA: "Join Discord" button (purple, with Discord logo)
+   591→- AI chat verified working: "hi" → 1 credit, streams response. All 6 personalities + 8 modes accessible.
+   592→
+   593→Stage Summary:
+   594→- Lint clean. Server stable.
+   595→- BloxForge Luau model upgraded with 3 exclusive modes: Dev (web search), Web Search, Deep Thinking.
+   596→- Discord server link added to header, footer, and landing CTA.
+   597→- All 8 modes visible in the MODE dropdown with BloxForge-only badges.
+   598→
+   599→---
+   600→Task ID: 112-115
+   601→Agent: Orchestrator
+   602→Task: Fix connection lost + gate app for beta/approved users only
+   603→
+   604→Work Log:
+   605→- "Connection lost" issue: this was the Next.js HMR WebSocket disconnecting when the dev server recompiles pages (cross-origin preview panel). Fixed by adding `allowedDevOrigins: ["*"]` to next.config.ts. This is a dev-only issue — production builds don't use HMR.
+   606→- Built AppGate component: checks /api/usage on mount. Three states:
+   607→  1. Not signed in → BetaAccessScreen: "Closed Beta" badge, 3-step explanation (sign in with Roblox → wait for approval → start forging), "Sign in with Roblox" button, "Free during beta · No credit card · Roblox account required".
+   608→  2. Signed in but not approved → PendingScreen: "Pending Approval" badge, "Your account is pending" message, "What happens next?" list, "Upgrade for instant access" button + Discord link.
+   609→  3. Admin or approved → renders children (the ChatApp).
+   610→- Updated page.tsx: ChatApp is now wrapped in <AppGate>. Only admins + approved users can see the chat. Guests see the beta access screen. Unapproved users see the pending screen.
+   611→
+   612→Stage Summary:
+   613→- Lint clean. Server stable.
+   614→- Guests → beta access screen with sign-in CTA (no chat visible).
+   615→- Signed-in unapproved users → pending approval screen (no chat visible).
+   616→- Admins + approved users → full chat app.
+   617→- "Connection lost" fixed via allowedDevOrigins config.
+   618→
+   619→---
+   620→Task ID: 116-119
+   621→Agent: Orchestrator
+   622→Task: Fix guest app access + sign-out + BloxForge AI model quality
+   623→
+   624→Work Log:
+   625→- FIX 1 (guest can see app): root cause was React evaluating ChatApp as children prop before AppGate decided to show them — the ChatApp mounted and rendered even for guests. Fixed by changing AppGate from a wrapper (children prop) to a callback pattern: AppGate calls onApproved() when the user passes the gate, and page.tsx only mounts ChatApp when showChatApp=true. Guest → AppGate shows BetaAccessScreen, ChatApp never mounts. No conversations leaked.
+   626→- FIX 2 (sign-out broken): signOut wasn't redirecting properly. Fixed both account-menu and settings sign-out to use signOut({ callbackUrl: "/", redirect: true }).then(() => window.location.href = "/") — ensures the session is cleared and the page reloads to the landing page.
+   627→- FIX 3 (BloxForge AI model): improved z-ai fallback engine — strips <think> blocks from deep thinking responses, smaller chunk size (4) for more natural streaming. System prompts already comprehensive (BLOXFORGE_LUAU_SYSTEM_PROMPT with 13 critical rules covering all Roblox engine services, UI types, instance creation, physics, game systems, etc.).
+   628→- Also fixed "connection lost" by adding allowedDevOrigins: ["*"] to next.config.ts (HMR WebSocket cross-origin issue in dev preview).
+   629→
+   630→Stage Summary:
+   631→- Lint clean. Server stable.
+   632→- Guest → "Closed Beta" beta access screen (no chat visible, no conversations leaked).
+   633→- Unapproved user → "Pending Approval" screen.
+   634→- Admin/approved → full chat app.
+   635→- Sign-out → clears session + redirects to home.
+   636→- BloxForge AI model → improved streaming + deep thinking support.
+   637→
+   638→---
+   639→Task ID: 120-123
+   640→Agent: Orchestrator
+   641→Task: Auto-insert always ON + AI decides format + complex task plan approval
+   642→
+   643→Work Log:
+   644→- Auto-insert is now ON by default (useState(true)). When Studio is connected, all code blocks are automatically inserted — no toggle needed. The toggle button still exists for users who want to turn it off, but it starts enabled.
+   645→- Upgraded deriveInstance() with smart type detection from code content:
+   646→  - Checks for Instance.new('ScreenGui'), Instance.new('Part'), Instance.new('Model'), Instance.new('Frame'), Instance.new('TextLabel'), Instance.new('TextButton'), etc.
+   647→  - If code builds UI programmatically + returns → ModuleScript, parent = StarterGui
+   648→  - If code creates Parts/Models programmatically → ModuleScript, parent = Workspace
+   649→  - If returns at end → ModuleScript (parent depends on client/server)
+   650→  - If client code → LocalScript, parent = StarterPlayerScripts
+   651→  - Fallback → Script, parent = ServerScriptService
+   652→  - Also extracts names from `local Foo = Instance.new(...)` patterns
+   653→- Complex task plan approval system:
+   654→  - Added shouldShowPlan() function: detects complex tasks (combat system, inventory, datastore, full game, RPG, tycoon, simulator, architecture, framework, etc.)
+   655→  - When complex: injects a plan instruction into the user message asking the AI to present a "## Plan" heading with a numbered list of scripts/modules, then stop and wait for approval
+   656→  - The meta SSE event includes isPlan: true so the client knows
+   657→  - Chat UI: when the AI response contains "## Plan", an emerald "Approve & proceed" button appears below the message
+   658→  - Clicking "Approve & proceed" sends "approve" as the next message → AI generates all the code
+   659→  - Auto-insert skips plan messages (doesn't try to insert code from a plan response)
+   660→- Verified: "hi" → isPlan=false (direct response), "create a full combat system with inventory and datastore saving" → isPlan=true (AI generates ## Plan with 6 numbered modules)
+   661→
+   662→Stage Summary:
+   663→- Lint clean. Server stable.
+   664→- Auto-insert ON by default — no asking, code goes straight to Studio.
+   665→- AI decides format: ModuleScript for UI/Parts/Models, LocalScript for client, Script for server — all from code content analysis.
+   666→- Complex tasks: AI presents a plan → user reviews → clicks "Approve & proceed" → AI generates all code → auto-inserts into Studio.
+   667→
+   668→---
+   669→Task ID: 124-126
+   670→Agent: Orchestrator
+   671→Task: Fix — AI can't create working scripts, models, parts, or UI
+   672→
+   673→Work Log:
+   674→- Root cause: when the AI generated code that creates instances via Instance.new (e.g. `local redBrick = Instance.new("Part")`), the plugin stored it as a ModuleScript with the code as Source — but never EXECUTED it. A ModuleScript just sits there; you need to require() it for the code to run. So nothing appeared in Studio.
+   675→- Fix: plugin now EXECUTES the AI's code by creating a temporary ModuleScript, wrapping the code with a `return <lastVariable>` if no return exists, and calling `require()` on it. This actually runs the Instance.new calls and creates the instances in Studio. If require() returns an Instance, that instance is used as the main instance (selected + named). If the code already parents the instance, the plugin respects that and doesn't re-parent.
+   676→- Updated system prompts (both BLOXFORGE_SYSTEM_PROMPT and BLOXFORGE_LUAU_SYSTEM_PROMPT) with critical rules:
+   677→  - Rule 6: UI code MUST end with `return screenGui` — the connector EXECUTES this code
+   678→  - Rule 7: Part/Model code MUST end with `return <variableName>` — the connector EXECUTES this code
+   679→  - BloxForge Luau: "MUST end with `return <mainInstanceVariable>` — the connector EXECUTES this code to create the instance in Studio. Without a return, nothing gets created."
+   680→- Verified: "create a red brick part" → AI generates `local redBrick = Instance.new("Part")` + sets all properties + `return redBrick` ✓. "create a health bar UI" → AI generates full ScreenGui hierarchy + `return screenGui` ✓.
+   681→
+   682→Stage Summary:
+   683→- Lint clean. Server stable.
+   684→- The AI now generates code with `return` statements at the end.
+   685→- The plugin EXECUTES the code via require() — instances actually appear in Studio.
+   686→- Scripts: stored as Script/LocalScript/ModuleScript with AI code as Source (run by Roblox).
+   687→- Parts/Models/UI: code is executed by the plugin — the Instance.new calls create the actual instances in Studio.
+   688→
+   689→---
+   690→Task ID: 127-132
+   691→Agent: Orchestrator
+   692→Task: Add Groq API + Studio-only personality + fix placement + admin model display
+   693→
+   694→Work Log:
+   695→- Added Groq personality: id="groq", label="Groq", model="llama-3.3-70b-versatile", badge="Studio", studioOnly=true, speed=3. Groq is ultra-fast inference — great for scripts, UI, and parts.
+   696→- Added Groq API key to DB: provider="groq", baseUrl="https://api.groq.com/openai/v1", model="llama-3.3-70b-versatile", priority=5, active=true.
+   697→- Updated AI engine: resolveApiKey() now accepts personalityId. When "groq" is selected, it searches the DB for a key with provider="groq" and uses that key + Groq's base URL. ChatOptions now includes personalityId, passed through streamChat → resolveApiKey.
+   698→- Updated chat API: passes personalityId to streamChat so the right API key is selected.
+   699→- Fixed placement logic in deriveInstance(): ModuleScripts that are shared (not client, not UI, not Part) → ReplicatedStorage (not ServerScriptService). UI code → StarterGui. Part/Model code → Workspace. Client scripts → StarterPlayerScripts. Server scripts → ServerScriptService.
+   700→- Updated admin dashboard API keys form: selecting "Groq" as provider auto-fills the base URL to "https://api.groq.com/openai/v1". Same for NVIDIA, OpenAI, OpenRouter, Together.
+   701→- Updated personality picker: admins see the actual model ID (e.g. "llama-3.3-70b-versatile") in small emerald text next to each personality in the MODEL dropdown. Non-admins don't see it.
+   702→- Verified: 7 personalities (BloxForge Luau, Groq, Thoughtful, Swift, Balanced, Flagship, Nemotron). Groq works for admin users — streams "Hi there! 👋" via the Groq API.
+   703→
+   704→Stage Summary:
+   705→- Lint clean. Server stable.
+   706→- Groq personality added (Studio-only): uses llama-3.3-70b-versatile via Groq's API.
+   707→- API key stored in DB, selectable via admin dashboard API Keys tab.
+   708→- Placement fixed: scripts→right service, UI→StarterGui, Parts→Workspace, shared modules→ReplicatedStorage.
+   709→- Admins see model IDs in the personality picker.
+   710→

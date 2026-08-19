@@ -1,0 +1,88 @@
+// BloxForge AI — Prisma schema
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  passwordHash    String   @default("")
+  plan            String   @default("free") // free | pro | studio
+  role            String   @default("user") // user | admin
+  approved        Boolean  @default(false) // beta: admin must approve
+  robloxUserId    String?  @unique // Roblox user ID for Roblox-auth users
+  robloxUsername  String?  // cached Roblox username
+  stripeCustomerId String? @unique // Stripe customer ID for billing
+  stripeSubId     String?  // Stripe subscription ID
+  stripePlan      String?  // current Stripe-paid plan (pro|studio)
+  stripePeriod    String?  // monthly|annual
+  extraCredits    Int      @default(0)
+  usageDate       String?
+  usageCount      Int      @default(0)
+  createdAt       DateTime @default(now())
+  conversations   Conversation[]
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String?
+  title     String    @default("New Forge Session")
+  model     String    @default("swift")
+  mode      String    @default("normal")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  role           String // "user" | "assistant" | "system"
+  content        String
+  model          String?
+  mode           String?
+  tokens         Int?
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+model Snippet {
+  id          String   @id @default(cuid())
+  title       String
+  language    String   @default("lua")
+  code        String
+  description String?
+  tags        String?
+  createdAt   DateTime @default(now())
+
+  @@map("snippets")
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  label     String
+  provider  String   @default("nvidia") // nvidia | custom
+  baseUrl   String   @default("https://integrate.api.nvidia.com/v1")
+  key       String
+  model     String?  // optional preferred model override
+  active    Boolean  @default(true)
+  priority  Int      @default(0) // higher = preferred
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("api_keys")
+}
